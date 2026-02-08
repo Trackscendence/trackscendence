@@ -1,0 +1,5 @@
+bin/
+bin/*
+srcs/.env
+secrets/
+secrets/*

@@ -1,0 +1,90 @@
+name: trackscendence
+
+services:
+  nginx:
+    container_name: nginx
+    env_file:
+      - .env
+    secrets:
+      - nginx_tls_key 
+      - nginx_tls_cert 
+    build:
+      context: ./requirements/nginx
+      args:
+        SSL_SUBJECT: "${SSL_SUBJECT}"
+    environment:
+      SERVER_NAME: "${SERVER_NAME}"
+      DEBUG: "true"
+    ports:
+      - "443:443"
+    depends_on:
+      - node 
+    restart: always
+    networks:
+      - front
+      - back
+
+  node:
+    build: ./requirements/node
+    container_name: node 
+    expose:
+      - "3000"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_NAME: "${MARIADB_DATABASE}"
+      DB_USER: "${MARIADB_USER}"
+      DB_PASSWORD_FILE: /run/secrets/mariadb_password
+    secrets:
+      - mariadb_password
+    restart: always
+    networks:
+      - back
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  mariadb:
+    build: ./requirements/mariadb
+    container_name: mariadb 
+    environment:
+      DEBUG: "true"
+    env_file:
+      - .env
+    secrets:
+      - mariadb_root_password
+      - mariadb_password
+    expose:
+      - "3306"
+    restart: always
+    networks:
+      - back
+    volumes:
+      - /home/${LOGIN}/mariadb:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -p\"$$(cat /run/secrets/mariadb_root_password)\" --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+secrets:
+  nginx_tls_key:
+    file: ../secrets/nginx_tls_key.pem
+  nginx_tls_cert:
+    file: ../secrets/nginx_tls_cert.crt
+  mariadb_root_password:
+    file: ../secrets/mariadb_root_password.txt
+  mariadb_password:
+    file: ../secrets/mariadb_password.txt
+
+networks:
+  front:
+    driver: bridge
+  back:
+    driver: bridge
+    internal: true
+
+  mariadb:
+    driver: local

@@ -17,6 +17,13 @@ In the folder where you would like to install this project, run;
 git clone https://github.com/Trackscendence/trackscendence.git
 cd ./trackscendence
 ```
+For git clone:
+ - git clone repo
+ - Make to `cp srcs/.env.example srcs/.env` and adjust the vars for your system. 
+ - You need to assign the LOGIN value to the whatever you call the git repo, such as `trackscendence`
+ - run `make`
+ - make sure `etc/hosts/` has this line: `127.0.0.1 trackscendence.42.fr`
+ - Visit: `trackscendence.42.fr` (Only works in Firefox or browswer that accept self sign certificates, this well be changed ASAP to work with Chrome)
 
 ### Building and Running
 

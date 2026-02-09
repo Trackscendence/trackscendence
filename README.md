@@ -48,7 +48,7 @@ CSS Framework: Tailwind with CSS
 | Name | Role | 42 Username | Github Profile |
 | - | - | - | - |
 | Muktim Coskuner | Project Manager(PM) / Scrum Master | mcoskune | [Muktim] |
-| Mihaela Tocu | Developer | mtocu | [mihaellatocu] |
+| Mihaela Tocu | Database | mtocu | [mihaellatocu] |
 | Skyy Moore | Technical Lead / Architect | smoore | [mooreApps22] |
 | Sergio Rodrigo De Los Rios | Product Owner (PO) | srodrigo | [sroderic]
 

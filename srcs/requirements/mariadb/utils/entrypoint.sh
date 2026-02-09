@@ -57,7 +57,7 @@ fi
 # Start Real MariaDB Server ################################
 echo "Starting MariaDB..."
 mariadbd --user=mysql --datadir=/var/lib/mysql \
-	--bind-address=0.0.0.0 --port=3306 --socket="$SOCK" &
+	--bind-address=0.0.0.0 --port=3306 --socket="$SOCK"
 pid="$!"
 
 # Waiting for Real Server ##################################

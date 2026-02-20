@@ -35,12 +35,11 @@ make all
 
 
 
-<!-- ## Frameworks
+**Current Frameworks**
 
 Frontend Framework: React
 Backend Framework: Fastify with Node.js
 CSS Framework: Tailwind with CSS
--->
 
 
 

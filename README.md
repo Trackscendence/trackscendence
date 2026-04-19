@@ -5,3 +5,5 @@ Bon dia! El meu nom és Sergi
 Hello, Miha was here.
 
 Wild Muktim appeared
+
+David said hi from Beijing (travelling in Beijing) 

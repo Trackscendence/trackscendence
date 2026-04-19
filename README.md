@@ -1,3 +1,9 @@
-Hello, my name is Skyy. Please add a sentence with you name below.
+Hello, my name is Skyy. Please add a sentence with your name below.
 
-Bon dia! El meu nom es Sergi
+Bon dia! El meu nom és Sergi
+
+Hello, Miha was here.
+
+Wild Muktim appeared
+
+David said hi from Beijing (travelling in Beijing) 

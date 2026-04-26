@@ -43,4 +43,12 @@ npm start
 ```
 
 go to localhost:3001
+
 alternatively you can ping the API at localhost:3001/api/ping
+
+To run the project in developement mode:
+```
+npm run dev
+```
+
+go to localhost:5173

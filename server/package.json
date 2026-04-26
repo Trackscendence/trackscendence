@@ -1,0 +1,19 @@
+{
+  "name": "server",
+  "version": "0.0.1",
+  "description": "transcendence backend",
+  "license": "ISC",
+  "author": "mcoskune, mtocu, smoore, srodrigo, szhong",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "cross-env NODE_ENV=production node index.js",
+    "dev": "cross-env NODE_ENV=development node --watch index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}

@@ -13,7 +13,7 @@ David said hi from Beijing (travelling in Beijing)
 
 ## UNO Rules
 
-# Rules:
+**Rules:**
 	- 2-10 players
 	-	Ages 7+
 	-	Every player gets 7 cards dealt face down
@@ -35,7 +35,7 @@ David said hi from Beijing (travelling in Beijing)
 
 ### Module 
 
-# Modules we are doing:
+**Modules we are doing:**
 	-	Web: use frontend/backend framework (React/Express) 2 pts
 	-	Web: WebSockets 2pts
 		-	Real-time updates across all clients
@@ -73,11 +73,32 @@ David said hi from Beijing (travelling in Beijing)
 
 
 ### Tools we are using
-Frontend - React  
-Backend - Express  
-CSS - Tailwind  
-Proxy - NGINX  
-Container - Podman containers (if too much of a hassle, we can return back to Docker, but Podman should be faster)
+
+Containers
+	Podman => https://podman.io/docs
+
+Reverse proxy
+	Nginx => https://nginx.org/
+	Nginx JS => https://nginx.org/en/docs/njs/
+
+Frontend
+	React => https://react.dev/?utm_source
+	Vite => https://vite.dev/guide/why
+	npm => https://docs.npmjs.com/about-npm
+	Tailwind CSS => https://v2.tailwindcss.com/docs/installation
+
+Backend
+	Node.js => https://nodejs.org/en
+	npm => https://docs.npmjs.com/about-npm
+	jsonwebtoken => https://www.npmjs.com/package/jsonwebtoken
+	Express => https://expressjs.com/
+	WebSockets => https://www.npmjs.com/package/websockets
+
+Database
+	Postgres => https://www.postgresql.org/
+	Prisma (ORM) => https://www.prisma.io/docs/orm
+
+
 
 ### Branches Policy
 

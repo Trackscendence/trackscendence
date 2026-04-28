@@ -13,24 +13,22 @@ David said hi from Beijing (travelling in Beijing)
 
 *This project has been create as part of the 42 curriculum by mcoskune, mtocu, smoore, srodrigo, and szhong.*
 
-### UNO Rules
-
 **Rules:**
 - 2-10 players
 -	Ages 7+
--	Every player gets 7 cards dealt face down
--	All other cards start in draw pile
--	The top card is placed FACE UP on the Discard Pile before the game starts
+-	At the start, every player gets 7 cards dealt face down
+	-	All other cards start in draw pile
+	-	The top card is placed FACE UP on the Discard Pile before the game starts
 -	Cards are placed on the Discard Pile when used
 -	The first player is the player left of the dealer (or the youngest if voted for)
--	You can only discard a card that MATCHES the face up card by NUMBER, COLOR, or SYMBOL/ACTION, or a wild card and you GET TO CHOOSE THE COLOR IN PLAY
+-	You can only discard (play) a card that MATCHES the face up card by NUMBER, COLOR, or SYMBOL/ACTION, or a wild card and you GET TO CHOOSE THE COLOR IN PLAY
 -	The next player is always the player to the left
 -	IF THE FIRST CARD IS AN ACTION CARD IT APPLIES TO THE FIRST PLAYER
 -	IF THE FIRST CARD IS WILD IT GOES BACK INTO THE DESK AND THE DRAW DECK IS SHUFFLED
 -	If a player has NO MATCHES or CHOOSES NOT TO PLAY A CARD (despite having a match), then they MUST DRAW a card
--	A player can only put one card down at a time
--	The game continues until a player has ONE CAR LEFT the player must yell “UNO!”
-- IF the player is caught not playing uno by another player that player must draw two cards as a PENALTY
+-	A player can only play one card at a time
+-	The game continues until a player has ONE CARD LEFT and the player must yell “UNO!”
+- IF another player catches some playing their last card and NOT saying "Uno!" the player must draw two cards as a PENALTY
 -	Once a player has ZERO CARD, that player WINS THE GAME
 -	If the draw deck is EMPTY, then the discard deck is RESHUFFLED
 -	The top card of the draw deck remains the top card of the draw deck

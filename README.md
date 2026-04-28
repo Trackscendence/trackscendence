@@ -100,17 +100,17 @@ David said hi from Beijing (travelling in Beijing)
 
 [npm](https://docs.npmjs.com/about-npm)
 
-[jsonwebtoken] (https://www.npmjs.com/package/jsonwebtoken))
+[jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken)
 
-[Express] (https://expressjs.com/)
+[Express](https://expressjs.com/)
 
 [WebSockets](https://www.npmjs.com/package/websockets)
 
 **Database:**
 	
-[Postgres] (https://www.postgresql.org/)
+[Postgres](https://www.postgresql.org/)
 
-[Prisma (ORM)] (https://www.prisma.io/docs/orm)
+[Prisma (ORM)](https://www.prisma.io/docs/orm)
 
 ### Branches Policy
 

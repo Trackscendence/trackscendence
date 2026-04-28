@@ -72,9 +72,9 @@ David said hi from Beijing (travelling in Beijing)
 -	Gaming: Three or more players can play against each other 2pt
 
 
-### Tools we are using
+# Tools we are using
 
-# We are using the PERN stack: Postgres + Express + React + Node
+### We are using the PERN stack: Postgres + Express + React + Node
 
 **Containers:**
 

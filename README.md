@@ -74,6 +74,8 @@ David said hi from Beijing (travelling in Beijing)
 
 ### Tools we are using
 
+# We are using the PERN stack: Postgres + Express + React + Node
+
 **Containers:**
 
 [Podman](https://podman.io/docs)

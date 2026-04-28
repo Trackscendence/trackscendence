@@ -11,7 +11,9 @@ David said hi from Beijing (travelling in Beijing)
 
 # UNO Trancendence
 
-## UNO Rules
+*This project has been create as part of the 42 curriculum by mcoskune, mtocu, smoore, srodrigo, and szhong.*
+
+### UNO Rules
 
 **Rules:**
 - 2-10 players

@@ -116,4 +116,5 @@ David said hi from Beijing (travelling in Beijing)
 
 ### Branches Policy
 
-Moving forward create a new branch for each ticket/feature/bug. Any one thing you work on should have it's own branch. Once the feature is finish, merge to dev, and then we will push from dev to main.
+- Create a new branch for each ticket/feature/bug. Any one thing you work on should have it's own branch.
+- Once the feature is finish, merge to dev, and then after a review by another team member, we will push from dev to main.

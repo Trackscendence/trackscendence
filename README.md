@@ -14,103 +14,103 @@ David said hi from Beijing (travelling in Beijing)
 ## UNO Rules
 
 **Rules:**
-	- 2-10 players
-	-	Ages 7+
-	-	Every player gets 7 cards dealt face down
-	-	All other cards start in draw pile
-	-	The top card is placed FACE UP on the Discard Pile before the game starts
-	-	Cards are placed on the Discard Pile when used
-	-	The first player is the player left of the dealer (or the youngest if voted for)
-	-	You can only discard a card that MATCHES the face up card by NUMBER, COLOR, or SYMBOL/ACTION, or a wild card and you GET TO CHOOSE THE COLOR IN PLAY
-	-	The next player is always the player to the left
-	-	IF THE FIRST CARD IS AN ACTION CARD IT APPLIES TO THE FIRST PLAYER
-	-	IF THE FIRST CARD IS WILD IT GOES BACK INTO THE DESK AND THE DRAW DECK IS SHUFFLED
-	-	If a player has NO MATCHES or CHOOSES NOT TO PLAY A CARD (despite having a match), then they MUST DRAW a card
-	-	A player can only put one card down at a time
-	-	The game continues until a player has ONE CAR LEFT the player must yell “UNO!”
-	- IF the player is caught not playing uno by another player that player must draw two cards as a PENALTY
-	-	Once a player has ZERO CARD, that player WINS THE GAME
-	-	If the draw deck is EMPTY, then the discard deck is RESHUFFLED
-	-	The top card of the draw deck remains the top card of the draw deck
+- 2-10 players
+-	Ages 7+
+-	Every player gets 7 cards dealt face down
+-	All other cards start in draw pile
+-	The top card is placed FACE UP on the Discard Pile before the game starts
+-	Cards are placed on the Discard Pile when used
+-	The first player is the player left of the dealer (or the youngest if voted for)
+-	You can only discard a card that MATCHES the face up card by NUMBER, COLOR, or SYMBOL/ACTION, or a wild card and you GET TO CHOOSE THE COLOR IN PLAY
+-	The next player is always the player to the left
+-	IF THE FIRST CARD IS AN ACTION CARD IT APPLIES TO THE FIRST PLAYER
+-	IF THE FIRST CARD IS WILD IT GOES BACK INTO THE DESK AND THE DRAW DECK IS SHUFFLED
+-	If a player has NO MATCHES or CHOOSES NOT TO PLAY A CARD (despite having a match), then they MUST DRAW a card
+-	A player can only put one card down at a time
+-	The game continues until a player has ONE CAR LEFT the player must yell “UNO!”
+- IF the player is caught not playing uno by another player that player must draw two cards as a PENALTY
+-	Once a player has ZERO CARD, that player WINS THE GAME
+-	If the draw deck is EMPTY, then the discard deck is RESHUFFLED
+-	The top card of the draw deck remains the top card of the draw deck
 
 ### Module 
 
 **Modules we are doing:**
-	-	Web: use frontend/backend framework (React/Express) 2 pts
-	-	Web: WebSockets 2pts
-		-	Real-time updates across all clients
-		-	Handle connection/disconnection gracefully
-		-	Efficient message broadcasting
-	-	Web: User chat 2 pts
-		-	A basic chat system (send/receive messages)
-		-	A profile system (view user info)
-		-	A friend system (add/remove friends, see friends list)
-	-	Web: public API for interact with the database (PostGres) 2 pts
-		-	Secure API key
-		-	Rate limiting
-		-	Documentation
-		-	At least 5 endpoints
-			-	GET /api/{something}
-			-	POST …
-			-	PUT …
-			-	DELETE …
-	-	Web: use an Object-Relational Maper (ORM) for the database (PostGres) 1 pt
-	-	Web: Servier-side Rendering (SSR) 1 pt
-	-	Web: Search functionality with filter, sorting, and pagination 1pt
-	-	Web: File upload and management system 1 pt
-	-	User Management: Standard user management and authentication 2 pts
-		-	User can update their profile info
-		-	Users can upload an avatar (or given a default avatar
-		-	Users can add other users as friends and see their online status
-		-	Users have a profile page displaying their info
-	-	AI: AI Opponent for games  2 pts (MAYBE)
-		-	AI must be able to put up a fight
-		-	AI should not be perfect
-		-	If you implement game customization options, the AI must be able to use them
-		-	You must be able to explain your AI during evaluation
-	-	Gaming: Users can play against each other in real time 2pt
-	-	Gaming: Three or more players can play against each other 2pt
+-	Web: use frontend/backend framework (React/Express) 2 pts
+-	Web: WebSockets 2pts
+	-	Real-time updates across all clients
+	-	Handle connection/disconnection gracefully
+	-	Efficient message broadcasting
+-	Web: User chat 2 pts
+	-	A basic chat system (send/receive messages)
+	-	A profile system (view user info)
+	-	A friend system (add/remove friends, see friends list)
+-	Web: public API for interact with the database (PostGres) 2 pts
+	-	Secure API key
+	-	Rate limiting
+	-	Documentation
+	-	At least 5 endpoints:
+		-	GET /api/{something}
+		-	POST …
+		-	PUT …
+		-	DELETE …
+-	Web: use an Object-Relational Maper (ORM) for the database (PostGres) 1 pt
+-	Web: Servier-side Rendering (SSR) 1 pt
+-	Web: Search functionality with filter, sorting, and pagination 1pt
+-	Web: File upload and management system 1 pt
+-	User Management: Standard user management and authentication 2 pts
+	-	User can update their profile info
+	-	Users can upload an avatar (or given a default avatar
+	-	Users can add other users as friends and see their online status
+	-	Users have a profile page displaying their info
+-	AI: AI Opponent for games  2 pts (MAYBE)
+	-	AI must be able to put up a fight
+	-	AI should not be perfect
+	-	If you implement game customization options, the AI must be able to use them
+	-	You must be able to explain your AI during evaluation
+-	Gaming: Users can play against each other in real time 2pt
+-	Gaming: Three or more players can play against each other 2pt
 
 
 ### Tools we are using
 
 **Containers:**
 
-	Podman => https://podman.io/docs
+Podman => https://podman.io/docs
 
 **Reverse proxy:**
 
-	Nginx => https://nginx.org/
+Nginx => https://nginx.org/
 
-	Nginx JS => https://nginx.org/en/docs/njs/
+Nginx JS => https://nginx.org/en/docs/njs/
 
 **Frontend:**
 
-	React => https://react.dev/?utm_source
+React => https://react.dev/?utm_source
 
-	Vite => https://vite.dev/guide/why
+Vite => https://vite.dev/guide/why
 
-	npm => https://docs.npmjs.com/about-npm
+npm => https://docs.npmjs.com/about-npm
 
-	Tailwind CSS => https://v2.tailwindcss.com/docs/installation
+Tailwind CSS => https://v2.tailwindcss.com/docs/installation
 
 **Backend:**
 	
-	Node.js => https://nodejs.org/en
-	
-	npm => https://docs.npmjs.com/about-npm
-	
-	jsonwebtoken => https://www.npmjs.com/package/jsonwebtoken
-	
-	Express => https://expressjs.com/
-	
-	WebSockets => https://www.npmjs.com/package/websockets
+Node.js => https://nodejs.org/en
+
+npm => https://docs.npmjs.com/about-npm
+
+jsonwebtoken => https://www.npmjs.com/package/jsonwebtoken
+
+Express => https://expressjs.com/
+
+WebSockets => https://www.npmjs.com/package/websockets
 
 **Database:**
 	
-	Postgres => https://www.postgresql.org/
+Postgres => https://www.postgresql.org/
 
-	Prisma (ORM) => https://www.prisma.io/docs/orm
+Prisma (ORM) => https://www.prisma.io/docs/orm
 
 ### Branches Policy
 

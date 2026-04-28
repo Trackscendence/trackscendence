@@ -78,41 +78,41 @@ David said hi from Beijing (travelling in Beijing)
 
 **Containers:**
 
-[Podman](https://podman.io/docs)
+- [Podman](https://podman.io/docs)
 
 **Reverse proxy:**
 
-[Nginx](https://nginx.org/)
+- [Nginx](https://nginx.org/)
 
-[Nginx JS](https://nginx.org/en/docs/njs/)
+- [Nginx JS](https://nginx.org/en/docs/njs/)
 
 **Frontend:**
 
-[React](https://react.dev/?utm_source)
+- [React](https://react.dev/?utm_source)
 
-[Vite](https://vite.dev/guide/why)
+- [Vite](https://vite.dev/guide/why)
 
-[npm](https://docs.npmjs.com/about-npm)
+- [npm](https://docs.npmjs.com/about-npm)
 
-[Tailwind CSS](https://v2.tailwindcss.com/docs/installation)
+- [Tailwind CSS](https://v2.tailwindcss.com/docs/installation)
 
 **Backend:**
 	
-[Node.js](https://nodejs.org/en)
+- [Node.js](https://nodejs.org/en)
 
-[npm](https://docs.npmjs.com/about-npm)
+- [npm](https://docs.npmjs.com/about-npm)
 
-[jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken)
+- [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken)
 
-[Express](https://expressjs.com/)
+- [Express](https://expressjs.com/)
 
-[WebSockets](https://www.npmjs.com/package/websockets)
+- [WebSockets](https://www.npmjs.com/package/websockets)
 
 **Database:**
 	
-[Postgres](https://www.postgresql.org/)
+- [Postgres](https://www.postgresql.org/)
 
-[Prisma (ORM)](https://www.prisma.io/docs/orm)
+- [Prisma (ORM)](https://www.prisma.io/docs/orm)
 
 ### Branches Policy
 

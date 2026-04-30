@@ -76,7 +76,7 @@ David said hi from Beijing (travelling in Beijing)
 
 ### We are using the PERN stack: Postgres + Express + React + Node
 
-**This is the tenatively diagram for the app:**
+**This is the tenative diagram for the app:**
 
 ![Diagram Image](/assets/diagram_draft1.jpg)
 

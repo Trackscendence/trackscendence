@@ -117,6 +117,8 @@ David said hi from Beijing (travelling in Beijing)
 
 - [Prisma (ORM)](https://www.prisma.io/docs/orm)
 
+# Team Work
+
 ### Branches Policy
 
 - Create a new branch for each ticket/feature/bug. Any one thing you work on should have it's own branch.

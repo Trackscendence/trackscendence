@@ -8,7 +8,6 @@ Wild Muktim appeared
 
 David said hi from Beijing (travelling in Beijing) 
 
-
 # UNO Trancendence
 
 *This project has been create as part of the 42 curriculum by mcoskune, mtocu, smoore, srodrigo, and szhong.*
@@ -36,16 +35,16 @@ David said hi from Beijing (travelling in Beijing)
 ### Module 
 
 **Modules we are doing:**
--	Web: use frontend/backend framework (React/Express) 2 pts
--	Web: WebSockets 2pts
+-	Web: use frontend/backend framework (React/Express) **2 pts**
+-	Web: WebSockets **2pts**
 	-	Real-time updates across all clients
 	-	Handle connection/disconnection gracefully
 	-	Efficient message broadcasting
--	Web: User chat 2 pts
+-	Web: User chat **2 pts**
 	-	A basic chat system (send/receive messages)
 	-	A profile system (view user info)
 	-	A friend system (add/remove friends, see friends list)
--	Web: public API for interact with the database (PostGres) 2 pts
+-	Web: public API for interact with the database (PostGres) **2 pts**
 	-	Secure API key
 	-	Rate limiting
 	-	Documentation
@@ -54,23 +53,23 @@ David said hi from Beijing (travelling in Beijing)
 		-	POST …
 		-	PUT …
 		-	DELETE …
--	Web: use an Object-Relational Maper (ORM) for the database (PostGres) 1 pt
--	Web: Servier-side Rendering (SSR) 1 pt
--	Web: Search functionality with filter, sorting, and pagination 1pt
--	Web: File upload and management system 1 pt
--	User Management: Standard user management and authentication 2 pts
+-	Web: use an Object-Relational Maper (ORM) for the database (PostGres) **1 pt**
+-	Web: Search functionality with filter, sorting, and pagination **1pt**
+-	Web: File upload and management system **1 pt**
+-	User Management: Standard user management and authentication **2 pts**
 	-	User can update their profile info
 	-	Users can upload an avatar (or given a default avatar
 	-	Users can add other users as friends and see their online status
 	-	Users have a profile page displaying their info
--	AI: AI Opponent for games  2 pts (MAYBE)
+-	AI: AI Opponent for games  **2 pts (MAYBE)**
 	-	AI must be able to put up a fight
 	-	AI should not be perfect
 	-	If you implement game customization options, the AI must be able to use them
 	-	You must be able to explain your AI during evaluation
--	Gaming: Users can play against each other in real time 2pt
--	Gaming: Three or more players can play against each other 2pt
+-	Gaming: Users can play against each other in real time **2pt**
+-	Gaming: Three or more players can play against each other **2pt**
 
+**17-19 pts** Only 14 pts need to pass evaluation.
 
 # Tools we are using
 
@@ -122,3 +121,11 @@ David said hi from Beijing (travelling in Beijing)
 
 - Create a new branch for each ticket/feature/bug. Any one thing you work on should have it's own branch.
 - Once the feature is finish, merge to dev, and then after a review by another team member, we will push from dev to main.
+
+### GitHub Issues
+
+**What each Scrum category means:**
+- Backlog: This is a task that needs to be done, but is not ready to take on.
+- Ready: This task is ready for some to begin work on, but no one has been aassigned or the task has been started yet.
+- In Progress: This task has been assigned and someone is currently working on it.
+- Done: This task has been finished and is ready for review, so it can be determined if the can be merged.

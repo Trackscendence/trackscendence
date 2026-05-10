@@ -85,21 +85,17 @@ David said hi from Beijing (travelling in Beijing)
 
 **Containers:**
 
-- [Podman](https://podman.io/docs)
+- [Docker Compose](https://docs.docker.com/reference/compose-file/)
 
 **Reverse proxy:**
 
 - [Nginx](https://nginx.org/)
-
-- [Nginx JS](https://nginx.org/en/docs/njs/)
 
 **Frontend:**
 
 - [React](https://react.dev/?utm_source)
 
 - [Vite](https://vite.dev/guide/why)
-
-- [npm](https://docs.npmjs.com/about-npm)
 
 - [Tailwind CSS](https://v2.tailwindcss.com/docs/installation)
 
@@ -109,17 +105,20 @@ David said hi from Beijing (travelling in Beijing)
 
 - [npm](https://docs.npmjs.com/about-npm)
 
+- [bcrypt](https://www.npmjs.com/package/bcrypt?activeTab=code)
+
 - [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken)
 
 - [Express](https://expressjs.com/)
 
 - [WebSockets](https://www.npmjs.com/package/websockets)
 
+- [Prisma (ORM)](https://www.prisma.io/docs/orm)
+
 **Database:**
 	
 - [Postgres](https://www.postgresql.org/)
 
-- [Prisma (ORM)](https://www.prisma.io/docs/orm)
 
 # Team Work
 

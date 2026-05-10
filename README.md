@@ -130,7 +130,7 @@ David said hi from Beijing (travelling in Beijing)
 ### GitHub Issues
 
 **What each Scrum category means:**
-- Backlog: This is a task that needs to be done, but is not ready to take on.
-- Ready: This task is ready for some to begin work on, but no one has been aassigned or the task has been started yet.
-- In Progress: This task has been assigned and someone is currently working on it.
-- Done: This task has been finished and is ready for review, so it can be determined if the can be merged.
+- **Backlog:** This is a task that needs to be done, but is not ready to take on.
+- **Ready:** This task is ready for some to begin work on, but no one has been aassigned or the task has been started yet.
+- **In Progress:** This task has been assigned and someone is currently working on it.
+- **Done:** This task has been finished and is ready for review, so it can be determined if the can be merged.

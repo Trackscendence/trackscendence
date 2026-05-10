@@ -1,9 +1,27 @@
-bin/
-bin/*
-srcs/.env
-secrets/
-secrets/*
+# Dependencies
 node_modules/
-node_modules/*
+
+# Environment
+.env
+*.env.local
+
+# Build output
+dist/
+
+# Logs
 npm-debug.log*
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Secrets
+secrets/
+
+# Legacy
+bin/
+srcs/.env

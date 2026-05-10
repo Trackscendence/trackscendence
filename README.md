@@ -42,15 +42,16 @@ cd trackscendence
 ```
 cp .env.example .env
 ```
+Ports are configured via `.env` — change `CLIENT_PORT`, `SERVER_PORT`, or `DB_PORT` if the defaults conflict with services on your machine.
 
 3. Start all services (database, server, client)
 ```
 npm run compose:up
 ```
 
-4. Open the app at `localhost:8080`
+4. Open the app at `localhost:<CLIENT_PORT>` (default `8080`)
 
-In production, nginx serves the built React frontend and proxies `/api/*` requests to Express, so everything is accessible through a single port (8080).
+In production, nginx serves the built React frontend and proxies `/api/*` requests to Express, so everything is accessible through a single port (`CLIENT_PORT`, default 8080).
 
 Other useful commands:
 ```
@@ -67,9 +68,9 @@ npm run compose:dev
 ```
 
 This starts all three services with hot reload enabled. Nginx is not used in dev mode — you access the frontend and backend directly:
-- Frontend: `localhost:5173` (Vite dev server)
-- Backend: `localhost:3001` (Node --watch)
-- Database: `localhost:5432` (PostgreSQL)
+- Frontend: `localhost:<CLIENT_DEV_PORT>` (Vite dev server, default `5173`)
+- Backend: `localhost:<SERVER_PORT>` (Node --watch, default `3001`)
+- Database: `localhost:<DB_PORT>` (PostgreSQL, default `5432`)
 
 #### Development mode (without containers)
 
@@ -83,7 +84,7 @@ npm run dev
 
 #### API endpoints
 
-- `localhost:3001/api/ping` — health check (returns pong + timestamp)
-- `localhost:3001/api/health` — database connection check
+- `localhost:<SERVER_PORT>/api/ping` — health check (returns pong + timestamp)
+- `localhost:<SERVER_PORT>/api/health` — database connection check
 
-In production mode, these are also accessible via nginx at `localhost:8080/api/...`
+In production mode, these are also accessible via nginx at `localhost:<CLIENT_PORT>/api/...`

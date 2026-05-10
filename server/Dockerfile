@@ -10,6 +10,7 @@ COPY . .
 
 RUN npx prisma generate
 
-EXPOSE 3001
+ARG PORT=3001
+EXPOSE ${PORT}
 
 CMD ["node", "index.js"]

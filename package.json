@@ -1,9 +1,18 @@
 {
   "scripts": {
     "install:all": "npm install && npm install --prefix server && npm install --prefix client",
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "client:dev": "npm run dev --prefix client",
+    "server:dev": "npm run dev --prefix server",
+    "dev": "concurrently \"npm:client:dev\" \"npm:server:dev\"",
     "build": "npm run build --prefix client",
-    "start": "npm start --prefix server"
+    "start": "npm start --prefix server",
+    "compose:up": "docker compose up -d --build",
+    "compose:down": "docker compose down",
+    "compose:dev": "docker compose -f compose.yaml -f compose.dev.yaml up --build",
+    "compose:build": "docker compose build",
+    "compose:logs": "docker compose logs -f",
+    "compose:clean": "docker compose down -v",
+    "db:shell": "docker compose exec database psql -U trackscendence -d trackscendence"
   },
   "dependencies": {
     "concurrently": "^9.2.1"

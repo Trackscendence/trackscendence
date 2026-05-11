@@ -1,4 +1,4 @@
-const AppException = require('./app.exception')
+const AppException = require('#exceptions/app.exception')
 
 class BadRequestException extends AppException {
 	constructor(message = 'Bad request', payload) {

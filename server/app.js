@@ -2,12 +2,12 @@ const express = require('express')
 const path = require('path')
 const helmet = require('helmet')
 const cors = require('cors')
-const config = require('./utils/config')
-const requestLogger = require('./src/middleware/morgan.middleware')
-const rateLimiter = require('./src/middleware/rate-limit.middleware')
-const { notFound, errorHandler } = require('./src/middleware/error.middleware')
-const apiRouter = require('./src/routes')
-const systemController = require('./src/modules/system/system.controller')
+const config = require('#utils/config')
+const requestLogger = require('#middleware/morgan.middleware')
+const rateLimiter = require('#middleware/rate-limit.middleware')
+const { notFound, errorHandler } = require('#middleware/error.middleware')
+const apiRouter = require('#routes')
+const systemController = require('#modules/system/system.controller')
 
 const app = express()
 
@@ -22,7 +22,7 @@ app.get('/', systemController.root)
 app.use('/api', apiRouter)
 
 if (config.NODE_ENV === 'development') {
-  const { swaggerUi, swaggerSpec } = require('./src/docs/swagger')
+  const { swaggerUi, swaggerSpec } = require('#docs/swagger')
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 }
 

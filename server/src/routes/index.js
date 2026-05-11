@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const v1Router = require('./v1')
+const v1Router = require('#routes/v1')
 
 const router = Router()
 

@@ -1,5 +1,5 @@
 const winston = require('winston')
-const config = require('./config')
+const config = require('#utils/config')
 
 const developmentFormat = winston.format.combine(
 	winston.format.colorize(),

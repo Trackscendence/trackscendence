@@ -1,5 +1,5 @@
-const ForbiddenException = require('../exceptions/forbidden.exception')
-const UnauthorizedException = require('../exceptions/unauthorized.exception')
+const ForbiddenException = require('#exceptions/forbidden.exception')
+const UnauthorizedException = require('#exceptions/unauthorized.exception')
 
 const requireAuth = (req, res, next) => {
 	next(new UnauthorizedException('Authentication middleware is not implemented yet'))

@@ -200,7 +200,6 @@ server/
         system.controller.js
         system.routes.js
     routes/
-      index.js
       v1/
         index.js
   utils/

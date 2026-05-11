@@ -1,4 +1,4 @@
-const AppException = require('./app.exception')
+const AppException = require('#exceptions/app.exception')
 
 class ConflictException extends AppException {
 	constructor(message = 'Conflict', payload) {

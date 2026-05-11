@@ -1,4 +1,4 @@
-const BadRequestException = require('../exceptions/bad-request.exception')
+const BadRequestException = require('#exceptions/bad-request.exception')
 
 const validateRequest = (schema, source = 'body') => {
 	return (req, res, next) => {

@@ -6,6 +6,17 @@
   "author": "mcoskune, mtocu, smoore, srodrigo, szhong",
   "type": "commonjs",
   "main": "index.js",
+  "imports": {
+    "#app": "./app.js",
+    "#db/*": "./src/db/*.js",
+    "#docs/*": "./src/docs/*.js",
+    "#exceptions/*": "./src/exceptions/*.js",
+    "#middleware/*": "./src/middleware/*.js",
+    "#modules/*": "./src/modules/*.js",
+    "#routes": "./src/routes/index.js",
+    "#routes/*": "./src/routes/*/index.js",
+    "#utils/*": "./utils/*.js"
+  },
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development node --watch index.js",

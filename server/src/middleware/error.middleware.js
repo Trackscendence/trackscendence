@@ -1,6 +1,6 @@
-const config = require('../../utils/config')
-const logger = require('../../utils/logger')
-const NotFoundException = require('../exceptions/not-found.exception')
+const config = require('#utils/config')
+const logger = require('#utils/logger')
+const NotFoundException = require('#exceptions/not-found.exception')
 
 const notFound = (req, res, next) => {
 	next(new NotFoundException(`Route ${req.method} ${req.originalUrl} not found`))

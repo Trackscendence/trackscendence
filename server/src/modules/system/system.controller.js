@@ -1,5 +1,5 @@
-const prisma = require('../../db/prisma')
-const config = require('../../../utils/config')
+const prisma = require('#db/prisma')
+const config = require('#utils/config')
 
 const root = (req, res) => {
 	const routes = {

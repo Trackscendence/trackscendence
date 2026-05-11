@@ -6,7 +6,7 @@ const config = require('#utils/config')
 const requestLogger = require('#middleware/morgan.middleware')
 const rateLimiter = require('#middleware/rate-limit.middleware')
 const { notFound, errorHandler } = require('#middleware/error.middleware')
-const apiRouter = require('#routes')
+const v1Router = require('#routes/v1')
 const systemController = require('#modules/system/system.controller')
 
 const app = express()
@@ -19,7 +19,7 @@ app.use(rateLimiter)
 
 app.get('/', systemController.root)
 
-app.use('/api', apiRouter)
+app.use('/api/v1', v1Router)
 
 if (config.NODE_ENV === 'development') {
   const { swaggerUi, swaggerSpec } = require('#docs/swagger')

@@ -212,10 +212,7 @@ Route mounting flow:
 
 ```
 server/app.js
-  -> app.use('/api', apiRouter)
-
-server/src/routes/index.js
-  -> router.use('/v1', v1Router)
+  -> app.use('/api/v1', v1Router)
 
 server/src/routes/v1/index.js
   -> v1Router.use('/', systemRoutes)
@@ -244,7 +241,7 @@ Use:
 ```js
 const config = require('#utils/config')
 const prisma = require('#db/prisma')
-const apiRouter = require('#routes')
+const v1Router = require('#routes/v1')
 ```
 
 Avoid deep relative imports like:

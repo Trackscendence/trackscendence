@@ -5,6 +5,7 @@ const root = (req, res) => {
 	const routes = {
 		ping: '/api/v1/ping',
 		health: '/api/v1/health',
+		auth: '/api/v1/auth',
 	}
 
 	if (config.NODE_ENV === 'development') {

@@ -270,7 +270,7 @@ In order to view the documented Swagger JsDocs contracts for the Frontend and Ba
 
 1. Make sure you are running in dev mode: `npm run compose:dev`
 2. In the browser, run `https://localhost:3001/api/docs/#/`
-3. Now, you can inspected the documented 
+3. Now, you can inspected the documented Swagger contracts in the browser
 
 #### Source Code
 

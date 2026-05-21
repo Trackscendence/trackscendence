@@ -248,3 +248,32 @@ Avoid deep relative imports like:
 ```js
 require('../../../utils/config')
 ```
+
+
+### Swagger UI/Swagger-jsdoc & API Contract
+
+These two packages work together to scan JS files with commented YAML structures, which describe a frontend HTTP method and the corresponding backend API. This YAML is esstential the API contract. And all similar contracts should be added to the swagger documentation.
+
+#### Documentation
+
+[Github Swagger JsDoc Docs](https://github.com/Surnet/swagger-jsdoc/blob/v6/docs/FIRST-STEPS.md)
+
+[NPM Swagger JsDoc Docs](https://www.npmjs.com/package/swagger-jsdoc)
+
+[NPM Swagger UI Docs](https://www.npmjs.com/package/swagger-ui)
+
+[Swagger Site](https://swagger.io/docs/specification/v3_0/about/)
+
+#### Instructions
+
+In order to view the documented Swagger JsDocs contracts for the Frontend and Backend:
+
+1. Make sure you are running in dev mode: `npm run compose:dev`
+2. In the browser, run `https://localhost:3001/api/docs/#/`
+3. Now, you can inspected the documented 
+
+#### Source Code
+
+Swagger is imported at `server/src/docs/swagger.js`.
+
+Example of Swagger YAML comments are found at `server/src/modules/auth/auth.routes.js`

@@ -9,30 +9,30 @@ const router = Router()
 * /auth/register:
 *   post:
 *     summary: Register a new user
-*       tags: [Auth]
-*       requestBody:
-*         required: true
-*         content:
-*           application/json:
-*             schema:
-*               type: object
-*               required:
-*                 - email
-*                 - username
-*                 - password
-*               properties:
-*                 email:
-*                   type: string
-*                   example: test@example.com
-*                 username:
-*                   type: string
-*                   example: smoore
-*                 password:
-*                   type: string
-*                   example: ThisIsMyRealPasswordPsych123!
-*		responses:
-*		  201:
-*           description: User registered successfully
+*     tags: [Auth]
+*     requestBody:
+*       required: true
+*       content:
+*         application/json:
+*           schema:
+*             type: object
+*             required:
+*               - email
+*               - username
+*               - password
+*             properties:
+*               email:
+*                 type: string
+*                 example: test@example.com
+*               username:
+*                 type: string
+*                 example: smoore
+*               password:
+*                 type: string
+*                 example: ThisIsMyRealPasswordPsych123!
+*     responses:
+*       201:
+*         description: User registered successfully
 */
 router.post('/register', authController.register)
 

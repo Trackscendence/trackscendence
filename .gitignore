@@ -25,3 +25,7 @@ secrets/
 # Legacy
 bin/
 srcs/.env
+
+# Makefile
+Makefile
+makefile

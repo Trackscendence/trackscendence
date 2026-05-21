@@ -16,6 +16,15 @@ const swaggerSpec = swaggerJsdoc({
 				description: 'API v1',
 			},
 		],
+		components: {
+			securitySchemes: {
+				bearerAuth: {
+					type: 'http',
+					scheme: 'bearer',
+					bearerFormat: 'JWT',
+				},
+			},
+		},
 	},
 	apis: [path.join(__dirname, '../modules/**/*.js')],
 })

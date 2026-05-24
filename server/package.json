@@ -6,6 +6,16 @@
   "author": "mcoskune, mtocu, smoore, srodrigo, szhong",
   "type": "commonjs",
   "main": "index.js",
+  "imports": {
+    "#app": "./app.js",
+    "#db/*": "./src/db/*.js",
+    "#docs/*": "./src/docs/*.js",
+    "#exceptions/*": "./src/exceptions/*.js",
+    "#middleware/*": "./src/middleware/*.js",
+    "#modules/*": "./src/modules/*.js",
+    "#routes/*": "./src/routes/*/index.js",
+    "#utils/*": "./utils/*.js"
+  },
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development node --watch index.js",
@@ -15,9 +25,16 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "cors": "^2.8.6",
     "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "prisma": "^6.19.3"
+    "express-rate-limit": "^8.5.1",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
+    "prisma": "^6.19.3",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.19.0"
   }
 }

@@ -1,13 +1,39 @@
-require('dotenv').config()
+const path = require('path')
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env'), quiet: true })
 
-const PORT = process.env.PORT
+const NODE_ENV = process.env.NODE_ENV || 'development'
 
-const NODE_ENV = process.env.NODE_ENV
+const parseNumber = (key, fallback) => {
+	const rawValue = process.env[key]
+	const value = rawValue == null || rawValue === '' ? fallback : Number(rawValue)
 
-const DATABASE_URL = process.env.DATABASE_URL
+	if (Number.isNaN(value)) {
+		throw new Error(`Invalid number for env var ${key}`)
+	}
+
+	return value
+}
+
+const optionalConfigs = {
+	NODE_ENV,
+	PORT: parseNumber('PORT', Number(process.env.SERVER_PORT) || 3001),
+	LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+	CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
+	RATE_LIMIT_WINDOW_MS: parseNumber('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
+	RATE_LIMIT_LIMIT: parseNumber('RATE_LIMIT_LIMIT', 100),
+}
+
+const requiredConfigs = {
+	DATABASE_URL: process.env.DATABASE_URL,
+}
+
+for (const key in requiredConfigs) {
+	if (!requiredConfigs[key]) {
+		throw new Error(`Missing value for env var ${key}`)
+	}
+}
 
 module.exports = {
-	PORT,
-	NODE_ENV,
-	DATABASE_URL,
+	...optionalConfigs,
+	...requiredConfigs,
 }

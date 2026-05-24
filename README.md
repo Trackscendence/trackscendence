@@ -249,7 +249,6 @@ Avoid deep relative imports like:
 require('../../../utils/config')
 ```
 
-
 ### Swagger UI/Swagger-jsdoc & API Contract
 
 These two packages work together to scan JS files with commented YAML structures, which describe a frontend HTTP method and the corresponding backend API. This YAML is esstential the API contract. And all similar contracts should be added to the swagger documentation.

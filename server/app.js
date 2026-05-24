@@ -28,7 +28,7 @@ if (config.NODE_ENV === 'development') {
 
 app.use('/api', notFound)
 
-if (process.env.NODE_ENV === 'production') {
+if (config.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')))
   app.get('/*splat', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist/index.html'))

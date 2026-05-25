@@ -25,3 +25,5 @@ secrets/
 # Legacy
 bin/
 srcs/.env
+
+*.local

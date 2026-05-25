@@ -9,10 +9,13 @@
     "compose:up": "docker compose up -d --build",
     "compose:down": "docker compose down",
     "compose:dev": "docker compose -f compose.yaml -f compose.dev.yaml up --build",
+    "compose:dev_down": "docker compose -f compose.yaml -f compose.dev.yaml down",
     "compose:build": "docker compose build",
     "compose:logs": "docker compose logs -f",
     "compose:clean": "docker compose down -v",
-    "db:shell": "docker compose exec database psql -U trackscendence -d trackscendence"
+    "db:shell": "docker compose exec database psql -U trackscendence -d trackscendence",
+    "prisma:generate": "docker compose exec server npm run prisma:generate",
+    "prisma:migrate": "docker compose exec server npm run prisma:migrate"
   },
   "dependencies": {
     "concurrently": "^9.2.1"

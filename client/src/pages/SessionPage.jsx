@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import useAuth from '../context/useAuth'
+import BasicChat from '../components/BasicChat'
 import { socket } from '../services/socket'
 const SessionPage = () => {
 	const navigate = useNavigate()
@@ -54,6 +55,7 @@ const SessionPage = () => {
 						</div>
 					</div>
 				</div>
+				<BasicChat />
 			</section>
 			
 		</main>

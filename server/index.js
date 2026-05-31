@@ -20,15 +20,23 @@ io.on('connection', (socket) => {
 			try {
 				const user = await authService.getUserFromToken(response)
 				socket.user = { id: user.id, username: user.username }
-				console.log('user connected:', socket.user )
+				socket.join('channel:#general')
+				logger.info('user connected:', socket.user )
 			} catch (error) {
 				console.log(error)
 			}
 		}
 	})
+
 	socket.on('disconnect', () => {
-			console.log('user disconnected', socket.user)
+			logger.info('user disconnected', socket.user)
 		})
+	
+	socket.on('message', (data) => {
+		logger.info(data)
+		data.user = socket.user
+		io.to(data.room).emit('message', data)
+	})
 })	
 
 server.listen(config.PORT, () => {

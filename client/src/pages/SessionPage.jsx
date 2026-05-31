@@ -4,7 +4,7 @@ import useAuth from '../context/useAuth'
 import { socket } from '../services/socket'
 const SessionPage = () => {
 	const navigate = useNavigate()
-	const { logout, user  } = useAuth()
+	const { logout, user, token } = useAuth()
 
 	const handleLogout = async () => {
 		await logout()
@@ -13,7 +13,9 @@ const SessionPage = () => {
 
 	useEffect(() => {
  		socket.connect()
-
+		socket.once('token', (callback) => {
+			callback(token)
+		})
 		return () => {
 			socket.disconnect()
 		}

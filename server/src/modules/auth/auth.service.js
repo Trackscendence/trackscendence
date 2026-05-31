@@ -152,12 +152,7 @@ const login = async (payload) => {
 	}
 }
 
-const getAuthenticatedUser = async (authorizationHeader) => {
-	const token = authToken.getBearerToken(authorizationHeader)
-
-	if (!token) {
-		throw new UnauthorizedException(AUTHENTICATION_REQUIRED_MESSAGE)
-	}
+const getUserFromToken = async (token) => {
 
 	let payload
 
@@ -186,8 +181,21 @@ const getAuthenticatedUser = async (authorizationHeader) => {
 	return user
 }
 
+const getAuthenticatedUser = async (authorizationHeader) => {
+	const token = authToken.getBearerToken(authorizationHeader)
+
+	if (!token) {
+		throw new UnauthorizedException(AUTHENTICATION_REQUIRED_MESSAGE)
+	}
+
+	return await getUserFromToken(token)
+}
+
+
+
 module.exports = {
 	INVALID_CREDENTIALS_MESSAGE,
+	getUserFromToken,
 	getAuthenticatedUser,
 	register,
 	login,

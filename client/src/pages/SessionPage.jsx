@@ -1,14 +1,24 @@
 import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import useAuth from '../context/useAuth'
-
+import { socket } from '../services/socket'
 const SessionPage = () => {
 	const navigate = useNavigate()
-	const { logout, user } = useAuth()
+	const { logout, user  } = useAuth()
 
 	const handleLogout = async () => {
 		await logout()
 		navigate('/login', { replace: true })
 	}
+
+	useEffect(() => {
+ 		socket.connect()
+
+		return () => {
+			socket.disconnect()
+		}
+	}, [])
+
 
 	return (
 		<main className="min-h-screen bg-[#f4f7f2] text-[#1f2d28]">
@@ -43,6 +53,7 @@ const SessionPage = () => {
 					</div>
 				</div>
 			</section>
+			
 		</main>
 	)
 }

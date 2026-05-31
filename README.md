@@ -8,271 +8,129 @@ Wild Muktim appeared
 
 David said hi from Beijing (travelling in Beijing) 
 
+# UNO Trancendence
 
-# UNO Trackscendence
+*This project has been create as part of the 42 curriculum by mcoskune, mtocu, smoore, srodrigo, and szhong.*
 
-### Modules we are doing
+**Rules:**
+- 2-10 players
+-	Ages 7+
+-	At the start, every player gets 7 cards dealt face down
+	-	All other cards start in draw pile
+	-	The top card is placed FACE UP on the Discard Pile before the game starts
+-	Cards are placed on the Discard Pile when used
+-	The first player is the player left of the dealer (or the youngest if voted for)
+-	You can only discard (play) a card that MATCHES the face up card by NUMBER, COLOR, or SYMBOL/ACTION, or a wild card and you GET TO CHOOSE THE COLOR IN PLAY
+-	The next player is always the player to the left
+-	IF THE FIRST CARD IS AN ACTION CARD IT APPLIES TO THE FIRST PLAYER
+-	IF THE FIRST CARD IS WILD IT GOES BACK INTO THE DESK AND THE DRAW DECK IS SHUFFLED
+-	If a player has NO MATCHES or CHOOSES NOT TO PLAY A CARD (despite having a match), then they MUST DRAW a card
+-	A player can only play one card at a time
+-	The game continues until a player has ONE CARD LEFT and the player must yell “UNO!”
+- IF another player catches some playing their last card and NOT saying "Uno!" the player must draw two cards as a PENALTY
+-	Once a player has ZERO CARD, that player WINS THE GAME
+-	If the draw deck is EMPTY, then the discard deck is RESHUFFLED
+-	The top card of the draw deck remains the top card of the draw deck
 
-### Tools we are using
+### Module 
 
-- Frontend: React
-- Backend: Express
-- CSS: Tailwind
-- ORM: Prisma
-- Database: PostgreSQL
-- Proxy: Nginx in production mode
-- Container: Docker / Docker Compose
+**Modules we are doing:**
+-	Web: use frontend/backend framework (React/Express) **2 pts**
+-	Web: WebSockets **2pts**
+	-	Real-time updates across all clients
+	-	Handle connection/disconnection gracefully
+	-	Efficient message broadcasting
+-	Web: User chat **2 pts**
+	-	A basic chat system (send/receive messages)
+	-	A profile system (view user info)
+	-	A friend system (add/remove friends, see friends list)
+-	Web: public API for interact with the database (PostGres) **2 pts**
+	-	Secure API key
+	-	Rate limiting
+	-	Documentation
+	-	At least 5 endpoints:
+		-	GET /api/{something}
+		-	POST …
+		-	PUT …
+		-	DELETE …
+-	Web: use an Object-Relational Maper (ORM) for the database (PostGres) **1 pt**
+-	Web: Search functionality with filter, sorting, and pagination **1pt**
+-	Web: File upload and management system **1 pt**
+-	User Management: Standard user management and authentication **2 pts**
+	-	User can update their profile info
+	-	Users can upload an avatar (or given a default avatar
+	-	Users can add other users as friends and see their online status
+	-	Users have a profile page displaying their info
+-	AI: AI Opponent for games  **2 pts (MAYBE)**
+	-	AI must be able to put up a fight
+	-	AI should not be perfect
+	-	If you implement game customization options, the AI must be able to use them
+	-	You must be able to explain your AI during evaluation
+-	Gaming: Users can play against each other in real time **2pt**
+-	Gaming: Three or more players can play against each other **2pt**
 
-In production mode, Nginx serves the built React frontend and proxies `/api/*` requests to Express. The backend and database stay inside the Docker network.
+**17-19 pts** Only 14 pts need to pass evaluation.
+
+# Tools we are using
+
+### We are using the PERN stack: Postgres + Express + React + Node
+
+**This is the tenative diagram for the app:**
+
+![Diagram Image](/assets/uno_pern_diagram.jpg)
+
+**Git Cheat Sheet"**
+
+- [Git](https://git-scm.com/cheat-sheet)
+
+**Containers:**
+
+- [Docker Compose](https://docs.docker.com/reference/compose-file/)
+
+**Reverse proxy:**
+
+- [Nginx](https://nginx.org/)
+
+**Frontend:**
+
+- [React](https://react.dev/?utm_source)
+
+- [Vite](https://vite.dev/guide/why)
+
+- [Tailwind CSS](https://v2.tailwindcss.com/docs/installation)
+
+**Backend:**
+	
+- [Node.js](https://nodejs.org/en)
+
+- [npm](https://docs.npmjs.com/about-npm)
+
+- [bcrypt](https://www.npmjs.com/package/bcrypt?activeTab=code)
+
+- [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken)
+
+- [Express](https://expressjs.com/)
+
+- [WebSockets](https://www.npmjs.com/package/websockets)
+
+- [Prisma (ORM)](https://www.prisma.io/docs/orm)
+
+**Database:**
+	
+- [Postgres](https://www.postgresql.org/)
+
+
+# Team Work
 
 ### Branches Policy
 
-Moving forward create a new branch for each ticket/feature/bug. Any one thing you work on should have it's own branch. Once the feature is finish, merge to dev, and then we will push from dev to main.
-
-### How to run it
-
-#### 1. Prepare environment
-
-Prerequisites: [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed.
-
-1. Clone the repository
-```
-git clone git@github.com:Trackscendence/trackscendence.git
-cd trackscendence
-```
-
-2. Copy the environment file and adjust values if needed
-```
-cp .env.example .env
-```
-
-Ports are configured through `.env`.
-
-Important port values:
-
-```env
-PORT=3001
-SERVER_PORT=3001
-CLIENT_PORT=8080
-CLIENT_DEV_PORT=5173
-DB_PORT=5432
-```
-
-`PORT` is the port Express listens on inside the server container. `SERVER_PORT` is the port exposed on your machine in Docker development mode. If another local process already uses `3001`, change only `SERVER_PORT`, for example:
-
-```env
-PORT=3001
-SERVER_PORT=4242
-```
-
-Then the backend is available at `http://localhost:4242`, while Express still logs that it is listening on port `3001` inside Docker.
-
-#### 2. Development mode with Docker
-
-Use this for normal project development:
-
-```
-npm run compose:dev
-```
-
-This starts:
-
-- Frontend: `http://localhost:<CLIENT_DEV_PORT>` (default `5173`)
-- Backend: `http://localhost:<SERVER_PORT>` (default `3001`)
-- Database: `localhost:<DB_PORT>` (default `5432`)
-- Adminer: `http://localhost:8081`
-
-This mode uses hot reload:
-
-- The client container runs Vite.
-- The server container runs Node with `--watch`.
-- The database runs in Docker.
-
-Nginx is not used in development mode.
-
-#### 3. Production-style mode with Docker
-
-Use this to test the production container setup:
-
-```
-npm run compose:up
-```
-
-Open the app at:
-
-```
-http://localhost:<CLIENT_PORT>
-```
-
-Default:
-
-```
-http://localhost:8080
-```
-
-In this mode, Nginx serves the frontend and proxies backend requests under `/api/*`.
-
-Other useful commands:
-
-```
-npm run compose:logs     # Follow logs from all services
-npm run compose:down     # Stop all services
-npm run compose:clean    # Stop and remove all data (volumes)
-npm run db:shell         # Open a psql shell in the database
-```
-
-#### 4. Development mode without Docker
-
-```
-npm run install:all
-npm run dev
-```
-
-This runs the frontend and backend directly on your machine:
-
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:3001`
-
-You still need a reachable PostgreSQL database and a valid `DATABASE_URL`.
-
-### Backend API
-
-The backend uses versioned API routes.
-
-Current development endpoints:
-
-- `GET /` - backend API metadata
-- `GET /api/v1/ping` - API process check
-- `GET /api/v1/health` - database connection check
-- `GET /api/docs/` - Swagger docs, development only
-
-Examples in Docker development mode:
-
-```
-curl http://localhost:<SERVER_PORT>/
-curl http://localhost:<SERVER_PORT>/api/v1/ping
-curl http://localhost:<SERVER_PORT>/api/v1/health
-```
-
-If `SERVER_PORT=4242`:
-
-```
-curl http://localhost:4242/api/v1/ping
-```
-
-Old unversioned API routes such as `/api/ping` and `/api/health` are not used.
-
-### Backend Structure
-
-The backend keeps `app.js` and `index.js` at the server root:
-
-- `server/app.js` creates and configures the Express app.
-- `server/index.js` starts the HTTP server.
-
-Initial backend setup structure:
-
-```
-server/
-  app.js
-  index.js
-  prisma/
-    schema.prisma
-  src/
-    db/
-      prisma.js
-    docs/
-      swagger.js
-    exceptions/
-      app.exception.js
-      bad-request.exception.js
-      conflict.exception.js
-      forbidden.exception.js
-      not-found.exception.js
-      unauthorized.exception.js
-    middleware/
-      auth.middleware.js
-      error.middleware.js
-      morgan.middleware.js
-      rate-limit.middleware.js
-      validation.middleware.js
-    modules/
-      system/
-        system.controller.js
-        system.routes.js
-    routes/
-      v1/
-        index.js
-  utils/
-    config.js
-    logger.js
-```
-
-Route mounting flow:
-
-```
-server/app.js
-  -> app.use('/api/v1', v1Router)
-
-server/src/routes/v1/index.js
-  -> v1Router.use('/', systemRoutes)
-```
-
-This produces API URLs like:
-
-```
-/api/v1/ping
-/api/v1/health
-```
-
-Future versions can be added as:
-
-```
-server/src/routes/v2/index.js
-server/src/routes/v3/index.js
-```
-
-### Backend Import Aliases
-
-The backend uses native Node package import aliases with `#` in `server/package.json`.
-
-Use:
-
-```js
-const config = require('#utils/config')
-const prisma = require('#db/prisma')
-const v1Router = require('#routes/v1')
-```
-
-Avoid deep relative imports like:
-
-```js
-require('../../../utils/config')
-```
-
-### Swagger UI/Swagger-jsdoc & API Contract
-
-These two packages work together to scan JS files with commented YAML structures, which describe a frontend HTTP method and the corresponding backend API. This YAML is esstential the API contract. And all similar contracts should be added to the swagger documentation.
-
-#### Documentation
-
-[Github Swagger JsDoc Docs](https://github.com/Surnet/swagger-jsdoc/blob/v6/docs/FIRST-STEPS.md)
-
-[NPM Swagger JsDoc Docs](https://www.npmjs.com/package/swagger-jsdoc)
-
-[NPM Swagger UI Docs](https://www.npmjs.com/package/swagger-ui)
-
-[Swagger Site](https://swagger.io/docs/specification/v3_0/about/)
-
-#### Instructions
-
-In order to view the documented Swagger JsDocs contracts for the Frontend and Backend:
-
-1. Make sure you are running in dev mode: `npm run compose:dev`
-2. In the browser, run `https://localhost:3001/api/docs/#/`
-3. Now, you can inspected the documented Swagger contracts in the browser
-
-#### Source Code
-
-Swagger is imported at `server/src/docs/swagger.js`.
-
-Example of Swagger YAML comments are found at `server/src/modules/auth/auth.routes.js`
+- Create a new branch for each ticket/feature/bug. Any one thing you work on should have it's own branch.
+- Once the feature is finish, merge to dev, and then after a review by another team member, we will push from dev to main.
+
+### GitHub Issues
+
+**What each Scrum category means:**
+- **Backlog:** This is a task that needs to be done, but is not ready to take on.
+- **Ready:** This task is ready for some to begin work on, but no one has been aassigned or the task has been started yet.
+- **In Progress:** This task has been assigned and someone is currently working on it.
+- **Done:** This task has been finished and is ready for review, so it can be determined if the can be merged.

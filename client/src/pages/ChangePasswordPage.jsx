@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuth from '../context/useAuth'
-import { changePassword } from '../services/auth'
+import { AUTH_TOKEN_KEY, changePassword } from '../services/auth'
 
 const ChangePasswordPage = () => {
 	const navigate = useNavigate()
@@ -12,10 +12,13 @@ const ChangePasswordPage = () => {
 		confirmPassword: '',
 	})
 	const [error, setError] = useState('')
-	const [message, setMessage] = useState('')
+	const [validationDetails, setValidationDetails] = useState([])
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	const handleChange = (event) => {
+		setError('')
+		setValidationDetails([])
+
 		setForm((currentForm) => ({
 			...currentForm,
 			[event.target.name]: event.target.value,
@@ -25,7 +28,7 @@ const ChangePasswordPage = () => {
 	const handleSubmit = async (event) => {
 		event.preventDefault()
 		setError('')
-		setMessage('')
+		setValidationDetails([])
 
 		if (form.newPassword !== form.confirmPassword) {
 			setError('Passwords do not match')
@@ -42,10 +45,13 @@ const ChangePasswordPage = () => {
 				},
 				token,
 			)
-			setMessage('Password updated successfully')
-			setForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+			localStorage.removeItem(AUTH_TOKEN_KEY)
+			window.location.replace('/login?passwordChanged=1')
 		} catch (requestError) {
-			setError(requestError.message)
+			const details = Array.isArray(requestError.payload?.details) ? requestError.payload.details : []
+
+			setValidationDetails(details)
+			setError(details.length > 0 ? '' : requestError.message)
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -100,6 +106,14 @@ const ChangePasswordPage = () => {
 						/>
 					</label>
 
+					{validationDetails.length > 0 ? (
+						<div className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
+							{validationDetails.map((detail) => (
+								<p key={detail}>{detail}</p>
+							))}
+						</div>
+					) : null}
+
 					{error ? (
 						<p className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">{error}</p>
 					) : null}
@@ -112,10 +126,6 @@ const ChangePasswordPage = () => {
 						{isSubmitting ? 'Updating password' : 'Change password'}
 					</button>
 				</form>
-
-				{message ? (
-					<p className="mt-4 rounded-md border border-[#bbd2c3] bg-[#eef7f1] px-3 py-2 text-sm text-[#24563f]">{message}</p>
-				) : null}
 
 				<button
 					className="mt-5 w-full rounded-md border border-[#cbd5c5] bg-transparent px-4 py-2 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"

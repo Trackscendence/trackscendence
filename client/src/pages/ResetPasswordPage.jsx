@@ -10,10 +10,12 @@ const ResetPasswordPage = () => {
 		confirmPassword: '',
 	})
 	const [error, setError] = useState('')
+	const [validationDetails, setValidationDetails] = useState([])
 	const [message, setMessage] = useState('')
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const navigate = useNavigate()
 	const tokenFromUrl = searchParams.get('token') || ''
+	const isTokenError = error === 'Invalid or expired token'
 
 	useEffect(() => {
 		setForm((currentForm) => {
@@ -29,6 +31,9 @@ const ResetPasswordPage = () => {
 	}, [tokenFromUrl])
 
 	const handleChange = (event) => {
+		setError('')
+		setValidationDetails([])
+
 		setForm((currentForm) => ({
 			...currentForm,
 			[event.target.name]: event.target.value,
@@ -38,6 +43,7 @@ const ResetPasswordPage = () => {
 	const handleSubmit = async (event) => {
 		event.preventDefault()
 		setError('')
+		setValidationDetails([])
 		setMessage('')
 
 		if (form.newPassword !== form.confirmPassword) {
@@ -54,7 +60,10 @@ const ResetPasswordPage = () => {
 				state: { message: 'Password has been reset. Sign in with your new password.' },
 			})
 		} catch (requestError) {
-			setError(requestError.message)
+			const details = Array.isArray(requestError.payload?.details) ? requestError.payload.details : []
+
+			setValidationDetails(details)
+			setError(details.length > 0 ? '' : requestError.message)
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -109,8 +118,29 @@ const ResetPasswordPage = () => {
 						/>
 					</label>
 
+					{validationDetails.length > 0 ? (
+						<div className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
+							{validationDetails.map((detail) => (
+								<p key={detail}>{detail}</p>
+							))}
+						</div>
+					) : null}
+
 					{error ? (
-						<p className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">{error}</p>
+						<div className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
+							<p>
+								{isTokenError
+									? 'This reset link is invalid, expired, or has already been used. Request a new password reset email and try again.'
+									: error}
+							</p>
+							{isTokenError ? (
+								<p className="mt-2">
+									<Link className="font-semibold text-[#8a321f] underline hover:text-[#702817]" to="/forgot-password">
+										Request a new reset link
+									</Link>
+								</p>
+							) : null}
+						</div>
 					) : null}
 
 					<button

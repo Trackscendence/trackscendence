@@ -7,14 +7,30 @@ const safeUserSelect = {
 	role: true,
 }
 
+const tokenUserSelect = {
+	...safeUserSelect,
+	tokenVersion: true,
+}
+
 const registeredUserSelect = {
 	...safeUserSelect,
 	createdAt: true,
 }
 
+const passwordResetFields = {
+	passwordResetTokenId: true,
+	passwordResetTokenHash: true,
+	passwordResetTokenExpiry: true,
+}
+
 const authUserSelect = {
-	...safeUserSelect,
+	...tokenUserSelect,
 	passwordHash: true,
+}
+
+const authUserWithResetSelect = {
+	...authUserSelect,
+	...passwordResetFields,
 }
 
 const createUser = ({ email, username, passwordHash }) => {
@@ -31,7 +47,7 @@ const createUser = ({ email, username, passwordHash }) => {
 const findByEmail = (email) => {
 	return prisma.user.findUnique({
 		where: { email },
-		select: authUserSelect,
+		select: authUserWithResetSelect,
 	})
 }
 
@@ -51,10 +67,60 @@ const findByIdentifier = (identifier) => {
 	})
 }
 
-const findSafeById = (id) => {
+const findByPasswordResetTokenId = (tokenId) => {
+	return prisma.user.findUnique({
+		where: { passwordResetTokenId: tokenId },
+		select: authUserWithResetSelect,
+	})
+}
+
+const findAuthById = (id) => {
 	return prisma.user.findUnique({
 		where: { id },
+		select: authUserSelect,
+	})
+}
+
+const updatePasswordById = (id, passwordHash) => {
+	return prisma.user.update({
+		where: { id },
+		data: {
+			passwordHash,
+			passwordResetTokenId: null,
+			passwordResetTokenHash: null,
+			passwordResetTokenExpiry: null,
+			tokenVersion: { increment: 1 },
+		},
 		select: safeUserSelect,
+	})
+}
+
+const updatePasswordResetToken = (id, tokenId, tokenHash, expiry) => {
+	return prisma.user.update({
+		where: { id },
+		data: {
+			passwordResetTokenId: tokenId,
+			passwordResetTokenHash: tokenHash,
+			passwordResetTokenExpiry: expiry,
+		},
+	})
+}
+
+const clearPasswordResetToken = (id) => {
+	return prisma.user.update({
+		where: { id },
+		data: {
+			passwordResetTokenId: null,
+			passwordResetTokenHash: null,
+			passwordResetTokenExpiry: null,
+		},
+	})
+}
+
+const findTokenUserById = (id) => {
+	return prisma.user.findUnique({
+		where: { id },
+		select: tokenUserSelect,
 	})
 }
 
@@ -63,5 +129,10 @@ module.exports = {
 	findByEmail,
 	findByUsername,
 	findByIdentifier,
-	findSafeById,
+	findByPasswordResetTokenId,
+	findAuthById,
+	updatePasswordById,
+	updatePasswordResetToken,
+	clearPasswordResetToken,
+	findTokenUserById,
 }

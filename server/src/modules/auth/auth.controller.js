@@ -20,9 +20,30 @@ const logout = (req, res) => {
 	res.status(204).send()
 }
 
+const changePassword = async (req, res) => {
+	const result = await authService.changePassword(req.user, req.body)
+
+	res.json(result)
+}
+
+const requestPasswordReset = async (req, res) => {
+	const result = await authService.requestPasswordReset(req.body)
+
+	res.json(result)
+}
+
+const resetPassword = async (req, res) => {
+	const result = await authService.resetPassword(req.body)
+
+	res.json(result)
+}
+
 module.exports = {
 	register,
 	login,
 	me,
 	logout,
+	changePassword,
+	requestPasswordReset,
+	resetPassword,
 }

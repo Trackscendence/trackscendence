@@ -21,6 +21,7 @@ const signAccessToken = (user) => {
 		{
 			sub: user.id,
 			role: user.role,
+			tokenVersion: user.tokenVersion,
 		},
 		config.JWT_SECRET,
 		{ expiresIn: config.JWT_EXPIRES_IN },

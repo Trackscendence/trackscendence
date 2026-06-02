@@ -1,0 +1,784 @@
+{
+  "info": {
+    "_postman_id": "a72e7f30-c637-4b2d-925c-a09e2cfa9f5a",
+    "name": "Trackscendence Auth Security",
+    "description": "End-to-end auth and password-reset checks for the local Trackscendence Docker stack. Run the collection from top to bottom, or at minimum run 'Initialize Test Variables' first.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Initialize",
+      "item": [
+        {
+          "name": "Initialize Test Variables",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "pm.environment.set('runId', runId);",
+                  "pm.environment.set('email', `trackscendence.${runId}@example.com`);",
+                  "pm.environment.set('username', `track_user_${runId}`);",
+                  "pm.environment.set('password', 'Start123!');",
+                  "pm.environment.set('newPassword', 'Changed123!');",
+                  "pm.environment.set('resetPassword', 'Reset123!');",
+                  "pm.environment.set('weakPassword', 'weak');",
+                  "pm.environment.set('unknownEmail', `missing.${runId}@example.com`);",
+                  "pm.environment.unset('token');",
+                  "pm.environment.unset('oldToken');",
+                  "pm.environment.unset('messageId');",
+                  "pm.environment.unset('resetToken');",
+                  "pm.environment.unset('resetLink');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ping returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('email and username were generated', function () {",
+                  "  pm.expect(pm.environment.get('email')).to.include('@example.com');",
+                  "  pm.expect(pm.environment.get('username')).to.include('track_user_');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ping",
+            "description": "Generates a fresh set of unique test credentials and clears saved auth/reset variables."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Register And Login",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('register returns the created user', function () {",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('email'));",
+                  "  pm.expect(json.user.username).to.eql(pm.environment.get('username'));",
+                  "});",
+                  "pm.test('register response does not include secrets', function () {",
+                  "  pm.expect(JSON.stringify(json)).to.not.include('passwordHash');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "response": []
+        },
+        {
+          "name": "Login With Original Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('token', json.token);",
+                  "pm.test('login stores a bearer token', function () {",
+                  "  pm.expect(pm.environment.get('token')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('me returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('me returns the logged-in user', function () {",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('email'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Change Password",
+      "item": [
+        {
+          "name": "Change Password Success",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.environment.get('token');",
+                  "if (token) {",
+                  "  pm.environment.set('oldToken', token);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('change password returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('change password returns success message', function () {",
+                  "  pm.expect(pm.response.json().message).to.eql('Password updated successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/change-password"
+          },
+          "response": []
+        },
+        {
+          "name": "Old Token Invalid After Change",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('old token is rejected with 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{oldToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Old Password Rejected After Change",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('old password login is rejected', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Login With Changed Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('new password login returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('token', json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 Forgot Password And Mailpit",
+      "item": [
+        {
+          "name": "Forgot Password For Known Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('forgot password returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('forgot password does not return resetToken', function () {",
+                  "  pm.expect(json.resetToken).to.eql(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/forgot-password"
+          },
+          "response": []
+        },
+        {
+          "name": "Find Reset Email In Mailpit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('mailpit messages returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const email = pm.environment.get('email');",
+                  "const messages = json.messages || [];",
+                  "const message = messages.find((entry) => (entry.To || []).some((recipient) => recipient.Address === email));",
+                  "pm.test('mailpit contains a reset email for the test address', function () {",
+                  "  pm.expect(message).to.exist;",
+                  "});",
+                  "if (message) {",
+                  "  pm.environment.set('messageId', message.ID);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{mailpitUrl}}/messages"
+          },
+          "response": []
+        },
+        {
+          "name": "Read Reset Email From Mailpit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('mailpit message returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "const text = json.Text || '';",
+                  "const linkMatch = text.match(/https?:\\/\\/[^\\s]+/);",
+                  "pm.test('reset email contains a link', function () {",
+                  "  pm.expect(linkMatch).to.not.eql(null);",
+                  "});",
+                  "if (linkMatch) {",
+                  "  const resetLink = linkMatch[0];",
+                  "  pm.environment.set('resetLink', resetLink);",
+                  "  const tokenMatch = resetLink.match(/[?&]token=([^&\\s]+)/);",
+                  "  pm.test('reset link contains a token', function () {",
+                  "    pm.expect(tokenMatch).to.not.eql(null);",
+                  "  });",
+                  "  if (tokenMatch) {",
+                  "    pm.environment.set('resetToken', decodeURIComponent(tokenMatch[1]));",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{mailpitUrl}}/message/{{messageId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 Reset Password",
+      "item": [
+        {
+          "name": "Reset Password With Emailed Token",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.environment.get('token');",
+                  "if (token) {",
+                  "  pm.environment.set('oldToken', token);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reset password returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('reset password returns success message', function () {",
+                  "  pm.expect(pm.response.json().message).to.eql('Password reset successful');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"{{resetPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/reset-password"
+          },
+          "response": []
+        },
+        {
+          "name": "Old Token Invalid After Reset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('old token after reset is rejected with 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{oldToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Previous Password Rejected After Reset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('changed password no longer works after reset', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Login With Reset Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reset password login returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('token', json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{resetPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Token Single Use Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('used reset token is rejected with 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"Again123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/reset-password"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 Negative Checks",
+      "item": [
+        {
+          "name": "Forgot Password For Unknown Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('forgot password for unknown email still returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('unknown email does not return resetToken', function () {",
+                  "  pm.expect(json.resetToken).to.eql(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{unknownEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/forgot-password"
+          },
+          "response": []
+        },
+        {
+          "name": "Weak Password Rejected On Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('weak signup is rejected with 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('weak signup returns validation details', function () {",
+                  "  pm.expect(json.error.payload.details).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"weak.{{$timestamp}}@example.com\",\n  \"username\": \"weak_user_{{$timestamp}}\",\n  \"password\": \"{{weakPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "response": []
+        },
+        {
+          "name": "Same Current And New Password Rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('same password change is rejected with 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('same password change returns exact message', function () {",
+                  "  pm.expect(json.error.message).to.eql('New password must differ from current password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{resetPassword}}\",\n  \"newPassword\": \"{{resetPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/change-password"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

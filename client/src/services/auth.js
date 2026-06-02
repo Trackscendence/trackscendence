@@ -40,6 +40,10 @@ const request = async (path, { method = 'GET', body, token } = {}) => {
 	})
 
 	if (!response.ok) {
+		if (response.status === 401 && token) {
+			window.dispatchEvent(new CustomEvent('trackscendence:session-expired'))
+		}
+
 		throw await parseError(response)
 	}
 
@@ -72,5 +76,27 @@ export const logout = (token) => {
 	return request('/auth/logout', {
 		method: 'POST',
 		token,
+	})
+}
+
+export const changePassword = (payload, token) => {
+	return request('/auth/change-password', {
+		method: 'POST',
+		body: payload,
+		token,
+	})
+}
+
+export const requestPasswordReset = (payload) => {
+	return request('/auth/forgot-password', {
+		method: 'POST',
+		body: payload,
+	})
+}
+
+export const resetPassword = (payload) => {
+	return request('/auth/reset-password', {
+		method: 'POST',
+		body: payload,
 	})
 }

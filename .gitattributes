@@ -1,0 +1,14 @@
+# Mark package lockfiles as generated to keep diff stats clean
+package-lock.json linguist-generated=true
+**/package-lock.json linguist-generated=true
+
+# Mark static assets as binary/generated
+*.svg linguist-generated=true
+*.png diff=image
+*.jpg diff=image
+*.jpeg diff=image
+*.gif diff=image
+*.ico diff=image
+*.woff linguist-generated=true
+*.woff2 linguist-generated=true
+*.ttf linguist-generated=true

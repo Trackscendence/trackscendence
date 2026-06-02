@@ -1,0 +1,118 @@
+name: CI General Check
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+  push:
+    branches:
+      - dev
+
+jobs:
+  validate-branch:
+    name: Validate PR Target Branch
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    steps:
+      - name: Enforce Dev to Main Merge Policy
+        run: |
+          echo "PR target branch: ${{ github.base_ref }}"
+          echo "PR source branch: ${{ github.head_ref }}"
+          if [ "${{ github.head_ref }}" != "dev" ]; then
+            echo "::error::Direct PRs to 'main' from branch '${{ github.head_ref }}' are prohibited."
+            echo "::error::Please retarget your PR to 'dev', or merge into 'dev' first."
+            exit 1
+          fi
+          echo "Branch targeting is valid."
+
+  coding-standards-check:
+    name: Coding Standards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: ./package-lock.json
+
+      - name: Install Root Dependencies
+        run: HUSKY=0 npm ci
+
+      - name: Check Formatting
+        run: npm run format:check
+
+      - name: Run Spellcheck
+        run: npm run spellcheck
+
+  client-check:
+    name: Client Lint and Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: ./client/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Build Application
+        run: npm run build
+
+  server-check:
+    name: Server Build and Prisma Validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: ./server/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+  docker-check:
+    name: Validate Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create .env from template
+        run: cp .env.example .env
+
+      - name: Verify Compose File Configurations
+        run: |
+          docker compose -f compose.yaml config > /dev/null
+          docker compose -f compose.yaml -f compose.dev.yaml config > /dev/null
+          echo "Docker compose configs are valid."
+
+      - name: Build Images
+        run: docker compose build

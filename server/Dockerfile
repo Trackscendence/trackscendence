@@ -13,4 +13,4 @@ RUN npx prisma generate
 ARG PORT=3001
 EXPOSE ${PORT}
 
-CMD ["node", "index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node index.js"]

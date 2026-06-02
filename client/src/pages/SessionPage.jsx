@@ -31,13 +31,22 @@ const SessionPage = () => {
 						<p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#bd4f35]">Trackscendence</p>
 						<h1 className="text-xl font-semibold">Session</h1>
 					</div>
-					<button
-						className="rounded-md border border-[#cbd5c5] px-4 py-2 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
-						type="button"
-						onClick={handleLogout}
-					>
-						Log out
-					</button>
+					<div className="flex items-center gap-2">
+						<button
+							className="rounded-md border border-[#cbd5c5] px-4 py-2 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+							type="button"
+							onClick={() => navigate('/change-password')}
+						>
+							Change password
+						</button>
+						<button
+							className="rounded-md border border-[#cbd5c5] px-4 py-2 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+							type="button"
+							onClick={handleLogout}
+						>
+							Log out
+						</button>
+					</div>
 				</div>
 			</header>
 

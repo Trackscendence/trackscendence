@@ -6,11 +6,13 @@ const ForgotPasswordPage = () => {
 	const [email, setEmail] = useState('')
 	const [message, setMessage] = useState('')
 	const [error, setError] = useState('')
+	const [validationDetails, setValidationDetails] = useState([])
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	const handleSubmit = async (event) => {
 		event.preventDefault()
 		setError('')
+		setValidationDetails([])
 		setMessage('')
 		setIsSubmitting(true)
 
@@ -18,7 +20,10 @@ const ForgotPasswordPage = () => {
 			const result = await requestPasswordReset({ email })
 			setMessage(result.message)
 		} catch (requestError) {
-			setError(requestError.message)
+			const details = Array.isArray(requestError.payload?.details) ? requestError.payload.details : []
+
+			setValidationDetails(details)
+			setError(details.length > 0 ? '' : requestError.message)
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -45,10 +50,22 @@ const ForgotPasswordPage = () => {
 							type="email"
 							autoComplete="email"
 							value={email}
-							onChange={(event) => setEmail(event.target.value)}
+							onChange={(event) => {
+								setError('')
+								setValidationDetails([])
+								setEmail(event.target.value)
+							}}
 							required
 						/>
 					</label>
+
+					{validationDetails.length > 0 ? (
+						<div className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
+							{validationDetails.map((detail) => (
+								<p key={detail}>{detail}</p>
+							))}
+						</div>
+					) : null}
 
 					{error ? (
 						<p className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">{error}</p>

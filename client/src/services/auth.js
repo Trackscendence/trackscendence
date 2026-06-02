@@ -1,6 +1,7 @@
 const apiBaseUrl = `${(import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')}/v1`
 
 export const AUTH_TOKEN_KEY = 'trackscendence.auth.token'
+const SESSION_ERROR_MESSAGES = new Set(['Authentication required', 'Invalid or expired token'])
 
 const parseError = async (response) => {
 	let body
@@ -40,11 +41,13 @@ const request = async (path, { method = 'GET', body, token } = {}) => {
 	})
 
 	if (!response.ok) {
-		if (response.status === 401 && token) {
+		const error = await parseError(response)
+
+		if (response.status === 401 && token && error.code === 'UNAUTHORIZED' && SESSION_ERROR_MESSAGES.has(error.message)) {
 			window.dispatchEvent(new CustomEvent('trackscendence:session-expired'))
 		}
 
-		throw await parseError(response)
+		throw error
 	}
 
 	if (response.status === 204) {

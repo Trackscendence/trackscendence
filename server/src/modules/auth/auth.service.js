@@ -384,6 +384,12 @@ const resetPassword = async (payload) => {
 		throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
 	}
 
+	const isSameAsCurrentPassword = await bcrypt.compare(newPassword, user.passwordHash)
+
+	if (isSameAsCurrentPassword) {
+		throw new BadRequestException(NEW_PASSWORD_MUST_DIFFER_MESSAGE)
+	}
+
 	const passwordHash = await bcrypt.hash(newPassword, 12)
 	await authRepository.updatePasswordById(user.id, passwordHash)
 

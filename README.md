@@ -6,8 +6,7 @@ Hello, Miha was here.
 
 Wild Muktim appeared
 
-David said hi from Beijing (travelling in Beijing) 
-
+David said hi from Beijing (travelling in Beijing)
 
 # UNO Trackscendence
 
@@ -36,12 +35,14 @@ Moving forward create a new branch for each ticket/feature/bug. Any one thing yo
 Prerequisites: [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed.
 
 1. Clone the repository
+
 ```
 git clone git@github.com:Trackscendence/trackscendence.git
 cd trackscendence
 ```
 
 2. Copy the environment file and adjust values if needed
+
 ```
 cp .env.example .env
 ```

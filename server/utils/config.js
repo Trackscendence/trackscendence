@@ -57,7 +57,7 @@ const optionalConfigs = {
 	CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
 	RATE_LIMIT_WINDOW_MS: parseNumber('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
 	RATE_LIMIT_LIMIT: parseNumber('RATE_LIMIT_LIMIT', 100),
-	JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1h',
+	JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
 	APP_BASE_URL: appBaseUrl,
 	PASSWORD_RESET_URL_BASE: parseUrl('PASSWORD_RESET_URL_BASE', `${appBaseUrl}/reset-password`),
 	SMTP_HOST: process.env.SMTP_HOST || '',

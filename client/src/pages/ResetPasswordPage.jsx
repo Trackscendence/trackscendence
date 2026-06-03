@@ -1,34 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../services/auth'
 
 const ResetPasswordPage = () => {
 	const [searchParams] = useSearchParams()
-	const [form, setForm] = useState({
+	const [form, setForm] = useState(() => ({
 		token: searchParams.get('token') || '',
 		newPassword: '',
 		confirmPassword: '',
-	})
+	}))
 	const [error, setError] = useState('')
 	const [validationDetails, setValidationDetails] = useState([])
 	const [message, setMessage] = useState('')
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const navigate = useNavigate()
-	const tokenFromUrl = searchParams.get('token') || ''
 	const isTokenError = error === 'Invalid or expired token'
-
-	useEffect(() => {
-		setForm((currentForm) => {
-			if (currentForm.token === tokenFromUrl) {
-				return currentForm
-			}
-
-			return {
-				...currentForm,
-				token: tokenFromUrl,
-			}
-		})
-	}, [tokenFromUrl])
 
 	const handleChange = (event) => {
 		setError('')

@@ -33,6 +33,14 @@ const authUserWithResetSelect = {
 	...passwordResetFields,
 }
 
+const passwordUpdateData = (passwordHash) => ({
+	passwordHash,
+	passwordResetTokenId: null,
+	passwordResetTokenHash: null,
+	passwordResetTokenExpiry: null,
+	tokenVersion: { increment: 1 },
+})
+
 const createUser = ({ email, username, passwordHash }) => {
 	return prisma.user.create({
 		data: {
@@ -84,13 +92,15 @@ const findAuthById = (id) => {
 const updatePasswordById = (id, passwordHash) => {
 	return prisma.user.update({
 		where: { id },
-		data: {
-			passwordHash,
-			passwordResetTokenId: null,
-			passwordResetTokenHash: null,
-			passwordResetTokenExpiry: null,
-			tokenVersion: { increment: 1 },
-		},
+		data: passwordUpdateData(passwordHash),
+		select: safeUserSelect,
+	})
+}
+
+const updatePasswordByIdInTransaction = (tx, id, passwordHash) => {
+	return tx.user.update({
+		where: { id },
+		data: passwordUpdateData(passwordHash),
 		select: safeUserSelect,
 	})
 }
@@ -124,6 +134,28 @@ const findTokenUserById = (id) => {
 	})
 }
 
+const withLockedPasswordResetToken = (tokenId, callback) => {
+	return prisma.$transaction(async (tx) => {
+		const users = await tx.$queryRaw`
+			SELECT
+				"id",
+				"email",
+				"username",
+				"role",
+				"passwordHash",
+				"passwordResetTokenHash",
+				"passwordResetTokenExpiry",
+				"tokenVersion"
+			FROM "User"
+			WHERE "passwordResetTokenId" = ${tokenId}
+			FOR UPDATE
+		`
+		const user = users[0] || null
+
+		return await callback(user, tx)
+	})
+}
+
 module.exports = {
 	createUser,
 	findByEmail,
@@ -132,7 +164,9 @@ module.exports = {
 	findByPasswordResetTokenId,
 	findAuthById,
 	updatePasswordById,
+	updatePasswordByIdInTransaction,
 	updatePasswordResetToken,
 	clearPasswordResetToken,
 	findTokenUserById,
+	withLockedPasswordResetToken,
 }

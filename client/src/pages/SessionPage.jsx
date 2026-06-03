@@ -1,8 +1,9 @@
+import { useEffect, useEffectEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
 import useAuth from '../context/useAuth'
 import BasicChat from '../components/BasicChat'
 import { socket } from '../services/socket'
+
 const SessionPage = () => {
 	const navigate = useNavigate()
 	const { logout, user, token } = useAuth()
@@ -12,16 +13,23 @@ const SessionPage = () => {
 		navigate('/login', { replace: true })
 	}
 
+	const handleSocketToken = useEffectEvent((callback) => {
+		callback(token)
+	})
+
 	useEffect(() => {
- 		socket.connect()
-		socket.once('token', (callback) => {
-			callback(token)
-		})
+		const onToken = (callback) => {
+			handleSocketToken(callback)
+		}
+
+		socket.connect()
+		socket.on('token', onToken)
+
 		return () => {
+			socket.off('token', onToken)
 			socket.disconnect()
 		}
 	}, [])
-
 
 	return (
 		<main className="min-h-screen bg-[#f4f7f2] text-[#1f2d28]">
@@ -66,7 +74,6 @@ const SessionPage = () => {
 				</div>
 				<BasicChat />
 			</section>
-			
 		</main>
 	)
 }

@@ -367,31 +367,31 @@ const resetPassword = async (payload) => {
 		throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
 	}
 
-	const user = await authRepository.findByPasswordResetTokenId(tokenId)
+	await authRepository.withLockedPasswordResetToken(tokenId, async (user, tx) => {
+		if (
+			!user ||
+			!user.passwordResetTokenExpiry ||
+			new Date(user.passwordResetTokenExpiry) < new Date() ||
+			!user.passwordResetTokenHash
+		) {
+			throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+		}
 
-	if (
-		!user ||
-		!user.passwordResetTokenExpiry ||
-		new Date(user.passwordResetTokenExpiry) < new Date() ||
-		!user.passwordResetTokenHash
-	) {
-		throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
-	}
+		const isValidToken = await bcrypt.compare(tokenSecret, user.passwordResetTokenHash)
 
-	const isValidToken = await bcrypt.compare(tokenSecret, user.passwordResetTokenHash)
+		if (!isValidToken) {
+			throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+		}
 
-	if (!isValidToken) {
-		throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
-	}
+		const isSameAsCurrentPassword = await bcrypt.compare(newPassword, user.passwordHash)
 
-	const isSameAsCurrentPassword = await bcrypt.compare(newPassword, user.passwordHash)
+		if (isSameAsCurrentPassword) {
+			throw new BadRequestException(NEW_PASSWORD_MUST_DIFFER_MESSAGE)
+		}
 
-	if (isSameAsCurrentPassword) {
-		throw new BadRequestException(NEW_PASSWORD_MUST_DIFFER_MESSAGE)
-	}
-
-	const passwordHash = await bcrypt.hash(newPassword, 12)
-	await authRepository.updatePasswordById(user.id, passwordHash)
+		const passwordHash = await bcrypt.hash(newPassword, 12)
+		await authRepository.updatePasswordByIdInTransaction(tx, user.id, passwordHash)
+	})
 
 	return { message: 'Password reset successful' }
 }

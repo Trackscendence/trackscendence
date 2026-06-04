@@ -20,4 +20,7 @@ model User {
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  failedLoginAttempts  Int  @default(0)
+  lockedUntil  DateTime?
 }

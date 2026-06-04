@@ -28,5 +28,5 @@ srcs/.env
 
 *.local
 
-# Developer specific tools
-justfile
+# Backup files
+*.bak

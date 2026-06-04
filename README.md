@@ -75,10 +75,6 @@ David said hi from Beijing (travelling in Beijing)
 
 ### We are using the PERN stack: Postgres + Express + React + Node
 
-**This is the tenative diagram for the app:**
-
-![Diagram Image](/assets/uno_pern_diagram.jpg)
-
 **Git Cheat Sheet"**
 
 - [Git](https://git-scm.com/cheat-sheet)

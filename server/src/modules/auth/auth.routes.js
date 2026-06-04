@@ -5,11 +5,11 @@ const { requireAuth } = require('#middleware/auth.middleware')
 const router = Router()
 /**
 * @swagger
-*
 * /auth/register:
 *   post:
 *     summary: Register a new user
-*     tags: [Auth]
+*     tags: 
+*       - Authentication
 *     requestBody:
 *       required: true
 *       content:
@@ -23,58 +23,122 @@ const router = Router()
 *             properties:
 *               email:
 *                 type: string
+*                 format: email
 *                 example: test@example.com
 *               username:
 *                 type: string
 *                 example: smoore
 *               password:
 *                 type: string
+*                 minLength: 8
 *                 example: ThisIsMyRealPasswordPsych123!
 *     responses:
 *       201:
 *         description: User registered successfully
+*       400:
+*         description: Validation failed
+*         content:
+*           application/json:
+*             example:
+*               error:
+*                 code: REQUEST_ERROR
+*                 message: Invalid request data
+*                 payload:
+*                   details:
+*                     - Email must be valid
+*                     - Password must be at least 8 characters
+*       409:
+*         description: Email or username already exists
+*         content:
+*           application/json:
+*             example:
+*               error:
+*                 code: REQUEST_ERROR
+*                 message: Email is already registered
 */
 router.post('/register', authController.register)
 
 /**
 * @swagger
-*
 * /auth/login:
 *   post:
-*     summary: Login a user
-*     tags: [Auth]
+*     summary: Authentication for a user logging in 
+*     tags:
+*       - Authentication
+*     requestBody:
+*       required: true
+*       content:
+*         application/json:
+*           schema:
+*             type: object
+*             required:
+*               - identifier
+*               - password
+*             properties:
+*               identifier:
+*                 type: string
+*                 description: Username or email address
+*                 example: test@example.com
+*               password:
+*                 type: string
+*                 example: thisIsSuchARealPassword1!
 *     responses:
 *       200:
 *         description: Login successful
+*       400:
+*         description: Validation failed
+*         content:
+*           application/json:
+*             example:
+*               error:
+*                 code: REQUEST_ERROR
+*                 message: Invalid request data
+*                 payload:
+*                   details:
+*                     - Identifier is required
+*       401:
+*         description: Invalid email/username or password
+*         content:
+*           application/json:
+*             example:
+*               error:
+*                 code: REQUEST_ERROR
+*                 message: Invalid email/username or password
 */
 router.post('/login', authController.login)
 
 /**
 * @swagger
-*
 * /auth/me:
 *   get:
 *     summary: Get current authenticated user
-*     tags: [Auth]
+*     tags:
+*       - Authentication
 *     security:
 *       - bearerAuth: []
 *     responses:
 *       200:
-*         description: Current user profile
+*         description: Current  authenticated user returned successfully
 *       401:
-*         description: Unauthorized
+*         description: Missing, invalid, or expired token
+*         content:
+*           application/json:
+*             example:
+*               error:
+*                 code: REQUEST_ERROR
+*                 message: Invalid or expired token
 */
 router.get('/me', requireAuth, authController.me)
 
 /**
 * @swagger
-*
 * /auth/logout:
 *   post:
-*     summary: Logout a user
-*     tags: [Auth]
+*     summary: Logout the current user
+*     tags:
+*       - Authentication
 *     responses:
-*       200:
+*       204:
 *         description: Logout successful
 */
 router.post('/logout', authController.logout)

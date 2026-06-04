@@ -26,6 +26,14 @@ const toSafeAuthUser = (user) => ({
 	role: user.role,
 })
 
+/*
+	Validates and normalize registration input.
+
+	Validation Rules:
+		- email is required and must be a valid email address
+		- password is required
+		- password must be at least 8 characters
+*/
 const validateRegistrationInput = ({ email, username, password } = {}) => {
 	const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
 	const normalizedUsername = typeof username === 'string' ? username.trim() : ''
@@ -59,6 +67,20 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
 	}
 }
 
+/*
+	Validate and normalize login input.
+
+	Validation Rules:
+		- identifier is required
+		- password is required
+	
+	Identifier may be:
+		- username
+		- email address
+
+	Throws:
+		- BadRequestException when validation fails
+*/
 const validateLoginInput = ({ identifier, password } = {}) => {
 	const normalizedIdentifier = typeof identifier === 'string' ? normalizeIdentifier(identifier) : ''
 	const normalizedPassword = typeof password === 'string' ? password : ''

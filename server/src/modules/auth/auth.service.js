@@ -1,3 +1,4 @@
+
 const bcrypt = require('bcrypt')
 const { Prisma } = require('@prisma/client')
 const BadRequestException = require('#exceptions/bad-request.exception')
@@ -11,6 +12,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email/username or password'
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
+
+const MAX_LOGIN_ATTEMPTS = 8
+const LOCK_DURATION_MINUTES = 2
 
 const normalizeEmail = (email) => email.trim().toLowerCase()
 const normalizeIdentifier = (identifier) => {
@@ -146,11 +150,35 @@ const login = async (payload) => {
     throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
   }
 
+  if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
+  	throw new UnauthorizedException('Account temporarily locked')
+  }
+
   const isValidPassword = await bcrypt.compare(password, user.passwordHash)
 
   if (!isValidPassword) {
+    const attempts = user.failedLoginAttempts + 1
+
+	if (attempts >= MAX_LOGIN_ATTEMPTS) {
+	  await authRepository.updateUser(user.id, {
+	    failedLoginAttempts: 0,
+		lockedUntil: new Date(
+		  Date.now() + LOCK_DURATION_MINUTES * 60 * 1000
+		),
+	  })
+	} else {
+	  await authRepository.updateUser(user.id, {
+	    failedLoginAttempts: attempts,
+	  })
+	}
+
     throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
   }
+
+  await authRepository.updateUser(user.id, {
+    failedLoginAttempts: 0,
+	lockedUntil: null,
+  })
 
   const token = authToken.signAccessToken(user)
 

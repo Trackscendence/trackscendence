@@ -1,5 +1,12 @@
 const prisma = require('#db/prisma')
 
+const updateUser = (userId, data) => {
+  return prisma.user.update({
+    where: {id: userId },
+    data,
+  })
+}
+
 const safeUserSelect = {
   id: true,
   email: true,
@@ -15,6 +22,8 @@ const registeredUserSelect = {
 const authUserSelect = {
   ...safeUserSelect,
   passwordHash: true,
+  failedLoginAttempts: true,
+  lockedUntil: true,
 }
 
 const createUser = ({ email, username, passwordHash }) => {
@@ -61,6 +70,7 @@ const findSafeById = (id) => {
 }
 
 module.exports = {
+  updateUser,
   createUser,
   findByEmail,
   findByUsername,

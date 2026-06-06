@@ -1,9 +1,15 @@
 {
   "scripts": {
+    "prepare": "husky",
     "install:all": "npm install && npm install --prefix server && npm install --prefix client",
     "client:dev": "npm run dev --prefix client",
     "server:dev": "npm run dev --prefix server",
     "dev": "concurrently \"npm:client:dev\" \"npm:server:dev\"",
+    "lint": "npm run lint:client",
+    "lint:client": "npm run lint --prefix client",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "spellcheck": "cspell .",
     "build": "npm run build --prefix client",
     "start": "npm start --prefix server",
     "compose:up": "docker compose up -d --build",
@@ -19,5 +25,14 @@
   },
   "dependencies": {
     "concurrently": "^9.2.1"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
+    "cspell": "^10.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.8.0"
   }
 }

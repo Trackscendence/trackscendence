@@ -19,9 +19,11 @@ const LOCK_DURATION_MINUTES = 2
 const USERNAME_MIN_LENGTH = 8
 const USERNAME_MAX_LENGTH = 20 
 
+const USERNAME_REGEX = /^[a-zA-Z0-9_-]+$/
+
 const normalizeEmail = (email) => email.trim().toLowerCase()
 const normalizeIdentifier = (identifier) => {
-  const trimmedIdentifier = identifier.trim()
+  const trimmedIdentifier = identifier.trim().toLowerCase()
 
   return trimmedIdentifier.includes('@')
     ? trimmedIdentifier.toLowerCase()
@@ -37,7 +39,7 @@ const toSafeAuthUser = (user) => ({
 
 const validateRegistrationInput = ({ email, username, password } = {}) => {
   const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
-  const normalizedUsername = typeof username === 'string' ? username.trim() : ''
+  const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : ''
   const normalizedPassword = typeof password === 'string' ? password : ''
   const details = []
 
@@ -53,6 +55,8 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
     details.push(`Username must be at least ${USERNAME_MIN_LENGTH} characters`)
   } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
     details.push(`Username must NOT be more than ${USERNAME_MAX_LENGTH} characters`)
+  } else if (!USERNAME_REGEX.test(normalizedUsername)) {
+    details.push(`Username must only contain letters, numbers, underscores, and hyphens`)
   }
 
 

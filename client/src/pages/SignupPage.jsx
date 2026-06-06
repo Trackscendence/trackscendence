@@ -10,7 +10,7 @@ const SignupPage = () => {
     username: '',
     password: '',
   })
-  const [error, setError] = useState('')
+  const [error, setError] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (event) => {
@@ -22,7 +22,7 @@ const SignupPage = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    setError('')
+    setError([])
     setIsSubmitting(true)
 
     try {
@@ -32,7 +32,13 @@ const SignupPage = () => {
         state: { message: 'Account created. Sign in to continue.' },
       })
     } catch (requestError) {
-      setError(requestError.message)
+	  const details = requestError.payload?.details
+
+	  if (details?.length) {
+	    setError(details)
+	  } else {
+        setError([requestError.message])
+	  }
     } finally {
       setIsSubmitting(false)
     }
@@ -89,11 +95,15 @@ const SignupPage = () => {
             />
           </label>
 
-          {error ? (
-            <p className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
-              {error}
-            </p>
-          ) : null}
+          {error.length > 0 ? (
+		    <div className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
+			  <ul className="list-disc pl-5">
+			    {error.map((message) => (
+				  <li key={message}>{message}</li>
+				))}
+			  </ul>
+			</div>
+		  ) : null}
 
           <button
             className="w-full rounded-md bg-[#2f7d61] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#276a52] disabled:cursor-not-allowed disabled:bg-[#91a69b]"

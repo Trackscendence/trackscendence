@@ -16,6 +16,9 @@ const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
 const MAX_LOGIN_ATTEMPTS = 8
 const LOCK_DURATION_MINUTES = 2
 
+const USERNAME_MIN_LENGTH = 8
+const USERNAME_MAX_LENGTH = 20 
+
 const normalizeEmail = (email) => email.trim().toLowerCase()
 const normalizeIdentifier = (identifier) => {
   const trimmedIdentifier = identifier.trim()
@@ -46,7 +49,9 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
 
   if (!normalizedUsername) {
     details.push('Username is required')
-  } 
+  } else if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
+    details.push(`Username must be at least ${USERNAME_MIN_LENGTH} characters`)
+  }
 
   if (!normalizedPassword) {
     details.push('Password is required')

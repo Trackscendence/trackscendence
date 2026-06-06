@@ -51,7 +51,10 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
     details.push('Username is required')
   } else if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
     details.push(`Username must be at least ${USERNAME_MIN_LENGTH} characters`)
+  } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
+    details.push(`Username must NOT be more than ${USERNAME_MAX_LENGTH} characters`)
   }
+
 
   if (!normalizedPassword) {
     details.push('Password is required')

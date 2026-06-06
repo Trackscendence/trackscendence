@@ -1,7 +1,7 @@
 services:
   database:
     ports:
-      - "${DB_PORT}:5432"
+      - '${DB_PORT}:5432'
   server:
     build: !reset null
     image: node:22-alpine
@@ -13,7 +13,7 @@ services:
       - ./server:/app
       - server_node_modules:/app/node_modules
     ports:
-      - "${SERVER_PORT}:3001"
+      - '${SERVER_PORT}:3001'
   client:
     build: !reset null
     image: node:22-alpine
@@ -25,12 +25,12 @@ services:
       - ./client:/app
       - client_node_modules:/app/node_modules
     ports:
-      - "${CLIENT_DEV_PORT}:5173"
+      - '${CLIENT_DEV_PORT}:5173'
 
   adminer:
     image: adminer
     ports:
-      - "8081:8080"
+      - '8081:8080'
     depends_on:
       - database
 

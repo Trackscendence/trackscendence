@@ -14,190 +14,195 @@ const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
 
 const normalizeEmail = (email) => email.trim().toLowerCase()
 const normalizeIdentifier = (identifier) => {
-	const trimmedIdentifier = identifier.trim()
+  const trimmedIdentifier = identifier.trim()
 
-	return trimmedIdentifier.includes('@') ? trimmedIdentifier.toLowerCase() : trimmedIdentifier
+  return trimmedIdentifier.includes('@')
+    ? trimmedIdentifier.toLowerCase()
+    : trimmedIdentifier
 }
 
 const toSafeAuthUser = (user) => ({
-	id: user.id,
-	email: user.email,
-	username: user.username,
-	role: user.role,
+  id: user.id,
+  email: user.email,
+  username: user.username,
+  role: user.role,
 })
 
 const validateRegistrationInput = ({ email, username, password } = {}) => {
-	const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
-	const normalizedUsername = typeof username === 'string' ? username.trim() : ''
-	const normalizedPassword = typeof password === 'string' ? password : ''
-	const details = []
+  const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
+  const normalizedUsername = typeof username === 'string' ? username.trim() : ''
+  const normalizedPassword = typeof password === 'string' ? password : ''
+  const details = []
 
-	if (!normalizedEmail) {
-		details.push('Email is required')
-	} else if (!EMAIL_REGEX.test(normalizedEmail)) {
-		details.push('Email must be valid')
-	}
+  if (!normalizedEmail) {
+    details.push('Email is required')
+  } else if (!EMAIL_REGEX.test(normalizedEmail)) {
+    details.push('Email must be valid')
+  }
 
-	if (!normalizedUsername) {
-		details.push('Username is required')
-	}
+  if (!normalizedUsername) {
+    details.push('Username is required')
+  }
 
-	if (!normalizedPassword) {
-		details.push('Password is required')
-	} else if (normalizedPassword.length < PASSWORD_MIN_LENGTH) {
-		details.push(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
-	}
+  if (!normalizedPassword) {
+    details.push('Password is required')
+  } else if (normalizedPassword.length < PASSWORD_MIN_LENGTH) {
+    details.push(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+  }
 
-	if (details.length > 0) {
-		throw new BadRequestException('Invalid request data', { details })
-	}
+  if (details.length > 0) {
+    throw new BadRequestException('Invalid request data', { details })
+  }
 
-	return {
-		email: normalizedEmail,
-		username: normalizedUsername,
-		password: normalizedPassword,
-	}
+  return {
+    email: normalizedEmail,
+    username: normalizedUsername,
+    password: normalizedPassword,
+  }
 }
 
 const validateLoginInput = ({ identifier, password } = {}) => {
-	const normalizedIdentifier = typeof identifier === 'string' ? normalizeIdentifier(identifier) : ''
-	const normalizedPassword = typeof password === 'string' ? password : ''
-	const details = []
+  const normalizedIdentifier =
+    typeof identifier === 'string' ? normalizeIdentifier(identifier) : ''
+  const normalizedPassword = typeof password === 'string' ? password : ''
+  const details = []
 
-	if (!normalizedIdentifier) {
-		details.push('Identifier is required')
-	}
+  if (!normalizedIdentifier) {
+    details.push('Identifier is required')
+  }
 
-	if (!normalizedPassword) {
-		details.push('Password is required')
-	}
+  if (!normalizedPassword) {
+    details.push('Password is required')
+  }
 
-	if (details.length > 0) {
-		throw new BadRequestException('Invalid request data', { details })
-	}
+  if (details.length > 0) {
+    throw new BadRequestException('Invalid request data', { details })
+  }
 
-	return {
-		identifier: normalizedIdentifier,
-		password: normalizedPassword,
-	}
+  return {
+    identifier: normalizedIdentifier,
+    password: normalizedPassword,
+  }
 }
 
 const isUniqueConstraintError = (error) => {
-	return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002'
+  )
 }
 
 const getUniqueConflictMessage = (error) => {
-	const target = Array.isArray(error.meta?.target) ? error.meta.target[0] : error.meta?.target
+  const target = Array.isArray(error.meta?.target)
+    ? error.meta.target[0]
+    : error.meta?.target
 
-	if (target === 'email') {
-		return 'Email is already registered'
-	}
+  if (target === 'email') {
+    return 'Email is already registered'
+  }
 
-	if (target === 'username') {
-		return 'Username is already taken'
-	}
+  if (target === 'username') {
+    return 'Username is already taken'
+  }
 
-	return 'User already exists'
+  return 'User already exists'
 }
 
 const register = async (payload) => {
-	const { email, username, password } = validateRegistrationInput(payload)
+  const { email, username, password } = validateRegistrationInput(payload)
 
-	const existingEmail = await authRepository.findByEmail(email)
-	if (existingEmail) {
-		throw new ConflictException('Email is already registered')
-	}
+  const existingEmail = await authRepository.findByEmail(email)
+  if (existingEmail) {
+    throw new ConflictException('Email is already registered')
+  }
 
-	const existingUsername = await authRepository.findByUsername(username)
-	if (existingUsername) {
-		throw new ConflictException('Username is already taken')
-	}
+  const existingUsername = await authRepository.findByUsername(username)
+  if (existingUsername) {
+    throw new ConflictException('Username is already taken')
+  }
 
-	const passwordHash = await bcrypt.hash(password, 12)
+  const passwordHash = await bcrypt.hash(password, 12)
 
-	try {
-		return await authRepository.createUser({
-			email,
-			username,
-			passwordHash,
-		})
-	} catch (error) {
-		if (isUniqueConstraintError(error)) {
-			throw new ConflictException(getUniqueConflictMessage(error))
-		}
+  try {
+    return await authRepository.createUser({
+      email,
+      username,
+      passwordHash,
+    })
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new ConflictException(getUniqueConflictMessage(error))
+    }
 
-		throw error
-	}
+    throw error
+  }
 }
 
 const login = async (payload) => {
-	const { identifier, password } = validateLoginInput(payload)
-	const user = await authRepository.findByIdentifier(identifier)
+  const { identifier, password } = validateLoginInput(payload)
+  const user = await authRepository.findByIdentifier(identifier)
 
-	if (!user) {
-		throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
-	}
+  if (!user) {
+    throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
+  }
 
-	const isValidPassword = await bcrypt.compare(password, user.passwordHash)
+  const isValidPassword = await bcrypt.compare(password, user.passwordHash)
 
-	if (!isValidPassword) {
-		throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
-	}
+  if (!isValidPassword) {
+    throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
+  }
 
-	const token = authToken.signAccessToken(user)
+  const token = authToken.signAccessToken(user)
 
-	return {
-		token,
-		user: toSafeAuthUser(user),
-	}
+  return {
+    token,
+    user: toSafeAuthUser(user),
+  }
 }
 
 const getUserFromToken = async (token) => {
+  let payload
 
-	let payload
+  try {
+    payload = authToken.verifyAccessToken(token)
+  } catch (error) {
+    if (authToken.isTokenError(error)) {
+      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+    }
 
-	try {
-		payload = authToken.verifyAccessToken(token)
-	} catch (error) {
-		if (authToken.isTokenError(error)) {
-			throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
-		}
+    throw error
+  }
 
-		throw error
-	}
+  const userId = Number(payload.sub)
 
-	const userId = Number(payload.sub)
+  if (!Number.isInteger(userId)) {
+    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+  }
 
-	if (!Number.isInteger(userId)) {
-		throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
-	}
+  const user = await authRepository.findSafeById(userId)
 
-	const user = await authRepository.findSafeById(userId)
+  if (!user) {
+    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+  }
 
-	if (!user) {
-		throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
-	}
-
-	return user
+  return user
 }
 
 const getAuthenticatedUser = async (authorizationHeader) => {
-	const token = authToken.getBearerToken(authorizationHeader)
+  const token = authToken.getBearerToken(authorizationHeader)
 
-	if (!token) {
-		throw new UnauthorizedException(AUTHENTICATION_REQUIRED_MESSAGE)
-	}
+  if (!token) {
+    throw new UnauthorizedException(AUTHENTICATION_REQUIRED_MESSAGE)
+  }
 
-	return await getUserFromToken(token)
+  return await getUserFromToken(token)
 }
 
-
-
 module.exports = {
-	INVALID_CREDENTIALS_MESSAGE,
-	getUserFromToken,
-	getAuthenticatedUser,
-	register,
-	login,
-	toSafeAuthUser,
+  INVALID_CREDENTIALS_MESSAGE,
+  getUserFromToken,
+  getAuthenticatedUser,
+  register,
+  login,
+  toSafeAuthUser,
 }

@@ -1,23 +1,23 @@
 const authService = require('#modules/auth/auth.service')
 
 const register = async (req, res) => {
-	const user = await authService.register(req.body)
+  const user = await authService.register(req.body)
 
-	res.status(201).json({ user })
+  res.status(201).json({ user })
 }
 
 const login = async (req, res) => {
-	const result = await authService.login(req.body)
+  const result = await authService.login(req.body)
 
-	res.json(result)
+  res.json(result)
 }
 
 const me = (req, res) => {
-	res.json({ user: req.user })
+  res.json({ user: req.user })
 }
 
 const logout = (req, res) => {
-	res.status(204).send()
+  res.status(204).send()
 }
 
 const changePassword = async (req, res) => {
@@ -39,11 +39,11 @@ const resetPassword = async (req, res) => {
 }
 
 module.exports = {
-	register,
-	login,
-	me,
-	logout,
-	changePassword,
-	requestPasswordReset,
-	resetPassword,
+  register,
+  login,
+  me,
+  logout,
+  changePassword,
+  requestPasswordReset,
+  resetPassword,
 }

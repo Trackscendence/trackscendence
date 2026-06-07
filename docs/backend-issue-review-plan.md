@@ -6,11 +6,11 @@ This document is a review plan for backend-related GitHub issues and the backend
 
 ## Current Branches And PRs
 
-| PR | Branch | Base | Assignee/Author | Purpose | Review Priority |
-| --- | --- | --- | --- | --- | --- |
-| [#49](https://github.com/Trackscendence/trackscendence/pull/49) | `feature/41-initial-backend-setup` | `dev` | `adshz` | Backend foundation: app structure, API v1 routes, config, logging, middleware, errors, Swagger | 1 |
-| [#50](https://github.com/Trackscendence/trackscendence/pull/50) | `feature/26-auth-foundation` | `dev` | `adshz` | Auth foundation: Prisma user fields, register, login, JWT, `/me`, logout, frontend auth flow | 2 |
-| [#36](https://github.com/Trackscendence/trackscendence/pull/36) | `dev` | `main` | `sroderic` | Dev containerization/port fixes | Background context |
+| PR                                                              | Branch                             | Base   | Assignee/Author | Purpose                                                                                        | Review Priority    |
+| --------------------------------------------------------------- | ---------------------------------- | ------ | --------------- | ---------------------------------------------------------------------------------------------- | ------------------ |
+| [#49](https://github.com/Trackscendence/trackscendence/pull/49) | `feature/41-initial-backend-setup` | `dev`  | `adshz`         | Backend foundation: app structure, API v1 routes, config, logging, middleware, errors, Swagger | 1                  |
+| [#50](https://github.com/Trackscendence/trackscendence/pull/50) | `feature/26-auth-foundation`       | `dev`  | `adshz`         | Auth foundation: Prisma user fields, register, login, JWT, `/me`, logout, frontend auth flow   | 2                  |
+| [#36](https://github.com/Trackscendence/trackscendence/pull/36) | `dev`                              | `main` | `sroderic`      | Dev containerization/port fixes                                                                | Background context |
 
 Important dependency:
 
@@ -20,20 +20,20 @@ Important dependency:
 
 Avoid working directly on these without coordinating first:
 
-| Issue | Assignee | Reason |
-| --- | --- | --- |
-| [#26](https://github.com/Trackscendence/trackscendence/issues/26) User Authentication Foundation | `adshz` | Has active branch/PR #50 |
-| [#38](https://github.com/Trackscendence/trackscendence/issues/38) Confirm backend project structure | `adshz` | Related to backend foundation |
-| [#39](https://github.com/Trackscendence/trackscendence/issues/39) Design API Authentication & Authorisation | `adshz` | Related to auth foundation |
-| [#40](https://github.com/Trackscendence/trackscendence/issues/40) Backend Project Structure Proposal | `adshz` | Related to backend foundation |
-| [#41](https://github.com/Trackscendence/trackscendence/issues/41) Backend Project Initial Setup | `adshz` | Has active branch/PR #49 |
-| [#42](https://github.com/Trackscendence/trackscendence/issues/42) Validate environment config | `adshz` | Related to PR #49 |
-| [#43](https://github.com/Trackscendence/trackscendence/issues/43) Structured logging and request logging | `adshz` | Related to PR #49 |
-| [#44](https://github.com/Trackscendence/trackscendence/issues/44) Baseline Express middleware | `adshz` | Related to PR #49 |
-| [#45](https://github.com/Trackscendence/trackscendence/issues/45) API v1 router and health routes | `adshz` | Related to PR #49 |
-| [#46](https://github.com/Trackscendence/trackscendence/issues/46) Centralized error handling | `adshz` | Related to PR #49 |
-| [#47](https://github.com/Trackscendence/trackscendence/issues/47) Swagger OpenAPI documentation | `adshz` | Related to PR #49 |
-| [#51](https://github.com/Trackscendence/trackscendence/issues/51) Auth validation and API contract | `mooreApps22` | Assigned and has a comment saying they are working on it |
+| Issue                                                                                                       | Assignee      | Reason                                                   |
+| ----------------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------------- |
+| [#26](https://github.com/Trackscendence/trackscendence/issues/26) User Authentication Foundation            | `adshz`       | Has active branch/PR #50                                 |
+| [#38](https://github.com/Trackscendence/trackscendence/issues/38) Confirm backend project structure         | `adshz`       | Related to backend foundation                            |
+| [#39](https://github.com/Trackscendence/trackscendence/issues/39) Design API Authentication & Authorisation | `adshz`       | Related to auth foundation                               |
+| [#40](https://github.com/Trackscendence/trackscendence/issues/40) Backend Project Structure Proposal        | `adshz`       | Related to backend foundation                            |
+| [#41](https://github.com/Trackscendence/trackscendence/issues/41) Backend Project Initial Setup             | `adshz`       | Has active branch/PR #49                                 |
+| [#42](https://github.com/Trackscendence/trackscendence/issues/42) Validate environment config               | `adshz`       | Related to PR #49                                        |
+| [#43](https://github.com/Trackscendence/trackscendence/issues/43) Structured logging and request logging    | `adshz`       | Related to PR #49                                        |
+| [#44](https://github.com/Trackscendence/trackscendence/issues/44) Baseline Express middleware               | `adshz`       | Related to PR #49                                        |
+| [#45](https://github.com/Trackscendence/trackscendence/issues/45) API v1 router and health routes           | `adshz`       | Related to PR #49                                        |
+| [#46](https://github.com/Trackscendence/trackscendence/issues/46) Centralized error handling                | `adshz`       | Related to PR #49                                        |
+| [#47](https://github.com/Trackscendence/trackscendence/issues/47) Swagger OpenAPI documentation             | `adshz`       | Related to PR #49                                        |
+| [#51](https://github.com/Trackscendence/trackscendence/issues/51) Auth validation and API contract          | `mooreApps22` | Assigned and has a comment saying they are working on it |
 
 Unassigned backend or backend-adjacent issues are safer candidates after the foundation review, but they may still depend on PR #49 and PR #50.
 
@@ -41,47 +41,47 @@ Unassigned backend or backend-adjacent issues are safer candidates after the fou
 
 ### Foundation
 
-| Issue | Assignee | Notes |
-| --- | --- | --- |
-| [#38](https://github.com/Trackscendence/trackscendence/issues/38) | `adshz` | Backend architecture decision and structure discussion |
-| [#40](https://github.com/Trackscendence/trackscendence/issues/40) | `adshz` | Structure proposal |
-| [#41](https://github.com/Trackscendence/trackscendence/issues/41) | `adshz` | Initial backend setup |
-| [#42](https://github.com/Trackscendence/trackscendence/issues/42) | `adshz` | Environment config validation |
-| [#43](https://github.com/Trackscendence/trackscendence/issues/43) | `adshz` | Logging |
-| [#44](https://github.com/Trackscendence/trackscendence/issues/44) | `adshz` | Express middleware |
-| [#45](https://github.com/Trackscendence/trackscendence/issues/45) | `adshz` | API v1 router and health routes |
-| [#46](https://github.com/Trackscendence/trackscendence/issues/46) | `adshz` | Centralized errors |
-| [#47](https://github.com/Trackscendence/trackscendence/issues/47) | `adshz` | Swagger docs |
+| Issue                                                             | Assignee | Notes                                                  |
+| ----------------------------------------------------------------- | -------- | ------------------------------------------------------ |
+| [#38](https://github.com/Trackscendence/trackscendence/issues/38) | `adshz`  | Backend architecture decision and structure discussion |
+| [#40](https://github.com/Trackscendence/trackscendence/issues/40) | `adshz`  | Structure proposal                                     |
+| [#41](https://github.com/Trackscendence/trackscendence/issues/41) | `adshz`  | Initial backend setup                                  |
+| [#42](https://github.com/Trackscendence/trackscendence/issues/42) | `adshz`  | Environment config validation                          |
+| [#43](https://github.com/Trackscendence/trackscendence/issues/43) | `adshz`  | Logging                                                |
+| [#44](https://github.com/Trackscendence/trackscendence/issues/44) | `adshz`  | Express middleware                                     |
+| [#45](https://github.com/Trackscendence/trackscendence/issues/45) | `adshz`  | API v1 router and health routes                        |
+| [#46](https://github.com/Trackscendence/trackscendence/issues/46) | `adshz`  | Centralized errors                                     |
+| [#47](https://github.com/Trackscendence/trackscendence/issues/47) | `adshz`  | Swagger docs                                           |
 
 ### Auth And Authorization
 
-| Issue | Assignee | Notes |
-| --- | --- | --- |
-| [#26](https://github.com/Trackscendence/trackscendence/issues/26) | `adshz` | Main auth foundation |
-| [#39](https://github.com/Trackscendence/trackscendence/issues/39) | `adshz` | Token/auth flow design |
-| [#51](https://github.com/Trackscendence/trackscendence/issues/51) | `mooreApps22` | Validation and API contract |
-| [#52](https://github.com/Trackscendence/trackscendence/issues/52) | Unassigned | Password and session security |
-| [#53](https://github.com/Trackscendence/trackscendence/issues/53) | Unassigned | Failed login protection and freeze |
-| [#54](https://github.com/Trackscendence/trackscendence/issues/54) | Unassigned | Signup hardening |
-| [#55](https://github.com/Trackscendence/trackscendence/issues/55) | Unassigned | Login hardening |
-| [#56](https://github.com/Trackscendence/trackscendence/issues/56) | Unassigned | Standard user management planning |
-| [#57](https://github.com/Trackscendence/trackscendence/issues/57) | Unassigned | OAuth, likely optional/later |
-| [#58](https://github.com/Trackscendence/trackscendence/issues/58) | Unassigned | Two-factor authentication |
-| [#59](https://github.com/Trackscendence/trackscendence/issues/59) | Unassigned | Roles and access control |
-| [#60](https://github.com/Trackscendence/trackscendence/issues/60) | Unassigned | Privacy, HTTPS, account data |
+| Issue                                                             | Assignee      | Notes                              |
+| ----------------------------------------------------------------- | ------------- | ---------------------------------- |
+| [#26](https://github.com/Trackscendence/trackscendence/issues/26) | `adshz`       | Main auth foundation               |
+| [#39](https://github.com/Trackscendence/trackscendence/issues/39) | `adshz`       | Token/auth flow design             |
+| [#51](https://github.com/Trackscendence/trackscendence/issues/51) | `mooreApps22` | Validation and API contract        |
+| [#52](https://github.com/Trackscendence/trackscendence/issues/52) | Unassigned    | Password and session security      |
+| [#53](https://github.com/Trackscendence/trackscendence/issues/53) | Unassigned    | Failed login protection and freeze |
+| [#54](https://github.com/Trackscendence/trackscendence/issues/54) | Unassigned    | Signup hardening                   |
+| [#55](https://github.com/Trackscendence/trackscendence/issues/55) | Unassigned    | Login hardening                    |
+| [#56](https://github.com/Trackscendence/trackscendence/issues/56) | Unassigned    | Standard user management planning  |
+| [#57](https://github.com/Trackscendence/trackscendence/issues/57) | Unassigned    | OAuth, likely optional/later       |
+| [#58](https://github.com/Trackscendence/trackscendence/issues/58) | Unassigned    | Two-factor authentication          |
+| [#59](https://github.com/Trackscendence/trackscendence/issues/59) | Unassigned    | Roles and access control           |
+| [#60](https://github.com/Trackscendence/trackscendence/issues/60) | Unassigned    | Privacy, HTTPS, account data       |
 
 ### Backend Feature Modules
 
-| Issue | Assignee | Notes |
-| --- | --- | --- |
-| [#27](https://github.com/Trackscendence/trackscendence/issues/27) User Profiles | Unassigned | Depends on stable user/auth identity |
-| [#28](https://github.com/Trackscendence/trackscendence/issues/28) Friend System | Unassigned | Depends on users and auth |
-| [#29](https://github.com/Trackscendence/trackscendence/issues/29) Chat Broadcast System | Unassigned | Likely needs auth and realtime layer |
-| [#30](https://github.com/Trackscendence/trackscendence/issues/30) Chat Rooms | Unassigned | Likely needs auth, users, and persistence |
-| [#32](https://github.com/Trackscendence/trackscendence/issues/32) AI Opponents | Unassigned | Depends on game logic |
-| [#33](https://github.com/Trackscendence/trackscendence/issues/33) File Upload System | Unassigned | Needed for avatars or uploaded assets |
-| [#34](https://github.com/Trackscendence/trackscendence/issues/34) Prisma ORM | Unassigned | Foundation for database-backed modules |
-| [#35](https://github.com/Trackscendence/trackscendence/issues/35) UNO Game Logic | Unassigned | Core game engine and persistence |
+| Issue                                                                                   | Assignee   | Notes                                     |
+| --------------------------------------------------------------------------------------- | ---------- | ----------------------------------------- |
+| [#27](https://github.com/Trackscendence/trackscendence/issues/27) User Profiles         | Unassigned | Depends on stable user/auth identity      |
+| [#28](https://github.com/Trackscendence/trackscendence/issues/28) Friend System         | Unassigned | Depends on users and auth                 |
+| [#29](https://github.com/Trackscendence/trackscendence/issues/29) Chat Broadcast System | Unassigned | Likely needs auth and realtime layer      |
+| [#30](https://github.com/Trackscendence/trackscendence/issues/30) Chat Rooms            | Unassigned | Likely needs auth, users, and persistence |
+| [#32](https://github.com/Trackscendence/trackscendence/issues/32) AI Opponents          | Unassigned | Depends on game logic                     |
+| [#33](https://github.com/Trackscendence/trackscendence/issues/33) File Upload System    | Unassigned | Needed for avatars or uploaded assets     |
+| [#34](https://github.com/Trackscendence/trackscendence/issues/34) Prisma ORM            | Unassigned | Foundation for database-backed modules    |
+| [#35](https://github.com/Trackscendence/trackscendence/issues/35) UNO Game Logic        | Unassigned | Core game engine and persistence          |
 
 Issue [#12](https://github.com/Trackscendence/trackscendence/issues/12) mentions a MariaDB/Node connector. This may be stale because the current backend direction uses Prisma and PostgreSQL. Confirm before doing any work on it.
 
@@ -333,27 +333,27 @@ Use this template while reviewing each PR or issue.
 
 ## What This Changes
 
-- 
+-
 
 ## Files I Understand
 
-- 
+-
 
 ## Files I Need To Re-read
 
-- 
+-
 
 ## Questions For The Author
 
-- 
+-
 
 ## Possible Bugs Or Risks
 
-- 
+-
 
 ## Follow-up Issues Needed
 
-- 
+-
 
 ## My Summary In One Paragraph
 

@@ -27,3 +27,6 @@ bin/
 srcs/.env
 
 *.local
+
+# Backup files
+*.bak

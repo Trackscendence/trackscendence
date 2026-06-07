@@ -11,8 +11,8 @@ services:
       NODE_ENV: development
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
-      SMTP_SECURE: "false"
-      SMTP_FROM: "Trackscendence <no-reply@trackscendence.local>"
+      SMTP_SECURE: 'false'
+      SMTP_FROM: 'Trackscendence <no-reply@trackscendence.local>'
     volumes:
       - ./server:/app
       - server_node_modules:/app/node_modules

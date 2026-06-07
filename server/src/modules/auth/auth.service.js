@@ -47,7 +47,7 @@ const getTokenVersionFromPayload = (payload) => {
 const getPasswordValidationMessages = (password) => {
   const details = []
 
-  if (typeof password !== "string" || password.length === 0) {
+  if (typeof password !== 'string' || password.length === 0) {
     details.push('Password is required')
     return details
   }
@@ -130,12 +130,19 @@ const validateChangePasswordInput = ({ currentPassword, newPassword } = {}) => {
 
   details.push(...getPasswordValidationMessages(normalizedNew))
 
-  if (normalizedCurrent && normalizedNew && normalizedCurrent === normalizedNew) {
+  if (
+    normalizedCurrent &&
+    normalizedNew &&
+    normalizedCurrent === normalizedNew
+  ) {
     details.push(NEW_PASSWORD_MUST_DIFFER_MESSAGE)
   }
 
   if (details.length > 0) {
-    if (details.length === 1 && details[0] === NEW_PASSWORD_MUST_DIFFER_MESSAGE) {
+    if (
+      details.length === 1 &&
+      details[0] === NEW_PASSWORD_MUST_DIFFER_MESSAGE
+    ) {
       throw new BadRequestException(NEW_PASSWORD_MUST_DIFFER_MESSAGE)
     }
 
@@ -357,10 +364,13 @@ const requestPasswordReset = async (payload) => {
     try {
       await authRepository.clearPasswordResetToken(user.id)
     } catch (clearError) {
-      logger.error('Failed to clear password reset token after email delivery failure', {
-        userId: user.id,
-        error: clearError.message,
-      })
+      logger.error(
+        'Failed to clear password reset token after email delivery failure',
+        {
+          userId: user.id,
+          error: clearError.message,
+        },
+      )
     }
 
     logger.error('Failed to deliver password reset email', {
@@ -387,37 +397,44 @@ const resetPassword = async (payload) => {
     throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
   }
 
-  await authRepository.withLockedPasswordResetToken(tokenId, async (user, tx) => {
-    if (
-      !user ||
-      !user.passwordResetTokenExpiry ||
-      new Date(user.passwordResetTokenExpiry) < new Date() ||
-      !user.passwordResetTokenHash
-    ) {
-      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
-    }
+  await authRepository.withLockedPasswordResetToken(
+    tokenId,
+    async (user, tx) => {
+      if (
+        !user ||
+        !user.passwordResetTokenExpiry ||
+        new Date(user.passwordResetTokenExpiry) < new Date() ||
+        !user.passwordResetTokenHash
+      ) {
+        throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+      }
 
-    const isValidToken = await bcrypt.compare(
-      tokenSecret,
-      user.passwordResetTokenHash,
-    )
+      const isValidToken = await bcrypt.compare(
+        tokenSecret,
+        user.passwordResetTokenHash,
+      )
 
-    if (!isValidToken) {
-      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
-    }
+      if (!isValidToken) {
+        throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+      }
 
-    const isSameAsCurrentPassword = await bcrypt.compare(
-      newPassword,
-      user.passwordHash,
-    )
+      const isSameAsCurrentPassword = await bcrypt.compare(
+        newPassword,
+        user.passwordHash,
+      )
 
-    if (isSameAsCurrentPassword) {
-      throw new BadRequestException(NEW_PASSWORD_MUST_DIFFER_MESSAGE)
-    }
+      if (isSameAsCurrentPassword) {
+        throw new BadRequestException(NEW_PASSWORD_MUST_DIFFER_MESSAGE)
+      }
 
-    const passwordHash = await bcrypt.hash(newPassword, 12)
-    await authRepository.updatePasswordByIdInTransaction(tx, user.id, passwordHash)
-  })
+      const passwordHash = await bcrypt.hash(newPassword, 12)
+      await authRepository.updatePasswordByIdInTransaction(
+        tx,
+        user.id,
+        passwordHash,
+      )
+    },
+  )
 
   return { message: 'Password reset successful' }
 }

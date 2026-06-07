@@ -1,7 +1,10 @@
 const apiBaseUrl = `${(import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')}/v1`
 
 export const AUTH_TOKEN_KEY = 'trackscendence.auth.token'
-const SESSION_ERROR_MESSAGES = new Set(['Authentication required', 'Invalid or expired token'])
+const SESSION_ERROR_MESSAGES = new Set([
+  'Authentication required',
+  'Invalid or expired token',
+])
 
 const parseError = async (response) => {
   let body

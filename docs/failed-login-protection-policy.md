@@ -1,12 +1,12 @@
 ### Failed Login Protection Policy and Documentation
 
-This document defines the policy for what happens when a user attempts to login into an account and is unsucessful.
+This document defines the policy for users unsuccessfully attempt to login to an account.
 
 #### Policy
 
 Currently, for development, if a user failed to login with the wrong password 8 times, then they will be locked out of attempt login for 2 minutes. This is a purposely generous policy to make testing easy.
 
-If we wanted to take the website live, we would lower the attempts to 5 and increase the minutes locked out to 10 or 15 minutes; or whatever seem reasonable.
+If we wanted to take the website live, we would lower the attempts to 5 and increase the minutes locked out to 10 or 15 minutes; or whatever seems reasonable.
 
 #### Invalid Username
 

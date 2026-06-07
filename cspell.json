@@ -12,6 +12,7 @@
     "server/prisma/migrations"
   ],
   "words": [
+    "axllent",
     "commitlint",
     "cspell",
     "adshz",
@@ -22,6 +23,8 @@
     "healthcheck",
     "isready",
     "lintstaged",
+    "Mailpit",
+    "mailpit",
     "Miha",
     "Mindmap",
     "mindmap",
@@ -41,6 +44,7 @@
     "trackscendence",
     "travelling",
     "tsconfig",
+    "prerequest",
     "vite",
     "vitest",
     "zhong"

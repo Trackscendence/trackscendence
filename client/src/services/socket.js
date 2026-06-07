@@ -2,10 +2,8 @@ import io from 'socket.io-client'
 
 const URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
-export const socket = io(URL,
-	{
-		autoConnect: false,
-		transports: ["websocket"],
-		path: '/websocket/'
-	}
-)
+export const socket = io(URL, {
+  autoConnect: false,
+  transports: ['websocket'],
+  path: '/websocket/',
+})

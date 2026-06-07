@@ -1,6 +1,6 @@
+import { forwardRef } from 'react'
 
-
-export function Input({ label, id, error, className = '', ...props }) {
+export const Input = forwardRef(function Input({ label, id, error, className = '', ...props }, ref) {
   const inputId = id || props.name
 
   return (
@@ -11,6 +11,7 @@ export function Input({ label, id, error, className = '', ...props }) {
         </label>
       )}
       <input
+        ref={ref}
         id={inputId}
         className={`block w-full rounded-md border ${
           error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
@@ -20,4 +21,4 @@ export function Input({ label, id, error, className = '', ...props }) {
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   )
-}
+})

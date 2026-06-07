@@ -8,7 +8,7 @@ export default function PrivacyPolicyPage() {
       
       <Card>
         <CardContent className="prose prose-blue max-w-none">
-          <p className="text-sm text-gray-500">Last updated: {new Date().toLocaleDateString()}</p>
+          <p className="text-sm text-gray-500">Last updated: June 7, 2026</p>
           
           <h2 className="text-xl font-semibold mt-6 mb-4">1. Introduction</h2>
           <p>

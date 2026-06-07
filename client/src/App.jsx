@@ -8,19 +8,19 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 
 const App = () => {
-	return (
-		<Routes>
-			<Route path="/signup" element={<SignupPage />} />
-			<Route path="/login" element={<LoginPage />} />
-			<Route path="/forgot-password" element={<ForgotPasswordPage />} />
-			<Route path="/reset-password" element={<ResetPasswordPage />} />
-			<Route element={<ProtectedRoute />}>
-				<Route path="/change-password" element={<ChangePasswordPage />} />
-				<Route path="/" element={<SessionPage />} />
-			</Route>
-			<Route path="*" element={<Navigate to="/" replace />} />
-		</Routes>
-	)
+  return (
+    <Routes>
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/change-password" element={<ChangePasswordPage />} />
+        <Route path="/" element={<SessionPage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
 }
 
 export default App

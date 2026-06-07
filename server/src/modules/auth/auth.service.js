@@ -54,7 +54,7 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
   } else if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
     details.push(`Username must be at least ${USERNAME_MIN_LENGTH} characters`)
   } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
-    details.push(`Username must NOT be more than ${USERNAME_MAX_LENGTH} characters`)
+    details.push(`Username must be at most ${USERNAME_MAX_LENGTH} characters`)
   } else if (!USERNAME_REGEX.test(normalizedUsername)) {
     details.push(`Username must only contain letters, numbers, underscores, and hyphens`)
   }

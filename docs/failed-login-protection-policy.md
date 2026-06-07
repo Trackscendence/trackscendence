@@ -14,10 +14,10 @@ The User model is used for tracking password attempts, so the username must be k
 
 #### Code Description
 
-The User model tracks login attempts, which is kept in `/src/server/prisma/schema.prisma`. The property is called `loginAttempts`. If the value of this property equals or exceeds `MAX_LOGIN_ATTEMPTS` then the user attempting to login will be temporarly blocked from logging in until `LOCK_DURATION_MINUTES` minutes have counted down.
+The User model tracks login attempts, which is kept in `/src/server/prisma/schema.prisma`. The property is called `failedLoginAttempts`. If the value of this property equals or exceeds `MAX_LOGIN_ATTEMPTS` then the user attempting to login will be temporarly blocked from logging in until `LOCK_DURATION_MINUTES` minutes have counted down.
 
 The User model can store the timestamp at point user attempting to login can being attempting again in the `lockedUntil` property. It is calculated by added `LOCK_DURATION_MINUTES`to the timestamp of when the user attempt to login too many times.
 
 If the password is invalid the user is NOT explicitly told them used a wrong password. 
 
-The logic for calculating failed attempts, locked out time, and error messages are found in login() function in `auth.services.js` and the updateUser() function in `auth.repository.js`.
+The logic for calculating failed attempts, locked out time, and error messages are found in login() function in `auth.service.js` and the updateUser() function in `auth.repository.js`.

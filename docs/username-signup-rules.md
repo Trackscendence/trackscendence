@@ -12,3 +12,5 @@ Further rules at Signup are as thus:
 1. An email can only be registered once
 2. An username can only be used once
 3. Once an account is registered, the user must manually login
+4. In order for a user to register, they must agree to the Terms of Service
+5. In order for a user to register, they must agree to the Privacy Policy

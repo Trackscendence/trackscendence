@@ -21,21 +21,21 @@ const logout = (req, res) => {
 }
 
 const changePassword = async (req, res) => {
-	const result = await authService.changePassword(req.user, req.body)
+  const result = await authService.changePassword(req.user, req.body)
 
-	res.json(result)
+  res.json(result)
 }
 
 const requestPasswordReset = async (req, res) => {
-	const result = await authService.requestPasswordReset(req.body)
+  const result = await authService.requestPasswordReset(req.body)
 
-	res.json(result)
+  res.json(result)
 }
 
 const resetPassword = async (req, res) => {
-	const result = await authService.resetPassword(req.body)
+  const result = await authService.resetPassword(req.body)
 
-	res.json(result)
+  res.json(result)
 }
 
 module.exports = {

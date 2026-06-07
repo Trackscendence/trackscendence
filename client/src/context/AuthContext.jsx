@@ -60,10 +60,16 @@ const AuthProvider = ({ children }) => {
       setUser(null)
     }
 
-    window.addEventListener('trackscendence:session-expired', handleSessionExpired)
+    window.addEventListener(
+      'trackscendence:session-expired',
+      handleSessionExpired,
+    )
 
     return () => {
-      window.removeEventListener('trackscendence:session-expired', handleSessionExpired)
+      window.removeEventListener(
+        'trackscendence:session-expired',
+        handleSessionExpired,
+      )
     }
   }, [])
 

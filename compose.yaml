@@ -19,8 +19,8 @@ services:
       NODE_ENV: production
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
-      SMTP_SECURE: "false"
-      SMTP_FROM: "Trackscendence <no-reply@trackscendence.local>"
+      SMTP_SECURE: 'false'
+      SMTP_FROM: 'Trackscendence <no-reply@trackscendence.local>'
     depends_on:
       database:
         condition: service_healthy
@@ -39,7 +39,7 @@ services:
   mailpit:
     image: axllent/mailpit
     ports:
-      - "8025:8025"
+      - '8025:8025'
 
 volumes:
   pgdata:

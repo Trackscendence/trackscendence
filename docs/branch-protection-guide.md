@@ -34,6 +34,7 @@ graph TD
 ## 2. How Branch Enforcement Works in CI
 
 Our GitHub Actions workflow ([ci.yml](file:///.github/workflows/ci.yml)) automatically checks the source and target branches when a Pull Request is opened:
+
 - If a developer opens a Pull Request targeting `main` from a branch other than `dev` (such as `feature/something`), the **`Validate PR Target Branch`** check will fail.
 - Because this status check is marked as **required** in the Branch Protection settings, GitHub will block the merge button.
 - The developer will be prompted to change their base branch to `dev`.
@@ -45,10 +46,12 @@ Our GitHub Actions workflow ([ci.yml](file:///.github/workflows/ci.yml)) automat
 To enforce this workflow, the following branch protection rules have been configured on GitHub settings:
 
 ### Main Branch (`main`)
+
 - **Require a pull request before merging**: Enabled (direct pushes to `main` are blocked).
 - **Require approvals**: Enabled (requires at least **1** review/approval before merging).
 - **Require status checks to pass before merging**: Enabled. The following automated checks must pass successfully before merging:
   - `Validate PR Target Branch`
+  - `Coding Standards`
   - `Client Lint and Build`
   - `Server Build and Prisma Validation`
   - `Validate Docker Build`
@@ -56,8 +59,10 @@ To enforce this workflow, the following branch protection rules have been config
 - **Do not allow bypassing the above settings**: Enabled (applies to repository owners/administrators).
 
 ### Dev Branch (`dev`)
+
 - **Require a pull request before merging**: Enabled (direct pushes to `dev` are blocked).
 - **Require status checks to pass before merging**: Enabled. The following automated checks must pass before merging:
+  - `Coding Standards`
   - `Client Lint and Build`
   - `Server Build and Prisma Validation`
   - `Validate Docker Build`

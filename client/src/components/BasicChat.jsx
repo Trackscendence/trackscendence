@@ -1,58 +1,83 @@
 import { useEffect, useState, useRef } from 'react'
-import { socket } from '../services/socket'
+import { socket } from '@/services/socket'
+import { Card, CardContent, CardFooter } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Badge } from '@/components/ui/Badge'
 
 function BasicChat() {
   const messageRef = useRef()
   const [messages, setMessages] = useState([])
-
-  const handler = (data) => {
-    setMessages((previous) => {
-      return [
-        ...previous,
-        { id: previous.length, message: data.message, user: data.user },
-      ]
-    })
-  }
+  const [isConnected, setIsConnected] = useState(socket.connected)
 
   useEffect(() => {
-    socket.on('message', handler)
+    const onConnect = () => setIsConnected(true)
+    const onDisconnect = () => setIsConnected(false)
+    const onMessage = (data) => {
+      setMessages((prev) => [
+        ...prev,
+        { id: prev.length, message: data.message, user: data.user },
+      ])
+    }
+
+    socket.on('connect', onConnect)
+    socket.on('disconnect', onDisconnect)
+    socket.on('message', onMessage)
 
     return () => {
-      socket.off('message', handler)
+      socket.off('connect', onConnect)
+      socket.off('disconnect', onDisconnect)
+      socket.off('message', onMessage)
     }
   }, [])
 
   const sendMessage = () => {
+    if (!messageRef.current.value.trim()) return
+
     socket.emit('message', {
       message: messageRef.current.value,
       room: 'channel:#general',
     })
+    messageRef.current.value = ''
   }
 
   return (
-    <div className="rounded-lg border border-[#d8dfd4] bg-white p-6 shadow-sm">
-      <ul className="rounded-t-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
-        {messages.map((m) => (
-          <li key={m.id}>
-            {m.user.username}: {m.message}
-          </li>
-        ))}
-      </ul>
-      <div className="rounded-b-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
-        <input
-          className="mt-2 rounded-md border border-[#cbd5c5] px-3 py-2 text-base transition outline-none focus:border-[#2f7d61] focus:ring-2 focus:ring-[#2f7d61]/20"
-          id="message"
-          placeholder="message..."
-          ref={messageRef}
-        />
-        <button
-          className='className="w-full disabled:bg-[#91a69b]" rounded-md bg-[#2f7d61] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#276a52] disabled:cursor-not-allowed'
-          onClick={sendMessage}
-        >
-          Send message
-        </button>
+    <Card className="mt-6">
+      <div className="flex items-center justify-between border-b border-gray-900/10 px-4 py-4 sm:px-8">
+        <h2 className="text-base font-semibold leading-7 text-gray-900">Live Chat</h2>
+        <Badge variant={isConnected ? 'success' : 'error'}>
+          {isConnected ? 'Connected' : 'Disconnected'}
+        </Badge>
       </div>
-    </div>
+      
+      <CardContent className="h-64 overflow-y-auto">
+        {messages.length === 0 ? (
+          <p className="text-sm text-gray-500 italic text-center py-4">No messages yet. Say hello!</p>
+        ) : (
+          <ul className="space-y-2">
+            {messages.map((m) => (
+              <li key={m.id} className="text-sm">
+                <span className="font-semibold text-blue-600">{m.user.username}: </span>
+                <span className="text-gray-700">{m.message}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+
+      <CardFooter className="flex gap-2">
+        <Input
+          id="message"
+          placeholder="Type a message..."
+          ref={messageRef}
+          className="flex-1"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') sendMessage()
+          }}
+        />
+        <Button onClick={sendMessage}>Send</Button>
+      </CardFooter>
+    </Card>
   )
 }
 

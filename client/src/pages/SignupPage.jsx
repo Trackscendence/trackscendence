@@ -175,7 +175,12 @@ const SignupPage = () => {
 
       {showTerms && (
 	    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-		  <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-6">
+		  <div 
+		    role="dialog"
+			aria-modal="true"
+			aria-labelledby="terms-dialog-title"
+		    className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-6"
+          >
 		    <h2 className="mb-4 text-xl font-semibold">
 			  Terms of Service
 			</h2>
@@ -206,7 +211,12 @@ const SignupPage = () => {
 
       {showPrivacy && (
 	    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-		  <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-6">
+		  <div 
+		    role="dialog"
+			aria-modal="true"
+			aria-labelledby="privacy-dialog-title"
+		    className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-6"
+          >
 		    <h2 className="mb-4 text-xl font-semibold">
 			  Privacy Policy 
 			</h2>

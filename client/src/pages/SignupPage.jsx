@@ -185,15 +185,15 @@ const SignupPage = () => {
 			  Terms of Service
 			</h2>
 			<p>
-			  In order to use the Trackscendence website you much agree to the terms of service you are reading.
+			  In order to use the Trackscendence website you must agree to the terms of service you are reading.
 
-			  You agree not to temper with or otherwise hack the site in any way.
+			  You agree not to tamper with or otherwise hack the site in any way.
 
 			  You must agree to only use the website in the manner it was intended to be used, which is playing the Uno! card game, making friends, viewing profiles, chatting to other user on the website and other obvious uses of the website.
 
 			  You must agree not to use this website to commit any crimes, harass others, or otherwise conduct malicious activities.
 
-			  Uno! is not owned by any of the creator of this website and this website is not meant to be monetized in anyway. This website is only meant for educationational purposes.
+			  Uno! is not owned by any of the creator of this website and this website is not meant to be monetized in anyway. This website is meant for educational purposes only.
 			</p>
 			<button
 			  type="button"
@@ -221,9 +221,9 @@ const SignupPage = () => {
 			  Privacy Policy 
 			</h2>
 			<p>
-			  In order to use the Trackscendence website you much agree to the Privacy Policy you are reading.
+			  In order to use the Trackscendence website you must agree to the Privacy Policy you are reading.
 
-			  We do NOT share, give, or sell Trackscendence website user data in way shape or form. Emails used for authenication users at signup and possibly emailing uses about website updates. Chats that are made public are public, but private message are not available to anyone other than the user that wrote them and who they personally share them with. 
+			  We do NOT share, give, or sell Trackscendence website user data in way shape or form. Emails used for authentication users at signup and possibly emailing uses about website updates. Chats that are made public are public, but private chat messages are not available to anyone other than the user that wrote them and who they personally share them with. 
 			</p>
 			<button
 			  type="button"

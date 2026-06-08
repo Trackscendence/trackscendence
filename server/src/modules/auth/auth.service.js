@@ -1,4 +1,3 @@
-
 const bcrypt = require('bcrypt')
 const { Prisma } = require('@prisma/client')
 const BadRequestException = require('#exceptions/bad-request.exception')
@@ -39,7 +38,8 @@ const toSafeAuthUser = (user) => ({
 
 const validateRegistrationInput = ({ email, username, password } = {}) => {
   const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
-  const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : ''
+  const normalizedUsername =
+    typeof username === 'string' ? username.trim().toLowerCase() : ''
   const normalizedPassword = typeof password === 'string' ? password : ''
   const details = []
 
@@ -56,9 +56,10 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
   } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
     details.push(`Username must be at most ${USERNAME_MAX_LENGTH} characters`)
   } else if (!USERNAME_REGEX.test(normalizedUsername)) {
-    details.push(`Username must only contain letters, numbers, underscores, and hyphens`)
+    details.push(
+      `Username must only contain letters, numbers, underscores, and hyphens`,
+    )
   }
-
 
   if (!normalizedPassword) {
     details.push('Password is required')
@@ -163,7 +164,7 @@ const login = async (payload) => {
   }
 
   if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
-  	throw new UnauthorizedException('Account temporarily locked')
+    throw new UnauthorizedException('Account temporarily locked')
   }
 
   const isValidPassword = await bcrypt.compare(password, user.passwordHash)
@@ -171,25 +172,23 @@ const login = async (payload) => {
   if (!isValidPassword) {
     const attempts = user.failedLoginAttempts + 1
 
-	if (attempts >= MAX_LOGIN_ATTEMPTS) {
-	  await authRepository.updateUser(user.id, {
-	    failedLoginAttempts: 0,
-		lockedUntil: new Date(
-		  Date.now() + LOCK_DURATION_MINUTES * 60 * 1000
-		),
-	  })
-	} else {
-	  await authRepository.updateUser(user.id, {
-	    failedLoginAttempts: attempts,
-	  })
-	}
+    if (attempts >= MAX_LOGIN_ATTEMPTS) {
+      await authRepository.updateUser(user.id, {
+        failedLoginAttempts: 0,
+        lockedUntil: new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000),
+      })
+    } else {
+      await authRepository.updateUser(user.id, {
+        failedLoginAttempts: attempts,
+      })
+    }
 
     throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
   }
 
   await authRepository.updateUser(user.id, {
     failedLoginAttempts: 0,
-	lockedUntil: null,
+    lockedUntil: null,
   })
 
   const token = authToken.signAccessToken(user)

@@ -2,7 +2,7 @@ const prisma = require('#db/prisma')
 
 const updateUser = (userId, data) => {
   return prisma.user.update({
-    where: {id: userId },
+    where: { id: userId },
     data,
   })
 }

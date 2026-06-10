@@ -16,10 +16,16 @@ services:
       dockerfile: Dockerfile
     env_file: .env
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_SECURE: 'false'
+      SMTP_FROM: 'Trackscendence <no-reply@trackscendence.local>'
     depends_on:
       database:
         condition: service_healthy
+      mailpit:
+        condition: service_started
 
   client:
     build:
@@ -29,6 +35,11 @@ services:
       - '${CLIENT_PORT}:8080'
     depends_on:
       - server
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - '8025:8025'
 
 volumes:
   pgdata:

@@ -1,41 +1,24 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import useAuth from '../context/useAuth'
+import { Link } from 'react-router-dom'
+import { requestPasswordReset } from '../services/auth'
 
-const SignupPage = () => {
-  const navigate = useNavigate()
-  const { register } = useAuth()
-  const [form, setForm] = useState({
-    email: '',
-    username: '',
-    password: '',
-  })
+const ForgotPasswordPage = () => {
+  const [email, setEmail] = useState('')
+  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [validationDetails, setValidationDetails] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleChange = (event) => {
-    setError('')
-    setValidationDetails([])
-
-    setForm((currentForm) => ({
-      ...currentForm,
-      [event.target.name]: event.target.value,
-    }))
-  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
     setValidationDetails([])
+    setMessage('')
     setIsSubmitting(true)
 
     try {
-      await register(form)
-      navigate('/login', {
-        replace: true,
-        state: { message: 'Account created. Sign in to continue.' },
-      })
+      const result = await requestPasswordReset({ email })
+      setMessage(result.message)
     } catch (requestError) {
       const details = Array.isArray(requestError.payload?.details)
         ? requestError.payload.details
@@ -55,8 +38,14 @@ const SignupPage = () => {
           <p className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase">
             Trackscendence
           </p>
-          <h1 className="mt-2 text-2xl font-semibold">Create your account</h1>
+          <h1 className="mt-2 text-2xl font-semibold">Forgot password</h1>
         </div>
+
+        {message ? (
+          <p className="mb-4 rounded-md border border-[#bbd2c3] bg-[#eef7f1] px-3 py-2 text-sm text-[#24563f]">
+            {message}
+          </p>
+        ) : null}
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="block">
@@ -66,41 +55,14 @@ const SignupPage = () => {
               name="email"
               type="email"
               autoComplete="email"
-              value={form.email}
-              onChange={handleChange}
+              value={email}
+              onChange={(event) => {
+                setError('')
+                setValidationDetails([])
+                setEmail(event.target.value)
+              }}
               required
             />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium">Username</span>
-            <input
-              className="mt-2 w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-base transition outline-none focus:border-[#2f7d61] focus:ring-2 focus:ring-[#2f7d61]/20"
-              name="username"
-              type="text"
-              autoComplete="username"
-              value={form.username}
-              onChange={handleChange}
-              required
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium">Password</span>
-            <input
-              className="mt-2 w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-base transition outline-none focus:border-[#2f7d61] focus:ring-2 focus:ring-[#2f7d61]/20"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              minLength={8}
-              value={form.password}
-              onChange={handleChange}
-              required
-            />
-            <p className="mt-2 text-xs text-[#50635a]">
-              Use 8+ characters with upper/lowercase letters, a number, and a
-              symbol.
-            </p>
           </label>
 
           {validationDetails.length > 0 ? (
@@ -122,12 +84,12 @@ const SignupPage = () => {
             type="submit"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Creating account' : 'Sign up'}
+            {isSubmitting ? 'Sending request' : 'Send reset instructions'}
           </button>
         </form>
 
         <p className="mt-5 text-center text-sm text-[#50635a]">
-          Already registered?{' '}
+          Remembered your password?{' '}
           <Link
             className="font-semibold text-[#2f6f86] hover:text-[#24586a]"
             to="/login"
@@ -140,4 +102,4 @@ const SignupPage = () => {
   )
 }
 
-export default SignupPage
+export default ForgotPasswordPage

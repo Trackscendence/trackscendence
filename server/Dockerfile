@@ -32,4 +32,4 @@ COPY --from=builder /app/prisma ./prisma
 ARG PORT=3001
 EXPOSE ${PORT}
 
-CMD ["node", "index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node index.js"]

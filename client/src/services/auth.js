@@ -79,6 +79,13 @@ export const login = (payload) => {
   })
 }
 
+export const completeTwoFactorLogin = (payload) => {
+  return request('/auth/login/2fa', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
 export const fetchCurrentUser = (token) => {
   return request('/auth/me', { token })
 }
@@ -109,5 +116,34 @@ export const resetPassword = (payload) => {
   return request('/auth/reset-password', {
     method: 'POST',
     body: payload,
+  })
+}
+
+export const setupTwoFactor = (token) => {
+  return request('/auth/two-factor/setup', {
+    method: 'POST',
+    token,
+  })
+}
+
+export const confirmTwoFactorSetup = (payload, token) => {
+  return request('/auth/two-factor/confirm', {
+    method: 'POST',
+    body: payload,
+    token,
+  })
+}
+
+export const disableTwoFactor = (token) => {
+  return request('/auth/two-factor/disable', {
+    method: 'POST',
+    token,
+  })
+}
+
+export const regenerateTwoFactor = (token) => {
+  return request('/auth/two-factor/regenerate', {
+    method: 'POST',
+    token,
   })
 }

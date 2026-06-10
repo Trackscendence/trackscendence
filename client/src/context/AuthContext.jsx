@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import AuthContext from './auth-context'
 import {
   AUTH_TOKEN_KEY,
+  completeTwoFactorLogin as completeTwoFactorLoginRequest,
   fetchCurrentUser,
   login as loginRequest,
   logout as logoutRequest,
@@ -14,6 +15,18 @@ const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => getStoredToken())
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(() => Boolean(getStoredToken()))
+
+  const applyAuthenticatedResult = useCallback((result) => {
+    if (!result?.token || !result?.user) {
+      return result
+    }
+
+    localStorage.setItem(AUTH_TOKEN_KEY, result.token)
+    setToken(result.token)
+    setUser(result.user)
+
+    return result
+  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -77,15 +90,39 @@ const AuthProvider = ({ children }) => {
     return registerRequest(payload)
   }, [])
 
-  const login = useCallback(async (payload) => {
-    const result = await loginRequest(payload)
+  const login = useCallback(
+    async (payload) => {
+      const result = await loginRequest(payload)
 
-    localStorage.setItem(AUTH_TOKEN_KEY, result.token)
-    setToken(result.token)
-    setUser(result.user)
+      return applyAuthenticatedResult(result)
+    },
+    [applyAuthenticatedResult],
+  )
 
-    return result
-  }, [])
+  const completeTwoFactorLogin = useCallback(
+    async (payload) => {
+      const result = await completeTwoFactorLoginRequest(payload)
+
+      return applyAuthenticatedResult(result)
+    },
+    [applyAuthenticatedResult],
+  )
+
+  const refreshUser = useCallback(async () => {
+    const activeToken = token || getStoredToken()
+
+    if (!activeToken) {
+      setToken(null)
+      setUser(null)
+      return null
+    }
+
+    const { user: currentUser } = await fetchCurrentUser(activeToken)
+    setToken(activeToken)
+    setUser(currentUser)
+
+    return currentUser
+  }, [token])
 
   const logout = useCallback(async () => {
     const activeToken = token || getStoredToken()
@@ -107,13 +144,24 @@ const AuthProvider = ({ children }) => {
     () => ({
       isAuthenticated: Boolean(user && token),
       isLoading,
+      completeTwoFactorLogin,
       login,
       logout,
+      refreshUser,
       register,
       token,
       user,
     }),
-    [isLoading, login, logout, register, token, user],
+    [
+      completeTwoFactorLogin,
+      isLoading,
+      login,
+      logout,
+      refreshUser,
+      register,
+      token,
+      user,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

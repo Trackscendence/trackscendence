@@ -6,6 +6,7 @@ import SignupPage from './pages/SignupPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
+import SettingsPage from './pages/SettingsPage'
 
 const App = () => {
   return (
@@ -16,6 +17,11 @@ const App = () => {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/change-password" element={<ChangePasswordPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route
+          path="/two-factor"
+          element={<Navigate to="/settings" replace />}
+        />
         <Route path="/" element={<SessionPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

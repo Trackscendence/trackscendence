@@ -45,9 +45,9 @@ const SessionPage = () => {
             <button
               className="rounded-md border border-[#cbd5c5] px-4 py-2 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
               type="button"
-              onClick={() => navigate('/change-password')}
+              onClick={() => navigate('/settings')}
             >
-              Change password
+              Settings
             </button>
             <button
               className="rounded-md border border-[#cbd5c5] px-4 py-2 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
@@ -71,6 +71,18 @@ const SessionPage = () => {
             <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
               <p className="text-sm font-medium text-[#617267]">Role</p>
               <p className="mt-1 text-base font-semibold">{user.role}</p>
+            </div>
+            <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
+              <p className="text-sm font-medium text-[#617267]">
+                Two-factor authentication
+              </p>
+              <p className="mt-1 text-base font-semibold">
+                {user.twoFactorEnabled
+                  ? 'Enabled'
+                  : user.twoFactorSetupPending
+                    ? 'Setup pending'
+                    : 'Disabled'}
+              </p>
             </div>
           </div>
         </div>

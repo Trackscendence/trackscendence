@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import useAuth from '../context/useAuth'
+import { AUTH_TOKEN_KEY, changePassword } from '../services/auth'
 
-const SignupPage = () => {
+const ChangePasswordPage = () => {
   const navigate = useNavigate()
-  const { register } = useAuth()
+  const { token } = useAuth()
   const [form, setForm] = useState({
-    email: '',
-    username: '',
-    password: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   })
   const [error, setError] = useState('')
   const [validationDetails, setValidationDetails] = useState([])
@@ -28,14 +29,24 @@ const SignupPage = () => {
     event.preventDefault()
     setError('')
     setValidationDetails([])
+
+    if (form.newPassword !== form.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      await register(form)
-      navigate('/login', {
-        replace: true,
-        state: { message: 'Account created. Sign in to continue.' },
-      })
+      await changePassword(
+        {
+          currentPassword: form.currentPassword,
+          newPassword: form.newPassword,
+        },
+        token,
+      )
+      localStorage.removeItem(AUTH_TOKEN_KEY)
+      window.location.replace('/login?passwordChanged=1')
     } catch (requestError) {
       const details = Array.isArray(requestError.payload?.details)
         ? requestError.payload.details
@@ -55,45 +66,31 @@ const SignupPage = () => {
           <p className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase">
             Trackscendence
           </p>
-          <h1 className="mt-2 text-2xl font-semibold">Create your account</h1>
+          <h1 className="mt-2 text-2xl font-semibold">Change password</h1>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="block">
-            <span className="text-sm font-medium">Email</span>
+            <span className="text-sm font-medium">Current password</span>
             <input
               className="mt-2 w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-base transition outline-none focus:border-[#2f7d61] focus:ring-2 focus:ring-[#2f7d61]/20"
-              name="email"
-              type="email"
-              autoComplete="email"
-              value={form.email}
+              name="currentPassword"
+              type="password"
+              autoComplete="current-password"
+              value={form.currentPassword}
               onChange={handleChange}
               required
             />
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium">Username</span>
+            <span className="text-sm font-medium">New password</span>
             <input
               className="mt-2 w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-base transition outline-none focus:border-[#2f7d61] focus:ring-2 focus:ring-[#2f7d61]/20"
-              name="username"
-              type="text"
-              autoComplete="username"
-              value={form.username}
-              onChange={handleChange}
-              required
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium">Password</span>
-            <input
-              className="mt-2 w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-base transition outline-none focus:border-[#2f7d61] focus:ring-2 focus:ring-[#2f7d61]/20"
-              name="password"
+              name="newPassword"
               type="password"
               autoComplete="new-password"
-              minLength={8}
-              value={form.password}
+              value={form.newPassword}
               onChange={handleChange}
               required
             />
@@ -101,6 +98,19 @@ const SignupPage = () => {
               Use 8+ characters with upper/lowercase letters, a number, and a
               symbol.
             </p>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium">Confirm new password</span>
+            <input
+              className="mt-2 w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-base transition outline-none focus:border-[#2f7d61] focus:ring-2 focus:ring-[#2f7d61]/20"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              required
+            />
           </label>
 
           {validationDetails.length > 0 ? (
@@ -122,22 +132,20 @@ const SignupPage = () => {
             type="submit"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Creating account' : 'Sign up'}
+            {isSubmitting ? 'Updating password' : 'Change password'}
           </button>
         </form>
 
-        <p className="mt-5 text-center text-sm text-[#50635a]">
-          Already registered?{' '}
-          <Link
-            className="font-semibold text-[#2f6f86] hover:text-[#24586a]"
-            to="/login"
-          >
-            Log in
-          </Link>
-        </p>
+        <button
+          className="mt-5 w-full rounded-md border border-[#cbd5c5] bg-transparent px-4 py-2 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+          type="button"
+          onClick={() => navigate('/')}
+        >
+          Back to session
+        </button>
       </section>
     </main>
   )
 }
 
-export default SignupPage
+export default ChangePasswordPage

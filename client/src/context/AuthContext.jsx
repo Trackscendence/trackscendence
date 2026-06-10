@@ -53,6 +53,26 @@ const AuthProvider = ({ children }) => {
     }
   }, [])
 
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      localStorage.removeItem(AUTH_TOKEN_KEY)
+      setToken(null)
+      setUser(null)
+    }
+
+    window.addEventListener(
+      'trackscendence:session-expired',
+      handleSessionExpired,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'trackscendence:session-expired',
+        handleSessionExpired,
+      )
+    }
+  }, [])
+
   const register = useCallback((payload) => {
     return registerRequest(payload)
   }, [])

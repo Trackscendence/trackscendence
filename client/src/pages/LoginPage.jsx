@@ -13,7 +13,13 @@ const LoginPage = () => {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const from = location.state?.from?.pathname || '/'
-  const message = location.state?.message
+  const params = new URLSearchParams(location.search)
+  const passwordChanged = params.get('passwordChanged') === '1'
+  const message =
+    location.state?.message ||
+    (passwordChanged
+      ? 'Password updated successfully. Please log in again.'
+      : '')
 
   if (isLoading) {
     return (
@@ -114,6 +120,14 @@ const LoginPage = () => {
             to="/signup"
           >
             Create an account
+          </Link>
+        </p>
+        <p className="mt-3 text-center text-sm text-[#50635a]">
+          <Link
+            className="font-semibold text-[#2f6f86] hover:text-[#24586a]"
+            to="/forgot-password"
+          >
+            Forgot your password?
           </Link>
         </p>
       </section>

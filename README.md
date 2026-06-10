@@ -82,12 +82,15 @@ This starts:
 - Backend: `http://localhost:<SERVER_PORT>` (default `3001`)
 - Database: `localhost:<DB_PORT>` (default `5432`)
 - Adminer: `http://localhost:8081`
+- Mailpit: `http://localhost:8025`
 
 This mode uses hot reload:
 
 - The client container runs Vite.
 - The server container runs Node with `--watch`.
+- The server applies pending Prisma migrations before it starts accepting requests.
 - The database runs in Docker.
+- Password reset emails are delivered to Mailpit.
 
 Nginx is not used in development mode.
 
@@ -112,6 +115,8 @@ http://localhost:8080
 ```
 
 In this mode, Nginx serves the frontend and proxies backend requests under `/api/*`.
+The server also applies pending Prisma migrations on startup, which bootstraps a fresh database volume automatically.
+Password reset emails are delivered to Mailpit at `http://localhost:8025`.
 
 Other useful commands:
 
@@ -135,6 +140,9 @@ This runs the frontend and backend directly on your machine:
 - Backend: `http://localhost:3001`
 
 You still need a reachable PostgreSQL database and a valid `DATABASE_URL`.
+
+For non-Docker development, password reset email delivery can use any SMTP provider by setting `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and optionally `PASSWORD_RESET_URL_BASE` in `.env`.
+If you open the app through a different public origin such as `127.0.0.1`, a tunnel URL, or a staging domain, set `APP_BASE_URL` or `PASSWORD_RESET_URL_BASE` to that exact frontend URL so reset links point to the right place.
 
 ### Backend API
 

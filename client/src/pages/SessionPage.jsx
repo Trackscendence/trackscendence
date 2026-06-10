@@ -1,8 +1,9 @@
+import { useEffect, useEffectEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
 import useAuth from '../context/useAuth'
 import BasicChat from '../components/BasicChat'
 import { socket } from '../services/socket'
+
 const SessionPage = () => {
   const navigate = useNavigate()
   const { logout, user, token } = useAuth()
@@ -12,15 +13,23 @@ const SessionPage = () => {
     navigate('/login', { replace: true })
   }
 
+  const handleSocketToken = useEffectEvent((callback) => {
+    callback(token)
+  })
+
   useEffect(() => {
+    const onToken = (callback) => {
+      handleSocketToken(callback)
+    }
+
     socket.connect()
-    socket.once('token', (callback) => {
-      callback(token)
-    })
+    socket.on('token', onToken)
+
     return () => {
+      socket.off('token', onToken)
       socket.disconnect()
     }
-  }, [token])
+  }, [])
 
   return (
     <main className="min-h-screen bg-[#f4f7f2] text-[#1f2d28]">
@@ -32,13 +41,22 @@ const SessionPage = () => {
             </p>
             <h1 className="text-xl font-semibold">Session</h1>
           </div>
-          <button
-            className="rounded-md border border-[#cbd5c5] px-4 py-2 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
-            type="button"
-            onClick={handleLogout}
-          >
-            Log out
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              className="rounded-md border border-[#cbd5c5] px-4 py-2 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+              type="button"
+              onClick={() => navigate('/change-password')}
+            >
+              Change password
+            </button>
+            <button
+              className="rounded-md border border-[#cbd5c5] px-4 py-2 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+              type="button"
+              onClick={handleLogout}
+            >
+              Log out
+            </button>
+          </div>
         </div>
       </header>
 

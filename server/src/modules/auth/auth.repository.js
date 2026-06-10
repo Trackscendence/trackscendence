@@ -5,11 +5,13 @@ const safeUserSelect = {
   email: true,
   username: true,
   role: true,
+  twoFactorEnabled: true,
 }
 
 const tokenUserSelect = {
   ...safeUserSelect,
   tokenVersion: true,
+  twoFactorPendingSecretCiphertext: true,
 }
 
 const registeredUserSelect = {
@@ -23,9 +25,15 @@ const passwordResetFields = {
   passwordResetTokenExpiry: true,
 }
 
+const twoFactorFields = {
+  twoFactorSecretCiphertext: true,
+  twoFactorPendingSecretCiphertext: true,
+}
+
 const authUserSelect = {
   ...tokenUserSelect,
   passwordHash: true,
+  ...twoFactorFields,
 }
 
 const authUserWithResetSelect = {
@@ -165,18 +173,111 @@ const withLockedPasswordResetToken = (tokenId, callback) => {
   })
 }
 
+const replacePendingTwoFactorSetup = async (
+  id,
+  pendingSecretCiphertext,
+  recoveryCodeHashes,
+) => {
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id },
+      data: {
+        twoFactorPendingSecretCiphertext: pendingSecretCiphertext,
+      },
+    })
+
+    await tx.userTwoFactorRecoveryCode.deleteMany({
+      where: {
+        userId: id,
+        isPending: true,
+      },
+    })
+
+    await tx.userTwoFactorRecoveryCode.createMany({
+      data: recoveryCodeHashes.map((codeHash) => ({
+        userId: id,
+        codeHash,
+        isPending: true,
+      })),
+    })
+  })
+}
+
+const activatePendingTwoFactorSetup = async (id, activeSecretCiphertext) => {
+  await prisma.$transaction(async (tx) => {
+    await tx.userTwoFactorRecoveryCode.deleteMany({
+      where: {
+        userId: id,
+        isPending: false,
+      },
+    })
+
+    await tx.userTwoFactorRecoveryCode.updateMany({
+      where: {
+        userId: id,
+        isPending: true,
+      },
+      data: {
+        isPending: false,
+      },
+    })
+
+    await tx.user.update({
+      where: { id },
+      data: {
+        twoFactorEnabled: true,
+        twoFactorSecretCiphertext: activeSecretCiphertext,
+        twoFactorPendingSecretCiphertext: null,
+      },
+    })
+  })
+}
+
+const clearTwoFactorById = async (id) => {
+  await prisma.$transaction(async (tx) => {
+    await tx.userTwoFactorRecoveryCode.deleteMany({
+      where: { userId: id },
+    })
+
+    await tx.user.update({
+      where: { id },
+      data: {
+        twoFactorEnabled: false,
+        twoFactorSecretCiphertext: null,
+        twoFactorPendingSecretCiphertext: null,
+      },
+    })
+  })
+}
+
+const consumeRecoveryCode = async (userId, codeHash) => {
+  const result = await prisma.userTwoFactorRecoveryCode.deleteMany({
+    where: {
+      userId,
+      codeHash,
+      isPending: false,
+    },
+  })
+
+  return result.count > 0
+}
+
 module.exports = {
+  activatePendingTwoFactorSetup,
+  clearPasswordResetToken,
+  clearTwoFactorById,
+  consumeRecoveryCode,
   createUser,
+  findAuthById,
   findByEmail,
-  findByUsername,
   findByIdentifier,
   findByPasswordResetTokenId,
-  findAuthById,
+  findByUsername,
   findSafeById,
+  findTokenUserById,
+  replacePendingTwoFactorSetup,
   updatePasswordById,
   updatePasswordByIdInTransaction,
   updatePasswordResetToken,
-  clearPasswordResetToken,
-  findTokenUserById,
   withLockedPasswordResetToken,
 }

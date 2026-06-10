@@ -13,15 +13,30 @@ enum Role {
 }
 
 model User {
-  id                      Int      @id @default(autoincrement())
-  email                   String   @unique
-  username                String   @unique
-  passwordHash            String
-  passwordResetTokenId    String?  @unique
-  passwordResetTokenHash  String?
-  passwordResetTokenExpiry DateTime?
-  tokenVersion            Int      @default(0)
-  role                    Role     @default(USER)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                            Int                         @id @default(autoincrement())
+  email                         String                      @unique
+  username                      String                      @unique
+  passwordHash                  String
+  passwordResetTokenId          String?                     @unique
+  passwordResetTokenHash        String?
+  passwordResetTokenExpiry      DateTime?
+  tokenVersion                  Int                         @default(0)
+  twoFactorEnabled              Boolean                     @default(false)
+  twoFactorSecretCiphertext     String?
+  twoFactorPendingSecretCiphertext String?
+  role                          Role                        @default(USER)
+  twoFactorRecoveryCodes        UserTwoFactorRecoveryCode[]
+  createdAt                     DateTime                    @default(now())
+  updatedAt                     DateTime                    @updatedAt
+}
+
+model UserTwoFactorRecoveryCode {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  codeHash  String   @unique
+  isPending Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isPending])
 }

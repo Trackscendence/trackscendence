@@ -1,7 +1,7 @@
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useAuth from '@/context/useAuth'
 import { useForm } from '@/hooks/useForm'
-import { AuthLayout } from '@/layouts/AuthLayout'
+import { AuthLayout } from '@/layouts'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'

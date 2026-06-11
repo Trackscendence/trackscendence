@@ -12,7 +12,7 @@ const SignupPage = () => {
 		password: '',
 	})
 	const [error, setError] = useState('')
-	const [fieldErrors, setFieldErrors] = useState('') //
+	const [fieldErrors, setFieldErrors] = useState({})
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	const handleChange = (event) => {
@@ -24,8 +24,9 @@ const SignupPage = () => {
 
 	const handleSubmit = async (event) => {
 		event.preventDefault()
+
 		setError('')
-		setIsSubmitting(true)
+		setFieldErrors({})
 
 		const validation = validateSignupInput(form)
 
@@ -69,6 +70,12 @@ const SignupPage = () => {
 							onChange={handleChange}
 							required
 						/>
+
+						{fieldErrors.email ? (
+						  <p className="mt-1 text-sm text-[#8a321f]">
+						    {fieldErrors.email}
+						  </p>
+						) : null}
 					</label>
 
 					<label className="block">
@@ -82,6 +89,12 @@ const SignupPage = () => {
 							onChange={handleChange}
 							required
 						/>
+
+						{fieldErrors.username ? (
+						  <p className="mt-1 text-sm text-[#8a321f]">
+						    {fieldErrors.username}
+						  </p>
+						) : null}
 					</label>
 
 					<label className="block">
@@ -96,6 +109,12 @@ const SignupPage = () => {
 							onChange={handleChange}
 							required
 						/>
+
+						{fieldErrors.password ? (
+						  <p className="mt-1 text-sm text-[#8a321f]">
+						    {fieldErrors.password}
+						  </p>
+						) : null}
 					</label>
 
 					{error ? (

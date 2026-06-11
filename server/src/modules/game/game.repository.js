@@ -20,7 +20,7 @@ const saveGameResult = async ({ startedAt, endedAt, status, players }) => {
     )
   }
 
-  // Use a nested write to ensure both the Game and GamePlayers are created transactionally
+  // Use a nested write to ensure both the Game and GamePlayers are created in a single transaction
   // and efficiently in a single database round-trip.
   const game = await prisma.game.create({
     data: {

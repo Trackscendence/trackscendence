@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import useAuthStore from './store/useAuthStore'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import SessionPage from './pages/SessionPage'
@@ -8,6 +10,10 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 
 const App = () => {
+  useEffect(() => {
+    useAuthStore.getState().init()
+  }, [])
+
   return (
     <Routes>
       <Route path="/signup" element={<SignupPage />} />

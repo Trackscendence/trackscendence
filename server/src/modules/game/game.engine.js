@@ -127,8 +127,14 @@ class UnoEngine {
     }
     // If first card is Wild, pick a random starting color to prevent getting stuck
     if (firstCard.color === COLORS.WILD) {
-      const standardColors = [COLORS.RED, COLORS.YELLOW, COLORS.GREEN, COLORS.BLUE]
-      this.currentColor = standardColors[Math.floor(Math.random() * standardColors.length)]
+      const standardColors = [
+        COLORS.RED,
+        COLORS.YELLOW,
+        COLORS.GREEN,
+        COLORS.BLUE,
+      ]
+      this.currentColor =
+        standardColors[Math.floor(Math.random() * standardColors.length)]
     }
   }
 
@@ -194,7 +200,11 @@ class UnoEngine {
       if (!declaredColor) {
         throw new Error('Wild card requires a declared color')
       }
-      if (![COLORS.RED, COLORS.YELLOW, COLORS.GREEN, COLORS.BLUE].includes(declaredColor)) {
+      if (
+        ![COLORS.RED, COLORS.YELLOW, COLORS.GREEN, COLORS.BLUE].includes(
+          declaredColor,
+        )
+      ) {
         throw new Error('Invalid declared color')
       }
     }

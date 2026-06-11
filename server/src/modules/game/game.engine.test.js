@@ -1,5 +1,5 @@
-const UnoEngine = require('./src/modules/game/game.engine')
-const { COLORS } = require('./src/modules/game/game.constants')
+const UnoEngine = require('./game.engine')
+const { COLORS } = require('./game.constants')
 
 console.log('=== Testing UNO Engine ===')
 

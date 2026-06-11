@@ -6,7 +6,7 @@ import {
 	login as loginRequest,
 	logout as logoutRequest,
 	register as registerRequest,
-} from '../services/auth'
+} from '../services/auth.routes'
 
 const getStoredToken = () => localStorage.getItem(AUTH_TOKEN_KEY)
 

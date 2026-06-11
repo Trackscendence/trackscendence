@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuth from '../context/useAuth'
+import { validateSignupInput } from '../services/auth.validation'
 
 const SignupPage = () => {
 	const navigate = useNavigate()
@@ -11,6 +12,7 @@ const SignupPage = () => {
 		password: '',
 	})
 	const [error, setError] = useState('')
+	const [fieldError, setFieldError] = useState('') //
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	const handleChange = (event) => {
@@ -23,6 +25,15 @@ const SignupPage = () => {
 	const handleSubmit = async (event) => {
 		event.preventDefault()
 		setError('')
+		setIsSubmitting(true)
+
+		const validation = validateSignupInput(form)
+
+		if (!validation.isValid) {
+		  setFieldError(validation.errors)
+		  return
+		}
+
 		setIsSubmitting(true)
 
 		try {

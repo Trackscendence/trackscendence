@@ -1,13 +1,18 @@
 const bcrypt = require('bcrypt')
 const { Prisma } = require('@prisma/client')
+
 const BadRequestException = require('#exceptions/bad-request.exception')
 const ConflictException = require('#exceptions/conflict.exception')
 const UnauthorizedException = require('#exceptions/unauthorized.exception')
+
 const authRepository = require('#modules/auth/auth.repository')
 const authToken = require('#modules/auth/auth.token')
 
 const PASSWORD_MIN_LENGTH = 8
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+//const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i
+
 const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email/username or password'
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
@@ -28,11 +33,20 @@ const toSafeAuthUser = (user) => ({
 
 /*
 	Validates and normalize registration input.
+		“What must always be true for the system to function correctly?”
 
 	Validation Rules:
-		- email is required and must be a valid email address
+		- email is required and must be a valid email address must:
+			- not be an empty string
+			- contain one '@'
+			- have the Top-Level Domain (TLD) with two or more characters
+			- have a local part, with 
+			- have a domain, which begin with dot
+			- have no whitespace
+			- have reasonable length domain and local part
 		- password is required
 		- password must be at least 8 characters
+		- username
 */
 const validateRegistrationInput = ({ email, username, password } = {}) => {
 	const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
@@ -41,7 +55,7 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
 	const details = []
 
 	if (!normalizedEmail) {
-		details.push('Email is required')
+		details.push('Valid email address is required')
 	} else if (!EMAIL_REGEX.test(normalizedEmail)) {
 		details.push('Email must be valid')
 	}

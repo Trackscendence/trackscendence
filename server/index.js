@@ -14,11 +14,17 @@ const io = new Server(server, {
 
 io.use(async (socket, next) => {
   try {
-    const token =
+    let token =
       socket.handshake.auth?.token || socket.handshake.headers?.authorization
     if (!token) {
       return next(new Error('Authentication error'))
     }
+    
+    // Normalize in case headers.authorization is an array
+    if (Array.isArray(token)) {
+      token = token[0]
+    }
+    
     const extractedToken = token.startsWith('Bearer ')
       ? token.split(' ')[1]
       : token

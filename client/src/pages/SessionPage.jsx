@@ -17,9 +17,12 @@ const SessionPage = () => {
     if (token) {
       socket.auth = { token }
       socket.connect()
+    } else {
+      socket.auth = {}
     }
 
     return () => {
+      socket.auth = {}
       socket.disconnect()
     }
   }, [token])

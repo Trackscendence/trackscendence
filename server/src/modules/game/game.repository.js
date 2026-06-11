@@ -15,7 +15,9 @@ const saveGameResult = async ({ startedAt, endedAt, status, players }) => {
     throw new Error('A game must have at least 2 players to be saved.')
   }
   if (!endedAt) {
-    throw new Error('A completed or abandoned game must have an endedAt timestamp.')
+    throw new Error(
+      'A completed or abandoned game must have an endedAt timestamp.',
+    )
   }
 
   // Use a nested write to ensure both the Game and GamePlayers are created transactionally
@@ -37,7 +39,7 @@ const saveGameResult = async ({ startedAt, endedAt, status, players }) => {
       players: true,
     },
   })
-  
+
   return game
 }
 

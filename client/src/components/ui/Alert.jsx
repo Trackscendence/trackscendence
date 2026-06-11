@@ -1,5 +1,3 @@
-
-
 export function Alert({ children, variant = 'error', className = '' }) {
   const variants = {
     error: 'bg-red-50 text-red-700 border-red-200',
@@ -9,7 +7,10 @@ export function Alert({ children, variant = 'error', className = '' }) {
   }
 
   return (
-    <div className={`rounded-md border p-4 text-sm ${variants[variant]} ${className}`} role="alert">
+    <div
+      className={`rounded-md border p-4 text-sm ${variants[variant]} ${className}`}
+      role="alert"
+    >
       {children}
     </div>
   )

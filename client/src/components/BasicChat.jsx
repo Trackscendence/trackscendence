@@ -44,20 +44,26 @@ function BasicChat() {
   return (
     <Card className="mt-6">
       <div className="flex items-center justify-between border-b border-gray-900/10 px-4 py-4 sm:px-8">
-        <h2 className="text-base font-semibold leading-7 text-gray-900">Live Chat</h2>
+        <h2 className="text-base leading-7 font-semibold text-gray-900">
+          Live Chat
+        </h2>
         <Badge variant={isConnected ? 'success' : 'error'}>
           {isConnected ? 'Connected' : 'Disconnected'}
         </Badge>
       </div>
-      
+
       <CardContent className="h-64 overflow-y-auto">
         {messages.length === 0 ? (
-          <p className="text-sm text-gray-500 italic text-center py-4">No messages yet. Say hello!</p>
+          <p className="py-4 text-center text-sm text-gray-500 italic">
+            No messages yet. Say hello!
+          </p>
         ) : (
           <ul className="space-y-2">
             {messages.map((m) => (
               <li key={m.id} className="text-sm">
-                <span className="font-semibold text-blue-600">{m.user.username}: </span>
+                <span className="font-semibold text-blue-600">
+                  {m.user.username}:{' '}
+                </span>
                 <span className="text-gray-700">{m.message}</span>
               </li>
             ))}

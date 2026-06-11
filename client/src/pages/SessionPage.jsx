@@ -38,7 +38,10 @@ const SessionPage = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Session</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/change-password')}>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/change-password')}
+          >
             Change password
           </Button>
           <Button variant="outline" onClick={handleLogout}>
@@ -53,11 +56,15 @@ const SessionPage = () => {
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
               <p className="text-sm font-medium text-gray-500">Username</p>
-              <p className="mt-1 text-base font-semibold text-gray-900">{user.username}</p>
+              <p className="mt-1 text-base font-semibold text-gray-900">
+                {user.username}
+              </p>
             </div>
             <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
               <p className="text-sm font-medium text-gray-500">Role</p>
-              <p className="mt-1 text-base font-semibold text-gray-900">{user.role}</p>
+              <p className="mt-1 text-base font-semibold text-gray-900">
+                {user.role}
+              </p>
             </div>
           </div>
         </CardContent>

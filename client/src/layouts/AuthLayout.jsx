@@ -1,5 +1,3 @@
-
-
 export const AuthLayout = ({ children, title, subtitle }) => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f4f7f2] px-5 py-10 text-[#1f2d28]">

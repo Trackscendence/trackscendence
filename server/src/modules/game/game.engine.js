@@ -2,6 +2,9 @@ const { COLORS, VALUES, CARD_TYPES } = require('./game.constants')
 
 class UnoEngine {
   constructor(playerIds = []) {
+    if (!Array.isArray(playerIds) || playerIds.length < 2) {
+      throw new Error('A game must have at least 2 players.')
+    }
     this.players = {}
     playerIds.forEach((id) => {
       this.players[id] = [] // Array of cards
@@ -122,11 +125,18 @@ class UnoEngine {
       this.players[currentPlayerId].push(this._drawOne(), this._drawOne())
       this.nextTurn()
     }
-    // If first card is Wild, the first player chooses the color (we default to standard rules where the next player can just play a wild or wait for color choice, but for simplicity here we assume the first player plays first)
+    // If first card is Wild, pick a random starting color to prevent getting stuck
+    if (firstCard.color === COLORS.WILD) {
+      const standardColors = [COLORS.RED, COLORS.YELLOW, COLORS.GREEN, COLORS.BLUE]
+      this.currentColor = standardColors[Math.floor(Math.random() * standardColors.length)]
+    }
   }
 
   _drawOne() {
     if (this.drawPile.length === 0) {
+      if (this.discardPile.length <= 1) {
+        throw new Error('No more cards to draw.')
+      }
       // Reshuffle discard pile into draw pile
       const topCard = this.discardPile.pop()
       this.drawPile = [...this.discardPile]
@@ -180,8 +190,13 @@ class UnoEngine {
       throw new Error('Illegal move: card cannot be played')
     }
 
-    if (cardToPlay.color === COLORS.WILD && !declaredColor) {
-      throw new Error('Wild card requires a declared color')
+    if (cardToPlay.color === COLORS.WILD) {
+      if (!declaredColor) {
+        throw new Error('Wild card requires a declared color')
+      }
+      if (![COLORS.RED, COLORS.YELLOW, COLORS.GREEN, COLORS.BLUE].includes(declaredColor)) {
+        throw new Error('Invalid declared color')
+      }
     }
 
     // Move card from hand to discard pile

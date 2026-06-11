@@ -1,6 +1,10 @@
 const apiBaseUrl = `${(import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')}/v1`
 
 export const AUTH_TOKEN_KEY = 'trackscendence.auth.token'
+const SESSION_ERROR_MESSAGES = new Set([
+  'Authentication required',
+  'Invalid or expired token',
+])
 
 const parseError = async (response) => {
   let body
@@ -40,7 +44,18 @@ const request = async (path, { method = 'GET', body, token } = {}) => {
   })
 
   if (!response.ok) {
-    throw await parseError(response)
+    const error = await parseError(response)
+
+    if (
+      response.status === 401 &&
+      token &&
+      error.code === 'UNAUTHORIZED' &&
+      SESSION_ERROR_MESSAGES.has(error.message)
+    ) {
+      window.dispatchEvent(new CustomEvent('trackscendence:session-expired'))
+    }
+
+    throw error
   }
 
   if (response.status === 204) {
@@ -72,5 +87,27 @@ export const logout = (token) => {
   return request('/auth/logout', {
     method: 'POST',
     token,
+  })
+}
+
+export const changePassword = (payload, token) => {
+  return request('/auth/change-password', {
+    method: 'POST',
+    body: payload,
+    token,
+  })
+}
+
+export const requestPasswordReset = (payload) => {
+  return request('/auth/forgot-password', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export const resetPassword = (payload) => {
+  return request('/auth/reset-password', {
+    method: 'POST',
+    body: payload,
   })
 }

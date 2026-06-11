@@ -1,5 +1,5 @@
+import { useEffect, useEffectEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
 import useAuth from '@/context/useAuth'
 import BasicChat from '@/components/BasicChat'
 import { socket } from '@/services/socket'
@@ -15,23 +15,36 @@ const SessionPage = () => {
     navigate('/login', { replace: true })
   }
 
+  const handleSocketToken = useEffectEvent((callback) => {
+    callback(token)
+  })
+
   useEffect(() => {
+    const onToken = (callback) => {
+      handleSocketToken(callback)
+    }
+
     socket.connect()
-    socket.once('token', (callback) => {
-      callback(token)
-    })
+    socket.on('token', onToken)
+
     return () => {
+      socket.off('token', onToken)
       socket.disconnect()
     }
-  }, [token])
+  }, [])
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Session</h1>
-        <Button variant="outline" onClick={handleLogout}>
-          Log out
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/change-password')}>
+            Change password
+          </Button>
+          <Button variant="outline" onClick={handleLogout}>
+            Log out
+          </Button>
+        </div>
       </div>
 
       <Card>

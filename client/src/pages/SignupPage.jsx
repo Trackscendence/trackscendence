@@ -9,7 +9,6 @@ import { Alert } from '@/components/ui/Alert'
 const SignupPage = () => {
   const navigate = useNavigate()
   const { register } = useAuth()
-
   const { values, error, isSubmitting, handleChange, handleSubmit } = useForm({
     initialValues: { email: '', username: '', password: '' },
     onSubmit: async (formValues) => {

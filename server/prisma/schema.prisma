@@ -55,4 +55,5 @@ model GamePlayer {
   user        User     @relation(fields: [userId], references: [id])
 
   @@unique([gameId, userId])
+  @@index([userId])
 }

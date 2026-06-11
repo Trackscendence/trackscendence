@@ -12,7 +12,7 @@ const SignupPage = () => {
 		password: '',
 	})
 	const [error, setError] = useState('')
-	const [fieldError, setFieldError] = useState('') //
+	const [fieldErrors, setFieldErrors] = useState('') //
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	const handleChange = (event) => {
@@ -30,7 +30,7 @@ const SignupPage = () => {
 		const validation = validateSignupInput(form)
 
 		if (!validation.isValid) {
-		  setFieldError(validation.errors)
+		  setFieldErrors(validation.errors)
 		  return
 		}
 

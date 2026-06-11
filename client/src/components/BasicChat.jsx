@@ -46,7 +46,7 @@ function BasicChat() {
           ref={messageRef}
         />
         <button
-          className='className="w-full disabled:bg-[#91a69b]" rounded-md bg-[#2f7d61] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#276a52] disabled:cursor-not-allowed'
+          className="w-full rounded-md bg-[#2f7d61] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#276a52] disabled:cursor-not-allowed disabled:bg-[#91a69b]"
           onClick={sendMessage}
         >
           Send message

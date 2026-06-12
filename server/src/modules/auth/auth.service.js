@@ -10,14 +10,13 @@ const authToken = require('#modules/auth/auth.token')
 
 const PASSWORD_MIN_LENGTH = 8
 
-//const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i
 
 const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email/username or password'
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
 
-const normalizeEmail = (email) => email.trim().toLowerCase()
+const normalizeEmail = (email) => email.trim()
 const normalizeIdentifier = (identifier) => {
 	const trimmedIdentifier = identifier.trim()
 
@@ -49,8 +48,8 @@ const toSafeAuthUser = (user) => ({
 		- username
 */
 const validateRegistrationInput = ({ email, username, password } = {}) => {
-	const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
-	const normalizedUsername = typeof username === 'string' ? username.trim() : ''
+	const normalizedEmail = typeof email === 'string' ? normalizeEmail(email).trim().toLowerCase() : ''
+	const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : ''
 	const normalizedPassword = typeof password === 'string' ? password : ''
 	const details = []
 
@@ -62,7 +61,14 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
 
 	if (!normalizedUsername) {
 		details.push('Username is required')
-	}
+	} else if (!USERNAME_REGEX.test(normalizedUsername)) {
+        details.username = 'Username cannot start with a number'
+    } else if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
+        details.username = `Username must not be less than ${USERNAME_MIN_LENGTH} characters`
+    } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
+        details.username = `Username must not be more than ${USERNAME_MAX_LENGTH} characters`
+    }
+
 
 	if (!normalizedPassword) {
 		details.push('Password is required')
@@ -101,7 +107,7 @@ const validateLoginInput = ({ identifier, password } = {}) => {
 	const details = []
 
 	if (!normalizedIdentifier) {
-		details.push('Identifier is required')
+		details.push('Email/Username is required')
 	}
 
 	if (!normalizedPassword) {

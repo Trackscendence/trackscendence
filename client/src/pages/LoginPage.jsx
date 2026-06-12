@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useAuth from '../context/useAuth'
+import { validateLoginInput } from '../services/auth.validation'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -11,6 +12,7 @@ const LoginPage = () => {
     password: '',
   })
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const from = location.state?.from?.pathname || '/'
   const message = location.state?.message
@@ -36,11 +38,21 @@ const LoginPage = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+
     setError('')
+	setFieldErrors({})
+
+	const validation = validateLoginInput(form)
+
+	if (!validation.isValid) {
+	  setFieldErrors(validation.errors)
+	  return
+	}
+
     setIsSubmitting(true)
 
     try {
-      await login(form)
+      await login(validation.normalizedData)
       navigate(from, { replace: true })
     } catch (requestError) {
       setError(requestError.message)
@@ -73,6 +85,12 @@ const LoginPage = () => {
               onChange={handleChange}
               required
             />
+			
+			{fieldErrors.identifier ? (
+			  <p className="mt-1 text-sm text-[#8a321f]">
+			    {fieldErrors.identifier}
+			  </p>
+			) : null}
           </label>
 
           <label className="block">
@@ -86,6 +104,12 @@ const LoginPage = () => {
               onChange={handleChange}
               required
             />
+			
+			{fieldErrors.password ? (
+			  <p className="mt-1 text-sm text-[#8a321f]">
+			    {fieldErrors.password}
+			  </p>
+			) : null}
           </label>
 
           {error ? (

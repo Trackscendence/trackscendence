@@ -16,7 +16,13 @@ const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email/username or password'
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
 
-const normalizeEmail = (email) => email.trim()
+const EMAIL_MAX_LENGTH = 254
+const USERNAME_REGEX = /^[A-Za-z][A-Za-z0-9]*$/
+
+const USERNAME_MIN_LENGTH = 6
+const USERNAME_MAX_LENGTH = 32
+
+const normalizeEmail = (email) => email.trim().toLowerCase()
 const normalizeIdentifier = (identifier) => {
 	const trimmedIdentifier = identifier.trim()
 
@@ -48,25 +54,27 @@ const toSafeAuthUser = (user) => ({
 		- username
 */
 const validateRegistrationInput = ({ email, username, password } = {}) => {
-	const normalizedEmail = typeof email === 'string' ? normalizeEmail(email).trim().toLowerCase() : ''
+	const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
 	const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : ''
 	const normalizedPassword = typeof password === 'string' ? password : ''
 	const details = []
 
 	if (!normalizedEmail) {
-		details.push('Valid email address is required')
+	  details.push('Valid email address is required')
 	} else if (!EMAIL_REGEX.test(normalizedEmail)) {
-		details.push('Email must be valid')
-	}
+      details.push('Email must be valid')
+	} else if (normalizedEmail.length > EMAIL_MAX_LENGTH) {
+	  details.push(`Email must not be more than ${EMAIL_MAX_LENGTH}`)
+  }
 
 	if (!normalizedUsername) {
 		details.push('Username is required')
 	} else if (!USERNAME_REGEX.test(normalizedUsername)) {
-        details.username = 'Username cannot start with a number'
+        details.push('Username must start with a letter and contain only eletters and numbers')
     } else if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
-        details.username = `Username must not be less than ${USERNAME_MIN_LENGTH} characters`
+        details.push(`Username must not be less than ${USERNAME_MIN_LENGTH} characters`)
     } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
-        details.username = `Username must not be more than ${USERNAME_MAX_LENGTH} characters`
+        details.push(`Username must not be more than ${USERNAME_MAX_LENGTH} characters`)
     }
 
 

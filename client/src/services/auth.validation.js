@@ -7,6 +7,8 @@ const PASSWORD_MIN_LENGTH = 8
 const USERNAME_MIN_LENGTH = 6
 const USERNAME_MAX_LENGTH = 32
 
+const EMAIL_MAX_LENGTH = 254
+
 const normalizeIdentifier = (identifier) => {
   const trimmedIdentifier = identifier.trim()
 
@@ -26,6 +28,8 @@ export const validateSignupInput = ({email, username, password}) => {
     errors.email = 'Valid email address is requred'
   } else if (!EMAIL_REGEX.test(normalizedEmail)) {
     errors.email = 'Email must be valid'
+  } else if (normalizedEmail.length > EMAIL_MAX_LENGTH) {
+    errors.email = `Email must not be more than ${EMAIL_MAX_LENGTH}`
   }
 
   if (!normalizedUsername) {

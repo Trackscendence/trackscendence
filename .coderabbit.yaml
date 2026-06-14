@@ -1,6 +1,6 @@
-language: "en"
+language: 'en'
 reviews:
-  profile: "chill" # Keeps the tone helpful and encouraging for a student project
+  profile: 'chill' # Keeps the tone helpful and encouraging for a student project
   # Custom prompt to guide the AI on what to look out for in your specific tech stack
   prompt: |
     You are an expert full-stack mentor reviewing a student PERN stack project (Postgres, Express, React, Node). 

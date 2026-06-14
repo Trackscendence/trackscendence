@@ -11,14 +11,6 @@ const systemController = require('#modules/system/system.controller')
 
 const app = express()
 
-app.use(helmet())
-app.use(cors({ origin: config.CORS_ORIGIN }))
-app.use(express.json())
-app.use(requestLogger)
-app.use(rateLimiter)
-
-app.get('/', systemController.root)
-
 app.use('/api/v1', v1Router)
 
 if (config.NODE_ENV === 'development') {

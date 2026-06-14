@@ -158,8 +158,8 @@ The current auth/security implementation includes:
 
 For the detailed 2FA flow, security notes, endpoint list, and local demo steps, see:
 
-- [Two-Factor Authentication Documentation](/home/ogrativ/Projects/trackscendence/docs/two-factor-auth.md)
-- [Postman Auth And 2FA Flow](/home/ogrativ/Projects/trackscendence/docs/postman/README.md)
+- [Two-Factor Authentication Documentation](docs/two-factor-auth.md)
+- [Postman Auth And 2FA Flow](docs/postman/README.md)
 
 ### Backend API
 

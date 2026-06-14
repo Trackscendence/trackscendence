@@ -33,10 +33,11 @@ model User {
 model UserTwoFactorRecoveryCode {
   id        Int      @id @default(autoincrement())
   userId    Int
-  codeHash  String   @unique
+  codeHash  String
   isPending Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, codeHash])
   @@index([userId, isPending])
 }

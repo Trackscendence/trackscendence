@@ -1,6 +1,6 @@
 const crypto = require('crypto')
 const QRCode = require('qrcode')
-const { authenticator } = require('otplib')
+const { generateSecret, generateURI, verifySync } = require('otplib')
 const config = require('#utils/config')
 
 const RECOVERY_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -12,16 +12,20 @@ const QR_CODE_OPTIONS = {
   margin: 1,
   width: 256,
 }
-
-authenticator.options = {
-  step: 30,
-  window: 1,
-}
+const TOTP_PERIOD_SECONDS = 30
+const TOTP_EPOCH_TOLERANCE_SECONDS = TOTP_PERIOD_SECONDS
 
 const getEncryptionKey = () => {
   return crypto
     .createHash('sha256')
     .update(config.TWO_FACTOR_ENCRYPTION_SECRET)
+    .digest()
+}
+
+const getRecoveryCodeHashKey = () => {
+  return crypto
+    .createHash('sha256')
+    .update(`${config.TWO_FACTOR_ENCRYPTION_SECRET}:recovery-code-hash`)
     .digest()
 }
 
@@ -59,7 +63,7 @@ const decryptSecret = (ciphertext) => {
   ]).toString('utf8')
 }
 
-const generateSecret = () => authenticator.generateSecret()
+const generateTotpSecret = () => generateSecret()
 
 const normalizeTotpCode = (code) => {
   return typeof code === 'string' ? code.replace(/\s+/g, '').trim() : ''
@@ -68,13 +72,25 @@ const normalizeTotpCode = (code) => {
 const verifyTotpCode = (secret, code) => {
   const normalizedCode = normalizeTotpCode(code)
 
-  return Boolean(
-    normalizedCode && authenticator.check(normalizedCode, String(secret)),
-  )
+  if (!normalizedCode) {
+    return false
+  }
+
+  return verifySync({
+    secret: String(secret),
+    token: normalizedCode,
+    period: TOTP_PERIOD_SECONDS,
+    epochTolerance: TOTP_EPOCH_TOLERANCE_SECONDS,
+  }).valid
 }
 
 const buildOtpauthUrl = ({ accountName, secret }) => {
-  return authenticator.keyuri(accountName, config.TWO_FACTOR_ISSUER, secret)
+  return generateURI({
+    issuer: config.TWO_FACTOR_ISSUER,
+    label: accountName,
+    period: TOTP_PERIOD_SECONDS,
+    secret,
+  })
 }
 
 const buildQrCodeDataUrl = async (otpauthUrl) => {
@@ -100,7 +116,13 @@ const generateRecoveryCode = () => {
 }
 
 const generateRecoveryCodes = () => {
-  return Array.from({ length: RECOVERY_CODE_COUNT }, generateRecoveryCode)
+  const codes = new Set()
+
+  while (codes.size < RECOVERY_CODE_COUNT) {
+    codes.add(generateRecoveryCode())
+  }
+
+  return Array.from(codes)
 }
 
 const normalizeRecoveryCode = (code) => {
@@ -111,7 +133,7 @@ const normalizeRecoveryCode = (code) => {
 
 const hashRecoveryCode = (code) => {
   return crypto
-    .createHash('sha256')
+    .createHmac('sha256', getRecoveryCodeHashKey())
     .update(normalizeRecoveryCode(code))
     .digest('hex')
 }
@@ -122,7 +144,7 @@ module.exports = {
   decryptSecret,
   encryptSecret,
   generateRecoveryCodes,
-  generateSecret,
+  generateSecret: generateTotpSecret,
   hashRecoveryCode,
   normalizeRecoveryCode,
   normalizeTotpCode,

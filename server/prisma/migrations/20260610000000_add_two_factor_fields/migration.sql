@@ -16,7 +16,7 @@ CREATE TABLE "UserTwoFactorRecoveryCode" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserTwoFactorRecoveryCode_codeHash_key" ON "UserTwoFactorRecoveryCode"("codeHash");
+CREATE UNIQUE INDEX "UserTwoFactorRecoveryCode_userId_codeHash_key" ON "UserTwoFactorRecoveryCode"("userId", "codeHash");
 
 -- CreateIndex
 CREATE INDEX "UserTwoFactorRecoveryCode_userId_isPending_idx" ON "UserTwoFactorRecoveryCode"("userId", "isPending");

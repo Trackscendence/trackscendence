@@ -138,7 +138,7 @@ Open:
 
 ### API demo with Postman
 
-The Postman collection in [docs/postman/README.md](/home/ogrativ/Projects/trackscendence/docs/postman/README.md) now includes:
+The Postman collection in [docs/postman/README.md](postman/README.md) now includes:
 
 - TOTP setup
 - TOTP confirmation

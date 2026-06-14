@@ -28,6 +28,8 @@ const TWO_FACTOR_NOT_ENABLED_MESSAGE =
   'Two-factor authentication is not enabled'
 const TWO_FACTOR_SETUP_NOT_STARTED_MESSAGE =
   'Start two-factor authentication setup first'
+const TWO_FACTOR_SETUP_INVALID_MESSAGE =
+  'Stored two-factor setup is invalid. Restart setup and try again'
 const NEW_PASSWORD_MUST_DIFFER_MESSAGE =
   'New password must differ from current password'
 
@@ -439,7 +441,18 @@ const completeTwoFactorLogin = async (payload) => {
       throw new UnauthorizedException(INVALID_TWO_FACTOR_CODE_MESSAGE)
     }
   } else {
-    const secret = authTwoFactor.decryptSecret(user.twoFactorSecretCiphertext)
+    let secret
+
+    try {
+      secret = authTwoFactor.decryptSecret(user.twoFactorSecretCiphertext)
+    } catch (error) {
+      logger.warn('Failed to decrypt stored two-factor secret during login', {
+        userId: user.id,
+        error: error.message,
+      })
+
+      throw new UnauthorizedException(INVALID_TWO_FACTOR_CODE_MESSAGE)
+    }
 
     if (!authTwoFactor.verifyTotpCode(secret, code)) {
       throw new UnauthorizedException(INVALID_TWO_FACTOR_CODE_MESSAGE)
@@ -533,9 +546,20 @@ const confirmTwoFactorSetup = async (user, payload) => {
     throw new BadRequestException(TWO_FACTOR_SETUP_NOT_STARTED_MESSAGE)
   }
 
-  const pendingSecret = authTwoFactor.decryptSecret(
-    authUser.twoFactorPendingSecretCiphertext,
-  )
+  let pendingSecret
+
+  try {
+    pendingSecret = authTwoFactor.decryptSecret(
+      authUser.twoFactorPendingSecretCiphertext,
+    )
+  } catch (error) {
+    logger.warn('Failed to decrypt pending two-factor setup secret', {
+      userId: user.id,
+      error: error.message,
+    })
+
+    throw new BadRequestException(TWO_FACTOR_SETUP_INVALID_MESSAGE)
+  }
 
   if (!authTwoFactor.verifyTotpCode(pendingSecret, code)) {
     throw new BadRequestException(INVALID_TWO_FACTOR_CODE_MESSAGE)

@@ -11,6 +11,7 @@ export function useForm({ initialValues, onSubmit }) {
       ...prev,
       [name]: value,
     }))
+    setError(null)
   }
 
   const handleSubmit = async (e) => {
@@ -21,8 +22,10 @@ export function useForm({ initialValues, onSubmit }) {
     try {
       await onSubmit(values)
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.error) {
-        setError(err.response.data.error.message || 'An error occurred')
+      if (err.payload) {
+        setError(
+          err.payload.details || err.payload.message || 'An error occurred',
+        )
       } else {
         setError(err.message || 'An unexpected error occurred')
       }

@@ -58,4 +58,8 @@ const useAuthStore = create((set, get) => ({
   },
 }))
 
+window.addEventListener('trackscendence:session-expired', () => {
+  useAuthStore.getState().logout()
+})
+
 export default useAuthStore

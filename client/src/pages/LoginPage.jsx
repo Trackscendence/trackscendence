@@ -9,7 +9,10 @@ import { Alert } from '@/components/ui/Alert'
 const LoginPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isAuthenticated, isLoading, login } = useAuth()
+
+  const isAuthenticated = useAuth((state) => state.isAuthenticated)
+  const isLoading = useAuth((state) => state.isLoading)
+  const login = useAuth((state) => state.login)
   const from = location.state?.from?.pathname || '/'
   const params = new URLSearchParams(location.search)
   const passwordChanged = params.get('passwordChanged') === '1'

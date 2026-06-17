@@ -25,11 +25,20 @@ model User {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   games                   GamePlayer[]
+  sentFriendships         Friendship[] @relation("FriendshipRequester")
+  receivedFriendships     Friendship[] @relation("FriendshipAddressee")
+  blockedFriendships      Friendship[] @relation("FriendshipBlocker")
 }
 
 enum GameStatus {
   COMPLETED
   ABANDONED
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
 }
 
 model Game {
@@ -56,4 +65,24 @@ model GamePlayer {
 
   @@unique([gameId, userId])
   @@index([userId])
+}
+
+model Friendship {
+  id          Int              @id @default(autoincrement())
+  requesterId Int
+  addresseeId Int
+  status      FriendshipStatus @default(PENDING)
+  blockedById Int?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  requester   User             @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User             @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  blockedBy   User?            @relation("FriendshipBlocker", fields: [blockedById], references: [id], onDelete: SetNull)
+
+  // A follow-up SQL migration also enforces unordered-pair uniqueness via LEAST/GREATEST.
+  @@unique([requesterId, addresseeId])
+  @@index([requesterId, status])
+  @@index([addresseeId, status])
+  @@index([blockedById])
 }

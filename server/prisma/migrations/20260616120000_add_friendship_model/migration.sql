@@ -13,6 +13,16 @@ CREATE TABLE "Friendship" (
 
     CONSTRAINT "Friendship_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "Friendship_requesterId_addresseeId_different_check" CHECK ("requesterId" <> "addresseeId"),
+    CONSTRAINT "Friendship_status_blockedById_consistency_check" CHECK (
+      (
+        "status" = 'BLOCKED'
+        AND "blockedById" IS NOT NULL
+      )
+      OR (
+        "status" <> 'BLOCKED'
+        AND "blockedById" IS NULL
+      )
+    ),
     CONSTRAINT "Friendship_blockedById_valid_check" CHECK (
       "blockedById" IS NULL
       OR "blockedById" = "requesterId"

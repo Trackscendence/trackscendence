@@ -1178,6 +1178,53 @@
           "response": []
         },
         {
+          "name": "Requester Gets Validation Error For Too Large Target User ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('too large target user id returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('too large target user id keeps invalid request data message', function () {",
+                  "  pm.expect(json.error.message).to.eql('Invalid request data');",
+                  "});",
+                  "pm.test('too large target user id includes payload details', function () {",
+                  "  pm.expect(json.error.payload.details).to.include('targetUserId must not be greater than 2147483647');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": 2147483648\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
           "name": "Requester Cannot Delete Relationship With Self",
           "event": [
             {

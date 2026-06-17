@@ -16,6 +16,8 @@ const FRIEND_RESPONSE_ACTION = {
   REJECT: 'reject',
 }
 
+const PRISMA_INT_MAX = 2147483647
+
 const DELETE_RELATIONSHIP_ACTION = {
   REMOVE_ACCEPTED: 'removeAccepted',
   CANCEL_PENDING: 'cancelPending',
@@ -28,12 +30,27 @@ const isUniqueConstraintError = (error) => {
   )
 }
 
+const isForeignKeyConstraintError = (error) => {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2003'
+  )
+}
+
 const parsePositiveInteger = (value, fieldName) => {
   const number = Number(value)
 
   if (!Number.isInteger(number) || number < 1) {
     throw new BadRequestException('Invalid request data', {
       details: [`${fieldName} must be a positive integer`],
+    })
+  }
+
+  if (number > PRISMA_INT_MAX) {
+    throw new BadRequestException('Invalid request data', {
+      details: [
+        `${fieldName} must not be greater than ${PRISMA_INT_MAX}`,
+      ],
     })
   }
 
@@ -242,6 +259,10 @@ const sendFriendRequest = async (user, payload) => {
       }
 
       throw new ConflictException('Friend request already exists')
+    }
+
+    if (isForeignKeyConstraintError(error)) {
+      throw new NotFoundException('Target user not found')
     }
 
     throw error

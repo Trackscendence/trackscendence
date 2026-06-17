@@ -48,9 +48,7 @@ const parsePositiveInteger = (value, fieldName) => {
 
   if (number > PRISMA_INT_MAX) {
     throw new BadRequestException('Invalid request data', {
-      details: [
-        `${fieldName} must not be greater than ${PRISMA_INT_MAX}`,
-      ],
+      details: [`${fieldName} must not be greater than ${PRISMA_INT_MAX}`],
     })
   }
 

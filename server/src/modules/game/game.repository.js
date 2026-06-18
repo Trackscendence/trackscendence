@@ -1,4 +1,61 @@
+const { Prisma } = require('@prisma/client')
 const prisma = require('#db/prisma')
+
+const updateLifetimeStatsForUsers = async (tx, userIds) => {
+  const uniqueUserIds = [...new Set(userIds)].filter(Number.isInteger)
+
+  if (uniqueUserIds.length === 0) {
+    return
+  }
+
+  await tx.$executeRaw`
+    UPDATE "User" u
+    SET
+      "gamesPlayed" = stats."gamesPlayed",
+      "wins" = stats."wins",
+      "losses" = stats."losses"
+    FROM (
+      SELECT
+        gp."userId" AS "userId",
+        CAST(COUNT(*) AS INTEGER) AS "gamesPlayed",
+        CAST(COUNT(*) FILTER (WHERE gp."isWinner" = true) AS INTEGER) AS "wins",
+        CAST(
+          COUNT(*) FILTER (
+            WHERE gp."isWinner" = false AND g."status" = 'COMPLETED'
+          ) AS INTEGER
+        ) AS "losses"
+      FROM "GamePlayer" gp
+      JOIN "Game" g ON g."id" = gp."gameId"
+      WHERE gp."userId" IN (${Prisma.join(uniqueUserIds)})
+      GROUP BY gp."userId"
+    ) stats
+    WHERE u."id" = stats."userId"
+  `
+}
+
+const refreshUserRanks = async (tx) => {
+  await tx.$executeRaw`
+    WITH ranked_users AS (
+      SELECT
+        u."id",
+        CAST(
+          ROW_NUMBER() OVER (
+            ORDER BY
+              u."wins" DESC,
+              u."losses" ASC,
+              u."gamesPlayed" DESC,
+              u."username" ASC
+          ) AS INTEGER
+        ) AS "computedRank"
+      FROM "User" u
+      WHERE u."gamesPlayed" > 0
+    )
+    UPDATE "User" u
+    SET "rank" = ranked_users."computedRank"
+    FROM ranked_users
+    WHERE u."id" = ranked_users."id"
+  `
+}
 
 /**
  * Saves a completed game and its players' results to the database.
@@ -20,24 +77,32 @@ const saveGameResult = async ({ startedAt, endedAt, status, players }) => {
     )
   }
 
-  // Use a nested write to ensure both the Game and GamePlayers are created in a single transaction
-  // and efficiently in a single database round-trip.
-  const game = await prisma.game.create({
-    data: {
-      startedAt,
-      endedAt,
-      status,
-      players: {
-        create: players.map((p) => ({
-          userId: p.userId,
-          score: p.score,
-          isWinner: p.isWinner,
-        })),
+  const game = await prisma.$transaction(async (tx) => {
+    const createdGame = await tx.game.create({
+      data: {
+        startedAt,
+        endedAt,
+        status,
+        players: {
+          create: players.map((player) => ({
+            userId: player.userId,
+            score: player.score,
+            isWinner: player.isWinner,
+          })),
+        },
       },
-    },
-    include: {
-      players: true,
-    },
+      include: {
+        players: true,
+      },
+    })
+
+    await updateLifetimeStatsForUsers(
+      tx,
+      players.map((player) => player.userId),
+    )
+    await refreshUserRanks(tx)
+
+    return createdGame
   })
 
   return game

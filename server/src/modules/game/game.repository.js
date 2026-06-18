@@ -1,6 +1,73 @@
 const { Prisma } = require('@prisma/client')
 const prisma = require('#db/prisma')
 
+const GAME_RESULT_STATUSES = new Set(['COMPLETED', 'ABANDONED'])
+
+const isValidDate = (value) =>
+  value instanceof Date && !Number.isNaN(value.getTime())
+
+const validateSavedGameInput = ({ startedAt, endedAt, status, players }) => {
+  if (!isValidDate(startedAt)) {
+    throw new Error('A saved game must include a valid startedAt timestamp.')
+  }
+
+  if (!isValidDate(endedAt)) {
+    throw new Error('A saved game must include a valid endedAt timestamp.')
+  }
+
+  if (endedAt < startedAt) {
+    throw new Error('A saved game cannot end before it starts.')
+  }
+
+  if (!GAME_RESULT_STATUSES.has(status)) {
+    throw new Error('A saved game must use a supported status.')
+  }
+
+  if (!Array.isArray(players) || players.length < 2) {
+    throw new Error('A game must have at least 2 players to be saved.')
+  }
+
+  const seenUserIds = new Set()
+  let winnerCount = 0
+
+  players.forEach((player, index) => {
+    if (!Number.isInteger(player?.userId) || player.userId < 1) {
+      throw new Error(
+        `Player ${index + 1} must include a valid positive integer userId.`,
+      )
+    }
+
+    if (seenUserIds.has(player.userId)) {
+      throw new Error('A saved game cannot contain duplicate players.')
+    }
+    seenUserIds.add(player.userId)
+
+    if (!Number.isInteger(player?.score) || player.score < 0) {
+      throw new Error(
+        `Player ${index + 1} must include a valid non-negative integer score.`,
+      )
+    }
+
+    if (typeof player?.isWinner !== 'boolean') {
+      throw new Error(
+        `Player ${index + 1} must include a boolean isWinner flag.`,
+      )
+    }
+
+    if (player.isWinner) {
+      winnerCount += 1
+    }
+  })
+
+  if (status === 'COMPLETED' && winnerCount !== 1) {
+    throw new Error('A completed game must have exactly one winner.')
+  }
+
+  if (status === 'ABANDONED' && winnerCount !== 0) {
+    throw new Error('An abandoned game cannot have a winner.')
+  }
+}
+
 const updateLifetimeStatsForUsers = async (tx, userIds) => {
   const uniqueUserIds = [...new Set(userIds)].filter(Number.isInteger)
 
@@ -68,14 +135,7 @@ const refreshUserRanks = async (tx) => {
  * @returns {Promise<Object>} The created Game object
  */
 const saveGameResult = async ({ startedAt, endedAt, status, players }) => {
-  if (!players || players.length < 2) {
-    throw new Error('A game must have at least 2 players to be saved.')
-  }
-  if (!endedAt) {
-    throw new Error(
-      'A completed or abandoned game must have an endedAt timestamp.',
-    )
-  }
+  validateSavedGameInput({ startedAt, endedAt, status, players })
 
   const game = await prisma.$transaction(async (tx) => {
     const createdGame = await tx.game.create({

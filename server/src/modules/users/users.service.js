@@ -2,7 +2,11 @@ const { Prisma } = require('@prisma/client')
 const BadRequestException = require('#exceptions/bad-request.exception')
 const NotFoundException = require('#exceptions/not-found.exception')
 const UnauthorizedException = require('#exceptions/unauthorized.exception')
-const { toSafeAuthUser } = require('#modules/auth/auth.service')
+const {
+  getUsernameValidationMessages,
+  normalizeUsername,
+  toSafeAuthUser,
+} = require('#modules/auth/auth.service')
 const usersRepository = require('#modules/users/users.repository')
 
 const DISPLAY_NAME_MAX_LENGTH = 40
@@ -144,11 +148,13 @@ const toPublicProfile = (user, recentMatches) => ({
 })
 
 const getProfileByUsername = async (username) => {
-  const normalizedUsername = typeof username === 'string' ? username.trim() : ''
+  const normalizedUsername =
+    typeof username === 'string' ? normalizeUsername(username) : ''
+  const details = getUsernameValidationMessages(normalizedUsername)
 
-  if (!normalizedUsername) {
+  if (details.length > 0) {
     throw new BadRequestException('Invalid request data', {
-      details: ['username is required'],
+      details,
     })
   }
 

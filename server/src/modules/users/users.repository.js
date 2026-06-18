@@ -66,7 +66,11 @@ const updateProfileById = (id, data) => {
 const listRecentMatchesForUser = (userId, limit) => {
   return prisma.gamePlayer.findMany({
     where: { userId },
-    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    orderBy: [
+      { game: { endedAt: 'desc' } },
+      { game: { startedAt: 'desc' } },
+      { id: 'desc' },
+    ],
     take: limit,
     select: matchHistorySelect,
   })

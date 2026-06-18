@@ -103,6 +103,10 @@ const AuthProvider = ({ children }) => {
     }
   }, [token])
 
+  const updateUser = useCallback((nextUser) => {
+    setUser(nextUser)
+  }, [])
+
   const value = useMemo(
     () => ({
       isAuthenticated: Boolean(user && token),
@@ -111,9 +115,10 @@ const AuthProvider = ({ children }) => {
       logout,
       register,
       token,
+      updateUser,
       user,
     }),
-    [isLoading, login, logout, register, token, user],
+    [isLoading, login, logout, register, token, updateUser, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

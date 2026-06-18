@@ -4,6 +4,12 @@ const safeUserSelect = {
   id: true,
   email: true,
   username: true,
+  displayName: true,
+  bio: true,
+  gamesPlayed: true,
+  wins: true,
+  losses: true,
+  rank: true,
   role: true,
 }
 

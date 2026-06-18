@@ -10,8 +10,10 @@ const authRepository = require('#modules/auth/auth.repository')
 const authToken = require('#modules/auth/auth.token')
 
 const PASSWORD_MIN_LENGTH = 8
+const USERNAME_MAX_LENGTH = 30
 const PASSWORD_RESET_TOKEN_EXPIRES_MS = 60 * 60 * 1000
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const USERNAME_REGEX = /^[A-Za-z0-9_-]+$/
 const PASSWORD_COMPLEXITY_REGEX =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])(?=.{8,})(?!.*\s).*$/
 const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
@@ -23,6 +25,7 @@ const NEW_PASSWORD_MUST_DIFFER_MESSAGE =
   'New password must differ from current password'
 
 const normalizeEmail = (email) => email.trim().toLowerCase()
+const normalizeUsername = (username) => username.trim()
 const normalizeIdentifier = (identifier) => {
   const trimmedIdentifier = identifier.trim()
 
@@ -50,6 +53,27 @@ const getTokenVersionFromPayload = (payload) => {
   return Number.isInteger(tokenVersion) ? tokenVersion : null
 }
 
+const getUsernameValidationMessages = (username) => {
+  const details = []
+
+  if (!username) {
+    details.push('Username is required')
+    return details
+  }
+
+  if (username.length > USERNAME_MAX_LENGTH) {
+    details.push(`Username must be at most ${USERNAME_MAX_LENGTH} characters`)
+  }
+
+  if (!USERNAME_REGEX.test(username)) {
+    details.push(
+      'Username can only contain letters, numbers, underscores, and hyphens',
+    )
+  }
+
+  return details
+}
+
 const getPasswordValidationMessages = (password) => {
   const details = []
 
@@ -73,7 +97,8 @@ const getPasswordValidationMessages = (password) => {
 
 const validateRegistrationInput = ({ email, username, password } = {}) => {
   const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
-  const normalizedUsername = typeof username === 'string' ? username.trim() : ''
+  const normalizedUsername =
+    typeof username === 'string' ? normalizeUsername(username) : ''
   const normalizedPassword = typeof password === 'string' ? password : ''
   const details = []
 
@@ -83,9 +108,7 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
     details.push('Email must be valid')
   }
 
-  if (!normalizedUsername) {
-    details.push('Username is required')
-  }
+  details.push(...getUsernameValidationMessages(normalizedUsername))
 
   details.push(...getPasswordValidationMessages(normalizedPassword))
 
@@ -447,10 +470,12 @@ const resetPassword = async (payload) => {
 
 module.exports = {
   INVALID_CREDENTIALS_MESSAGE,
+  getUsernameValidationMessages,
   getUserFromToken,
   getAuthenticatedUser,
   register,
   login,
+  normalizeUsername,
   toSafeAuthUser,
   changePassword,
   requestPasswordReset,

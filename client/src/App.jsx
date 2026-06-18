@@ -15,10 +15,10 @@ const App = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/users/:username" element={<ProfilePage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/users/:username" element={<ProfilePage />} />
         <Route path="/" element={<SessionPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

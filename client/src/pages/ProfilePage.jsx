@@ -52,8 +52,8 @@ const ProfilePage = () => {
   const navigate = useNavigate()
   const { username: routeUsername } = useParams()
   const { token, updateUser, user } = useAuth()
-  const profileUsername = routeUsername || user.username
-  const isOwnProfile = profileUsername === user.username
+  const profileUsername = routeUsername || user?.username || ''
+  const isOwnProfile = Boolean(user) && profileUsername === user.username
   const [profile, setProfile] = useState(null)
   const [form, setForm] = useState({
     displayName: '',
@@ -422,7 +422,7 @@ const ProfilePage = () => {
                               <Link
                                 key={opponent.id}
                                 className="rounded-full border border-[#d2dacf] bg-white px-3 py-1 text-sm font-medium text-[#2f6f86] transition hover:border-[#2f6f86] hover:text-[#24586a]"
-                                to={`/users/${opponent.username}`}
+                                to={`/users/${encodeURIComponent(opponent.username)}`}
                               >
                                 {opponent.displayName || opponent.username}
                               </Link>

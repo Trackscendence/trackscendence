@@ -83,6 +83,9 @@ const SignupPage = () => {
               onChange={handleChange}
               required
             />
+            <p className="mt-2 text-xs text-[#50635a]">
+              Use letters, numbers, underscores, or hyphens only.
+            </p>
           </label>
 
           <label className="block">

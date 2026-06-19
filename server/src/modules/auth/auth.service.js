@@ -267,7 +267,7 @@ const login = async (payload) => {
 
   //WIP
   if (!isValidPassword) {
-    const attempts = user.failedLoginCount
+    const attempts = user.failedLoginCount + 1
 
     if (attempts >= MAX_LOGIN_ATTEMPTS) {
       await authRepository.updateUserLoginAttempts(user.id, {

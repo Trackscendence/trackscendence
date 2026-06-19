@@ -5,11 +5,11 @@ export const getTournaments = (token) => {
 }
 
 export const getTournament = (id, token) => {
-  return request(`/tournaments/${id}`, { token })
+  return request(`/tournaments/${encodeURIComponent(id)}`, { token })
 }
 
 export const joinTournament = (id, token) => {
-  return request(`/tournaments/${id}/join`, {
+  return request(`/tournaments/${encodeURIComponent(id)}/join`, {
     method: 'POST',
     token,
   })

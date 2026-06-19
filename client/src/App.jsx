@@ -4,7 +4,7 @@ import useAuthStore from '@/stores/useAuthStore'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AppLayout from '@/layouts/AppLayout'
-import PublicLayout from '@/layouts/PublicLayout'
+import AuthLayout from '@/layouts/AuthLayout'
 import Login from '@/pages/Login'
 import Signup from '@/pages/Signup'
 import ForgotPassword from '@/pages/ForgotPassword'
@@ -20,7 +20,8 @@ const App = () => {
   }, [])
 
   useEffect(() => {
-    const handler = () => useAuthStore.getState().handleSessionExpired()
+    const handler = (e) =>
+      useAuthStore.getState().handleSessionExpired(e.detail?.token)
     window.addEventListener('trackscendence:session-expired', handler)
     return () =>
       window.removeEventListener('trackscendence:session-expired', handler)
@@ -29,7 +30,7 @@ const App = () => {
   return (
     <ErrorBoundary>
       <Routes>
-        <Route element={<PublicLayout />}>
+        <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

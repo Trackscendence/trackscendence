@@ -106,9 +106,9 @@ const PrivacyPolicy = () => {
             </h2>
             <p className="mt-2">
               All passwords are hashed with bcrypt before storage. API
-              communication is encrypted in transit. Session tokens are
-              short-lived JWTs. Despite these measures, no system is perfectly
-              secure — please use a unique password for your account.
+              communication is encrypted in transit. Session tokens are JWTs
+              that expire after 7 days. Despite these measures, no system is
+              perfectly secure — please use a unique password for your account.
             </p>
           </section>
 

@@ -29,7 +29,7 @@ const Login = () => {
   }
 
   if (isAuthenticated && !isSubmitting) {
-    return <Navigate to="/" replace />
+    return <Navigate to={from} replace />
   }
 
   const handleChange = (event) => {

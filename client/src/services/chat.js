@@ -5,5 +5,7 @@ export const getRooms = (token) => {
 }
 
 export const getMessages = (roomId, token) => {
-  return request(`/chat/rooms/${roomId}/messages`, { token })
+  return request(`/chat/rooms/${encodeURIComponent(roomId)}/messages`, {
+    token,
+  })
 }

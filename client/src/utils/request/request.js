@@ -23,6 +23,8 @@ const parseError = async (response) => {
   return error
 }
 
+const REQUEST_TIMEOUT_MS = 30_000
+
 const request = async (path, { method = 'GET', body, token } = {}) => {
   const headers = {
     Accept: 'application/json',
@@ -36,11 +38,25 @@ const request = async (path, { method = 'GET', body, token } = {}) => {
     headers.Authorization = `Bearer ${token}`
   }
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  let response
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    })
+  } catch (err) {
+    clearTimeout(timeoutId)
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out')
+    }
+    throw err
+  }
+  clearTimeout(timeoutId)
 
   if (!response.ok) {
     const error = await parseError(response)
@@ -51,7 +67,11 @@ const request = async (path, { method = 'GET', body, token } = {}) => {
       error.code === 'UNAUTHORIZED' &&
       SESSION_ERROR_MESSAGES.has(error.message)
     ) {
-      window.dispatchEvent(new CustomEvent('trackscendence:session-expired'))
+      window.dispatchEvent(
+        new CustomEvent('trackscendence:session-expired', {
+          detail: { token },
+        }),
+      )
     }
 
     throw error

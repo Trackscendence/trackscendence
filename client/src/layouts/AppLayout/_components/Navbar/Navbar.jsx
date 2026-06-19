@@ -6,8 +6,11 @@ const Navbar = () => {
   const user = useAuthStore((state) => state.user)
 
   const handleLogout = async () => {
-    await useAuthStore.getState().logout()
-    navigate('/login', { replace: true })
+    try {
+      await useAuthStore.getState().logout()
+    } finally {
+      navigate('/login', { replace: true })
+    }
   }
 
   return (

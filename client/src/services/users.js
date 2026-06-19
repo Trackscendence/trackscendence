@@ -13,7 +13,7 @@ export const updateProfile = (payload, token) => {
 }
 
 export const getUserByUsername = (username, token) => {
-  return request(`/users/${username}`, { token })
+  return request(`/users/${encodeURIComponent(username)}`, { token })
 }
 
 export const getFriends = (token) => {

@@ -22,7 +22,7 @@ This document captures the coding philosophy, structural patterns, and design de
 
 Every component, hook, page, and utility lives in its own named folder with an `index.js` barrel. No exceptions.
 
-```
+```text
 ComponentName/
 ├── ComponentName.jsx     ← the implementation
 ├── index.js              ← re-export only: export { default } from './ComponentName'
@@ -52,7 +52,7 @@ Nothing else. No logic, no re-grouping, no star exports. Barrels exist solely so
 
 ## 3. Directory Map
 
-```
+```text
 client/src/
 ├── components/        shared UI primitives (Button, Card, Input …)
 ├── layouts/           route-level shells — Outlet-based wrappers
@@ -104,7 +104,7 @@ These items are **mandatory**. Evaluation fails without them, regardless of feat
 | ------------------------------------------------------ | ---------------------------------------------------------------------- |
 | `PrivacyPolicy` page — fully written, not placeholder  | `pages/PrivacyPolicy/`                                                 |
 | `TermsOfService` page — fully written, not placeholder | `pages/TermsOfService/`                                                |
-| Both pages linked from every protected page            | Footer inside `components/Layout/`                                     |
+| Both pages linked from every protected page            | Footer inside `layouts/AppLayout/AppLayout.jsx`                        |
 | Zero browser console errors or warnings                | `ErrorBoundary`, `key` props, `alt` on images, no unhandled rejections |
 | `ErrorBoundary` wrapping the app                       | `App.jsx` wraps `<Routes>`                                             |
 
@@ -151,7 +151,7 @@ Each unit does exactly one thing.
 
 **The form rule.** When a page contains a form with non-trivial state (more than one field, validation, async submit), extract it to `_components/FormName/`. The page renders `<LoginForm />`, not 60 lines of form JSX. The form component owns `form`, `error`, `isSubmitting` — not the page.
 
-```
+```text
 Login/
 ├── Login.jsx              ← renders <LoginForm />, reads route state, handles navigation
 ├── _components/
@@ -216,7 +216,7 @@ The same principle applies to props: don't pass a whole object when a component 
 
 Pages and components depend on abstractions (stores, hooks), not on concrete implementations (services, fetch).
 
-```
+```text
 Page → useAuthStore (abstraction)
          → services/auth.js (concrete)
               → utils/request (HTTP plumbing)
@@ -234,7 +234,7 @@ This is the most violated principle in frontend codebases. Unclear container/sub
 
 Every component is either a **container** or a **presenter**. A container knows about domain concepts (users, matches, rooms). A presenter knows only about what it renders (text, colour, size).
 
-```
+```text
 Container knows:     "show the logged-in user's match history, paginated"
 Presenter knows:     "render a list of rows with these columns"
 ```
@@ -243,7 +243,7 @@ They should never be the same component.
 
 ### Layer hierarchy
 
-```
+```text
 Page (top-level container)
 └── Section container (_components/SectionName/)
     ├── Feature container (_components/FeatureName/)
@@ -263,7 +263,7 @@ Each layer has one job:
 
 ### Concrete example — the Game page
 
-```
+```text
 Game/
 ├── Game.jsx                         ← reads useGameStore, passes match data down
 ├── _components/
@@ -293,7 +293,7 @@ Game/
 
 If a value needs to travel through more than two component levels to reach its consumer, it belongs in a store, not in props.
 
-```
+```jsx
 // Bad — token drilled through three layers
 <Game token={token}>
   <GameBoard token={token}>
@@ -367,7 +367,7 @@ useEffect(() => {
 
 `AppLayout.jsx` defines the skeleton of every authenticated page: navbar → content area → footer. Individual pages fill in the content area via `<Outlet />`. The page provides the body; AppLayout provides the structure. `PublicLayout` applies the same pattern for public auth pages, providing the full-screen centering wrapper.
 
-```
+```text
 AppLayout (template)
 ├── <Navbar /> — fixed structure
 ├── <main>
@@ -546,7 +546,7 @@ Stores initialise from `localStorage` synchronously (for values that should pers
 
 Stores are not islands. They have a defined dependency direction:
 
-```
+```text
 useSocketStore     ← owns the connection lifecycle
     ↑                    ↑
 useGameStore       useChatStore

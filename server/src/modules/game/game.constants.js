@@ -30,8 +30,15 @@ const CARD_TYPES = {
   WILD: 'WILD',
 }
 
+const GAME_RULES = {
+  CARDS_PER_PLAYER: 7,
+  MIN_PLAYERS: 2,
+  MAX_PLAYERS: 10,
+}
+
 module.exports = {
   COLORS,
   VALUES,
   CARD_TYPES,
+  GAME_RULES,
 }

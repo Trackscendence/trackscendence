@@ -1,10 +1,35 @@
-const { COLORS, VALUES, CARD_TYPES } = require('./game.constants')
+const { COLORS, VALUES, CARD_TYPES, GAME_RULES } = require('./game.constants')
 
+/**
+ * UnoEngine - Core game logic engine for UNO.
+ * Supports standard 108 deck generation, shuffles, deal, turn-state tracking,
+ * action card handling, and custom draw-and-play or draw-and-pass rules.
+ */
 class UnoEngine {
+  /**
+   * Initializes the UNO game engine with a list of player IDs.
+   * Generates the deck, shuffles, deals cards, and starts the game.
+   *
+   * @param {string[]} playerIds - Array of unique player IDs participating in the game.
+   * @throws {Error} If playerIds is invalid, has duplicate IDs, or doesn't meet player count requirements.
+   */
   constructor(playerIds = []) {
-    if (!Array.isArray(playerIds) || playerIds.length < 2) {
-      throw new Error('A game must have at least 2 players.')
+    if (!Array.isArray(playerIds)) {
+      throw new Error('Player IDs must be an array.')
     }
+    if (
+      playerIds.length < GAME_RULES.MIN_PLAYERS ||
+      playerIds.length > GAME_RULES.MAX_PLAYERS
+    ) {
+      throw new Error(
+        `A game must have between ${GAME_RULES.MIN_PLAYERS} and ${GAME_RULES.MAX_PLAYERS} players.`,
+      )
+    }
+    const uniquePlayerIds = new Set(playerIds)
+    if (uniquePlayerIds.size !== playerIds.length) {
+      throw new Error('Player IDs must be unique.')
+    }
+
     this.players = {}
     playerIds.forEach((id) => {
       this.players[id] = [] // Array of cards
@@ -14,8 +39,12 @@ class UnoEngine {
     this.discardPile = []
     this.currentPlayerIndex = 0
     this.playDirection = 1 // 1 for clockwise, -1 for counter-clockwise
-    this.currentColor = null // Used when a Wild card is played
+    this.currentColor = null // Used when a Wild card is active
     this.winner = null
+
+    // Track state for the current turn's draw actions
+    this.hasDrawnThisTurn = false
+    this.drawnCardThisTurn = null
 
     this.initDeck()
     this.shuffleDeck()
@@ -23,6 +52,9 @@ class UnoEngine {
     this.startGame()
   }
 
+  /**
+   * Initializes the standard 108 card UNO deck.
+   */
   initDeck() {
     this.drawPile = []
     const standardColors = [
@@ -76,8 +108,10 @@ class UnoEngine {
     }
   }
 
+  /**
+   * Shuffles the draw pile using the Fisher-Yates algorithm.
+   */
   shuffleDeck() {
-    // Fisher-Yates shuffle
     for (let i = this.drawPile.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[this.drawPile[i], this.drawPile[j]] = [
@@ -87,15 +121,20 @@ class UnoEngine {
     }
   }
 
+  /**
+   * Deals starting cards to all players.
+   */
   dealCards() {
-    const CARDS_PER_PLAYER = 7
-    for (let i = 0; i < CARDS_PER_PLAYER; i++) {
+    for (let i = 0; i < GAME_RULES.CARDS_PER_PLAYER; i++) {
       this.playerOrder.forEach((playerId) => {
         this.players[playerId].push(this._drawOne())
       })
     }
   }
 
+  /**
+   * Begins the game by turning over the first card and handling its effects.
+   */
   startGame() {
     // Flip first card
     let firstCard = this._drawOne()
@@ -112,8 +151,7 @@ class UnoEngine {
     // If first card is Reverse, dealer plays first, but play moves counter-clockwise
     if (firstCard.value === VALUES.REVERSE) {
       this.playDirection = -1
-      this.currentPlayerIndex =
-        (this.playerOrder.length - 1) % this.playerOrder.length
+      this.currentPlayerIndex = this.playerOrder.length - 1
     }
     // If first card is Skip, the first player loses their turn
     else if (firstCard.value === VALUES.SKIP) {
@@ -126,7 +164,7 @@ class UnoEngine {
       this.nextTurn()
     }
     // If first card is Wild, pick a random starting color to prevent getting stuck
-    if (firstCard.color === COLORS.WILD) {
+    else if (firstCard.color === COLORS.WILD) {
       const standardColors = [
         COLORS.RED,
         COLORS.YELLOW,
@@ -138,6 +176,13 @@ class UnoEngine {
     }
   }
 
+  /**
+   * Draws a single card from the draw pile. Reshuffles discard pile if needed.
+   *
+   * @private
+   * @returns {Object} The drawn card.
+   * @throws {Error} If there are no more cards in both draw and discard piles.
+   */
   _drawOne() {
     if (this.drawPile.length === 0) {
       if (this.discardPile.length <= 1) {
@@ -152,10 +197,21 @@ class UnoEngine {
     return this.drawPile.pop()
   }
 
+  /**
+   * Gets the card currently at the top of the discard pile.
+   *
+   * @returns {Object} The top card.
+   */
   getTopCard() {
     return this.discardPile[this.discardPile.length - 1]
   }
 
+  /**
+   * Validates whether a card can be legally played on top of the current discard pile.
+   *
+   * @param {Object} card - The card to validate.
+   * @returns {boolean} True if the card is playable, false otherwise.
+   */
   canPlayCard(card) {
     const topCard = this.getTopCard()
 
@@ -176,6 +232,15 @@ class UnoEngine {
     return false
   }
 
+  /**
+   * Plays a card from a player's hand. Handles win checks and action card side-effects.
+   *
+   * @param {string} playerId - The ID of the player making the move.
+   * @param {number} cardIndex - The index of the card in the player's hand.
+   * @param {string|null} declaredColor - The color choice if playing a Wild card.
+   * @throws {Error} If the game is over, it's not the player's turn, index is invalid, play is illegal,
+   *                 or a wild card is played without declaring a valid color.
+   */
   playCard(playerId, cardIndex, declaredColor = null) {
     if (this.winner) {
       throw new Error('Game is already over')
@@ -188,6 +253,11 @@ class UnoEngine {
     const playerHand = this.players[playerId]
     if (cardIndex < 0 || cardIndex >= playerHand.length) {
       throw new Error('Invalid card index')
+    }
+
+    // Official UNO rules: If a player drew a card this turn, they may only play THAT card.
+    if (this.hasDrawnThisTurn && cardIndex !== playerHand.length - 1) {
+      throw new Error('Can only play the drawn card after drawing')
     }
 
     const cardToPlay = playerHand[cardIndex]
@@ -249,6 +319,14 @@ class UnoEngine {
     this.nextTurn()
   }
 
+  /**
+   * Draws a card for the current player. If the card is playable, the turn is not advanced
+   * to allow them to play it or pass. If not playable, the turn is advanced automatically.
+   *
+   * @param {string} playerId - The ID of the player drawing.
+   * @returns {{ card: Object, playable: boolean }} The drawn card and its playability.
+   * @throws {Error} If the game is over, it's not the player's turn, or they have already drawn.
+   */
   drawCard(playerId) {
     if (this.winner) {
       throw new Error('Game is already over')
@@ -258,18 +336,54 @@ class UnoEngine {
       throw new Error('Not your turn')
     }
 
+    if (this.hasDrawnThisTurn) {
+      throw new Error('Already drew a card this turn')
+    }
+
     const card = this._drawOne()
     this.players[playerId].push(card)
+    this.hasDrawnThisTurn = true
+    this.drawnCardThisTurn = card
 
-    // Standard rules: If drawn card can be played, player could play it.
-    // For simplicity of this engine, we auto-skip turn after drawing.
-    // A more advanced engine would allow playing the drawn card immediately.
-    this.nextTurn()
-
-    return card
+    // Standard rules: If drawn card can be played, player can choose to play it.
+    // Otherwise, turn auto-skips.
+    if (this.canPlayCard(card)) {
+      return { card, playable: true }
+    } else {
+      this.nextTurn()
+      return { card, playable: false }
+    }
   }
 
+  /**
+   * Passes the player's turn. Only allowed if they have already drawn a card this turn.
+   *
+   * @param {string} playerId - The ID of the player passing.
+   * @throws {Error} If the game is over, it's not the player's turn, or they haven't drawn yet.
+   */
+  pass(playerId) {
+    if (this.winner) {
+      throw new Error('Game is already over')
+    }
+
+    if (this.playerOrder[this.currentPlayerIndex] !== playerId) {
+      throw new Error('Not your turn')
+    }
+
+    if (!this.hasDrawnThisTurn) {
+      throw new Error('Must draw a card before passing')
+    }
+
+    this.nextTurn()
+  }
+
+  /**
+   * Advances play to the next player's turn and resets turn-specific draw state.
+   */
   nextTurn() {
+    this.hasDrawnThisTurn = false
+    this.drawnCardThisTurn = null
+
     this.currentPlayerIndex += this.playDirection
 
     // Wrap around
@@ -280,6 +394,12 @@ class UnoEngine {
     }
   }
 
+  /**
+   * Gets the public/visible game state. Sanitizes player hands so that
+   * only hand sizes (and not individual card details) are returned.
+   *
+   * @returns {Object} Public game state representation.
+   */
   getState() {
     return {
       topCard: this.getTopCard(),
@@ -288,6 +408,8 @@ class UnoEngine {
       playDirection: this.playDirection,
       winner: this.winner,
       deckSize: this.drawPile.length,
+      hasDrawnThisTurn: this.hasDrawnThisTurn,
+      drawnCardThisTurn: this.drawnCardThisTurn,
       playerHandsSizes: this.playerOrder.reduce((acc, id) => {
         acc[id] = this.players[id].length
         return acc

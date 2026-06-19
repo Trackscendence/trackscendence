@@ -186,4 +186,5 @@ module.exports = {
   clearPasswordResetToken,
   findTokenUserById,
   withLockedPasswordResetToken,
+  updateUserLoginAttempts,
 }

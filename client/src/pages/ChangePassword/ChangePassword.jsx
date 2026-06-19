@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import { AUTH_TOKEN_KEY, changePassword } from '@/services/auth'
 import Button from '@/components/Button'
+import Card from '@/components/Card'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
 
@@ -62,7 +63,7 @@ const ChangePassword = () => {
 
   return (
     <div className="flex justify-center">
-      <section className="w-full max-w-md rounded-lg border border-[#d8dfd4] bg-white p-6 shadow-sm">
+      <Card>
         <div className="mb-7">
           <h1 className="text-2xl font-semibold">Change password</h1>
         </div>
@@ -131,7 +132,7 @@ const ChangePassword = () => {
             Back to home
           </Link>
         </p>
-      </section>
+      </Card>
     </div>
   )
 }

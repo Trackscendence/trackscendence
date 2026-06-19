@@ -1,0 +1,21 @@
+import request from '@/utils/request'
+
+export const getProfile = (token) => {
+  return request('/users/me', { token })
+}
+
+export const updateProfile = (payload, token) => {
+  return request('/users/me', {
+    method: 'PATCH',
+    body: payload,
+    token,
+  })
+}
+
+export const getUserByUsername = (username, token) => {
+  return request(`/users/${username}`, { token })
+}
+
+export const getFriends = (token) => {
+  return request('/users/me/friends', { token })
+}

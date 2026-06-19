@@ -165,6 +165,13 @@ const withLockedPasswordResetToken = (tokenId, callback) => {
   })
 }
 
+const updateUserLoginAttempts = (userId, data) => {
+  return prisma.user.update({
+    where: { id: userId },
+    data,
+  })
+}
+
 module.exports = {
   createUser,
   findByEmail,
@@ -179,4 +186,5 @@ module.exports = {
   clearPasswordResetToken,
   findTokenUserById,
   withLockedPasswordResetToken,
+  updateUserLoginAttempts,
 }

@@ -119,9 +119,9 @@ These items are **mandatory**. Evaluation fails without them, regardless of feat
 
 ## 6. Custom Design System Module
 
-The project claims the **custom design system minor module (1 point)**. The deliverable is `components/` — at least 10 cohesive, reusable UI primitives. Current count: `Avatar`, `Button`, `Card`, `ErrorBoundary`, `FormField`, `Input`, `LoadingSpinner`, `Modal`, `ProtectedRoute`, `Toast` = **10 exactly**. Adding one more gives headroom; dropping one below 10 loses the point.
+The project claims the **custom design system minor module (1 point)**. The deliverable is `components/` — at least 10 cohesive, reusable UI primitives. Current count: `Avatar`, `Button`, `Card`, `ErrorBoundary`, `FormField`, `Input`, `LoadingSpinner`, `Modal`, `Toast` = **9**. One more component is needed to reach the required 10.
 
-Note: `AppLayout` and `PublicLayout` live in `layouts/` and do not count toward this total — they are route shells, not UI primitives.
+Note: `AppLayout` and `AuthLayout` live in `layouts/`, and `ProtectedRoute` lives in `router/` — none of these count toward the total as they are route shells, not UI primitives.
 
 Criteria for a component to count toward this module:
 

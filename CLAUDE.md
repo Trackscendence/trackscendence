@@ -231,7 +231,7 @@ useEffect(() => {
 - `PrivacyPolicy` and `TermsOfService` pages must be fully written (not placeholders) and linked from `Layout`'s footer.
 - `ErrorBoundary` must wrap `<Routes>` in `App.jsx`.
 - Zero browser console errors: stable `key` on all list renders, `alt` on all `<img>`, `try/catch` in all `useEffect` async calls, no unhandled promise rejections.
-- Custom design system: `components/` must have at least 10 cohesive, reusable components. Current 10: `Avatar`, `Button`, `ErrorBoundary`, `FormField`, `Input`, `Layout`, `LoadingSpinner`, `Modal`, `ProtectedRoute`, `Toast`. Dropping below 10 loses the evaluation point.
+- Custom design system: `components/` must have at least 10 cohesive, reusable components. Current 9: `Avatar`, `Button`, `Card`, `ErrorBoundary`, `FormField`, `Input`, `LoadingSpinner`, `Modal`, `Toast`. One more needed — `ProtectedRoute` was moved to `router/` and no longer counts.
 
 ### Git workflow
 

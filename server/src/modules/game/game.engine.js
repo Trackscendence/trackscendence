@@ -409,7 +409,8 @@ class UnoEngine {
       winner: this.winner,
       deckSize: this.drawPile.length,
       hasDrawnThisTurn: this.hasDrawnThisTurn,
-      drawnCardThisTurn: this.drawnCardThisTurn,
+      // Keep drawn card private to the acting player/caller context.
+      drawnCardThisTurn: null,
       playerHandsSizes: this.playerOrder.reduce((acc, id) => {
         acc[id] = this.players[id].length
         return acc

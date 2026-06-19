@@ -43,6 +43,12 @@ test('UnoEngine Deck and Setup Tests', async (t) => {
 
   await t.test('Deals exactly CARDS_PER_PLAYER to each player', () => {
     const game = new UnoEngine(['p1', 'p2', 'p3'])
+    // Recreate a pre-start deal state to avoid opening-card side effects.
+    game.players = { p1: [], p2: [], p3: [] }
+    game.discardPile = []
+    game.initDeck()
+    game.shuffleDeck()
+    game.dealCards()
     assert.strictEqual(game.players['p1'].length, GAME_RULES.CARDS_PER_PLAYER)
     assert.strictEqual(game.players['p2'].length, GAME_RULES.CARDS_PER_PLAYER)
     assert.strictEqual(game.players['p3'].length, GAME_RULES.CARDS_PER_PLAYER)
@@ -91,12 +97,15 @@ test('UnoEngine Game Start Rules', async (t) => {
   })
 
   await t.test('Starting color is resolved for starting Wild card', () => {
-    // Mock the starting card being a Wild card
     const game = new UnoEngine(['p1', 'p2'])
-    game.discardPile = [
+    // Force startGame() to draw a Wild from the top of drawPile (array end).
+    game.discardPile = []
+    game.drawPile = [
+      { type: CARD_TYPES.NUMBER, color: COLORS.BLUE, value: VALUES.ONE },
       { type: CARD_TYPES.WILD, color: COLORS.WILD, value: VALUES.WILD },
     ]
     game.startGame()
+    assert.strictEqual(game.getTopCard().value, VALUES.WILD)
     assert.ok(
       [COLORS.RED, COLORS.YELLOW, COLORS.GREEN, COLORS.BLUE].includes(
         game.currentColor,

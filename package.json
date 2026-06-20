@@ -24,7 +24,9 @@
     "prisma:migrate": "docker compose exec server npm run prisma:migrate"
   },
   "dependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.0.2",

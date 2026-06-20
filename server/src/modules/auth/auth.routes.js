@@ -108,8 +108,170 @@ router.post('/register', authController.register)
  */
 router.post('/login', authController.login)
 
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request a password reset email
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: test@example.com
+ *     responses:
+ *       200:
+ *         description: Password reset request processed
+ *         content:
+ *           application/json
+ *             example:
+ *               message: If email is registered, password reset instructions have been sent
+ *       400:
+ *         description: Validation failed
+ *         content:
+ *           application/json:
+ *             example:
+ *               error:
+ *                 code: REQUEST_ERROR
+ *                 message: Invalid request data
+ *                 payload:
+ *                   details:
+ *                     - Email must be valid
+ */
 router.post('/forgot-password', authController.requestPasswordReset)
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset a password using a reset token
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - newPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Password rest token received via email
+ *                 example: 123e4567-e89b-112d4-a456-4242424242424.abcd1234ffff5678
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 example: TheNewPassword123!
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: Password reset successful
+ *       400:
+ *         description: Validation failed
+ *         content:
+ *           application/json:
+ *             example:
+ *               validations:
+ *                 value:
+ *                   error:
+ *                     code: REQUEST_ERROR
+ *                     message: Invalid request data
+ *                     payload:
+ *                       details:
+ *                         - Password must be at least 8 characters
+ *               passwordReuse:
+ *                 value:
+ *                   error:
+ *                     code: REQUEST_ERROR
+ *                     message: New password must differ from current password
+ *       401:
+ *         description: Invalid or expired reset token
+ *         content:
+ *           application/json:
+ *             example:
+ *               error:
+ *                 code: UNAUTHORIZED
+ *                 message: Invalid or expired token
+ */
 router.post('/reset-password', authController.resetPassword)
+
+/**
+ * @swagger
+ * /auth/change-password:
+ *   post:
+ *     summary: Change the current user's password
+ *     tags:
+ *       - Authentication
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 example: TheCurrentPassword123!
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 example: TheNewPassword123!
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *         content:
+ *           application/json
+ *             example:
+ *               message: Password updated successfully
+ *       400:
+ *         description: Validation failed, incorrect current password, or password reused attempt
+ *         content:
+ *           application/json:
+ *             example:
+ *               validations:
+ *                 value:
+ *                   error:
+ *                     code: REQUEST_ERROR
+ *                     message: Invalid request data
+ *               incorrectCurrentPassword:
+ *                 value:
+ *                   error:
+ *                     code: REQUEST_ERROR
+ *                     message: Current password is incorrect
+ *               passwordReuse:
+ *                 value:
+ *                   error:
+ *                     code: REQUEST_ERROR
+ *                     message: New password must differ from current password
+ *       401:
+ *         description: Missing, invalid, or expired token
+ *         content:
+ *           application/json:
+ *             example:
+ *               error:
+ *                 code: UNAUTHORIZED
+ *                 message: Invalid or expired token
+ */
 router.post('/change-password', requireAuth, authController.changePassword)
 
 /**

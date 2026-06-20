@@ -119,12 +119,10 @@ router.post('/login', authController.login)
  *       required: true
  *       content:
  *         application/json:
- *           example:
- *             message: If email is registered, password reset instructions have been sent
- *             schema:
- *               type: object
- *               required:
- *                 - email
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
  *             properties:
  *               email:
  *                 type: string
@@ -134,7 +132,7 @@ router.post('/login', authController.login)
  *       200:
  *         description: Password reset request processed
  *         content:
- *           application/json:
+ *           application/json
  *             example:
  *               message: If email is registered, password reset instructions have been sent
  *       400:
@@ -225,8 +223,6 @@ router.post('/reset-password', authController.resetPassword)
  *       required: true
  *       content:
  *         application/json:
- *           example:
- *             message: Password updated successfully
  *           schema:
  *             type: object
  *             required:
@@ -244,7 +240,7 @@ router.post('/reset-password', authController.resetPassword)
  *       200:
  *         description: Password reset successfully
  *         content:
- *           application/json:
+ *           application/json
  *             example:
  *               message: Password updated successfully
  *       400:

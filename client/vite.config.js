@@ -3,12 +3,13 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import process from 'node:process'
 import svgr from 'vite-plugin-svgr'
+import path from 'node:path'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), svgr()],
   resolve: {
-    tsconfigPaths: true,
+    alias: { '@': path.resolve(import.meta.dirname, 'src') },
   },
   server: {
     proxy: {

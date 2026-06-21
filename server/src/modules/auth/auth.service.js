@@ -33,6 +33,10 @@ const TWO_FACTOR_SETUP_INVALID_MESSAGE =
 const NEW_PASSWORD_MUST_DIFFER_MESSAGE =
   'New password must differ from current password'
 
+const MAX_LOGIN_ATTEMPTS = 8
+const LOCKED_DURATION_MINUTES = 2
+const GENERIC_ACCOUNT_LOCKED_MESSAGE = 'Account temporarily locked'
+
 const normalizeEmail = (email) => email.trim().toLowerCase()
 const normalizeIdentifier = (identifier) => {
   const trimmedIdentifier = identifier.trim()
@@ -393,11 +397,36 @@ const login = async (payload) => {
     throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
   }
 
+  if (user.lockedOutUntil && new Date(user.lockedOutUntil) > new Date()) {
+    throw new UnauthorizedException(GENERIC_ACCOUNT_LOCKED_MESSAGE)
+  }
+
   const isValidPassword = await bcrypt.compare(password, user.passwordHash)
 
+  //WIP
   if (!isValidPassword) {
+    const attempts = user.failedLoginCount + 1
+
+    if (attempts >= MAX_LOGIN_ATTEMPTS) {
+      await authRepository.updateUserLoginAttempts(user.id, {
+        failedLoginCount: 0,
+        lockedOutUntil: new Date(
+          Date.now() + LOCKED_DURATION_MINUTES * 60 * 1000,
+        ),
+      })
+    } else {
+      await authRepository.updateUserLoginAttempts(user.id, {
+        failedLoginCount: attempts,
+      })
+    }
+
     throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
   }
+
+  await authRepository.updateUserLoginAttempts(user.id, {
+    failedLoginCount: 0,
+    lockedOutUntil: null,
+  })
 
   if (user.twoFactorEnabled) {
     return {

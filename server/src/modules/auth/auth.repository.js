@@ -30,10 +30,16 @@ const twoFactorFields = {
   twoFactorPendingSecretCiphertext: true,
 }
 
+const lockoutFields = {
+  failedLoginCount: true,
+  lockedOutUntil: true,
+}
+
 const authUserSelect = {
   ...tokenUserSelect,
   passwordHash: true,
   ...twoFactorFields,
+  ...lockoutFields,
 }
 
 const authUserWithResetSelect = {
@@ -262,6 +268,12 @@ const consumeRecoveryCode = async (userId, codeHash) => {
   return result.count > 0
 }
 
+const updateUserLoginAttempts = (userId, data) => {
+  return prisma.user.update({
+    where: { id: userId },
+    data,
+  })
+}
 module.exports = {
   activatePendingTwoFactorSetup,
   clearPasswordResetToken,
@@ -280,4 +292,5 @@ module.exports = {
   updatePasswordByIdInTransaction,
   updatePasswordResetToken,
   withLockedPasswordResetToken,
+  updateUserLoginAttempts,
 }

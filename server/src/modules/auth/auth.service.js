@@ -344,16 +344,19 @@ const getTwoFactorChallengePayload = (challengeToken) => {
 
   const userId = Number(payload.sub)
   const tokenVersion = getTokenVersionFromPayload(payload)
+  const challengeVersion = Number(payload.challengeVersion)
 
   if (
     !Number.isInteger(userId) ||
     tokenVersion === null ||
+    !Number.isInteger(challengeVersion) ||
     payload.purpose !== authToken.TWO_FACTOR_CHALLENGE_PURPOSE
   ) {
     throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
   }
 
   return {
+    challengeVersion,
     userId,
     tokenVersion,
   }
@@ -429,10 +432,15 @@ const login = async (payload) => {
   })
 
   if (user.twoFactorEnabled) {
+    const challenge = await authRepository.issueTwoFactorChallenge(user.id)
+
     return {
       requiresTwoFactor: true,
       message: TWO_FACTOR_REQUIRED_MESSAGE,
-      challengeToken: authToken.signTwoFactorChallengeToken(user),
+      challengeToken: authToken.signTwoFactorChallengeToken(
+        challenge,
+        challenge.twoFactorChallengeVersion,
+      ),
       methods: ['totp', 'recovery_code'],
     }
   }
@@ -461,9 +469,10 @@ const completeTwoFactorLogin = async (payload) => {
   }
 
   if (recoveryCode) {
-    const consumed = await authRepository.consumeRecoveryCode(
+    const consumed = await authRepository.consumeRecoveryCodeAndChallenge(
       user.id,
       authTwoFactor.hashRecoveryCode(recoveryCode),
+      challenge.challengeVersion,
     )
 
     if (!consumed) {
@@ -485,6 +494,15 @@ const completeTwoFactorLogin = async (payload) => {
 
     if (!authTwoFactor.verifyTotpCode(secret, code)) {
       throw new UnauthorizedException(INVALID_TWO_FACTOR_CODE_MESSAGE)
+    }
+
+    const consumed = await authRepository.consumeTwoFactorChallenge(
+      user.id,
+      challenge.challengeVersion,
+    )
+
+    if (!consumed) {
+      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
     }
   }
 
@@ -510,7 +528,11 @@ const getUserFromToken = async (token) => {
   const userId = Number(payload.sub)
   const tokenVersion = getTokenVersionFromPayload(payload)
 
-  if (!Number.isInteger(userId) || tokenVersion === null) {
+  if (
+    !Number.isInteger(userId) ||
+    tokenVersion === null ||
+    payload.purpose !== undefined
+  ) {
     throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
   }
 

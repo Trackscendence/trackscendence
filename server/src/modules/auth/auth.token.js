@@ -30,12 +30,13 @@ const signAccessToken = (user) => {
   )
 }
 
-const signTwoFactorChallengeToken = (user) => {
+const signTwoFactorChallengeToken = (user, challengeVersion) => {
   return jwt.sign(
     {
       sub: user.id,
       tokenVersion: user.tokenVersion,
       purpose: TWO_FACTOR_CHALLENGE_PURPOSE,
+      challengeVersion,
     },
     config.JWT_SECRET,
     { expiresIn: config.TWO_FACTOR_CHALLENGE_EXPIRES_IN },

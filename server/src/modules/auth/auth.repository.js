@@ -11,6 +11,7 @@ const safeUserSelect = {
 const tokenUserSelect = {
   ...safeUserSelect,
   tokenVersion: true,
+  twoFactorChallengeVersion: true,
   twoFactorPendingSecretCiphertext: true,
 }
 
@@ -268,6 +269,87 @@ const consumeRecoveryCode = async (userId, codeHash) => {
   return result.count > 0
 }
 
+const issueTwoFactorChallenge = (userId) => {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      twoFactorChallengeVersion: {
+        increment: 1,
+      },
+    },
+    select: {
+      id: true,
+      tokenVersion: true,
+      twoFactorChallengeVersion: true,
+    },
+  })
+}
+
+const consumeTwoFactorChallenge = async (userId, challengeVersion) => {
+  const result = await prisma.user.updateMany({
+    where: {
+      id: userId,
+      twoFactorChallengeVersion: challengeVersion,
+    },
+    data: {
+      twoFactorChallengeVersion: {
+        increment: 1,
+      },
+    },
+  })
+
+  return result.count > 0
+}
+
+const consumeRecoveryCodeAndChallenge = async (
+  userId,
+  codeHash,
+  challengeVersion,
+) => {
+  try {
+    await prisma.$transaction(async (tx) => {
+      const challengeResult = await tx.user.updateMany({
+        where: {
+          id: userId,
+          twoFactorChallengeVersion: challengeVersion,
+        },
+        data: {
+          twoFactorChallengeVersion: {
+            increment: 1,
+          },
+        },
+      })
+
+      if (challengeResult.count !== 1) {
+        throw new Error('INVALID_TWO_FACTOR_CHALLENGE')
+      }
+
+      const codeResult = await tx.userTwoFactorRecoveryCode.deleteMany({
+        where: {
+          userId,
+          codeHash,
+          isPending: false,
+        },
+      })
+
+      if (codeResult.count !== 1) {
+        throw new Error('INVALID_TWO_FACTOR_RECOVERY_CODE')
+      }
+    })
+
+    return true
+  } catch (error) {
+    if (
+      error.message === 'INVALID_TWO_FACTOR_CHALLENGE' ||
+      error.message === 'INVALID_TWO_FACTOR_RECOVERY_CODE'
+    ) {
+      return false
+    }
+
+    throw error
+  }
+}
+
 const updateUserLoginAttempts = (userId, data) => {
   return prisma.user.update({
     where: { id: userId },
@@ -279,6 +361,8 @@ module.exports = {
   clearPasswordResetToken,
   clearTwoFactorById,
   consumeRecoveryCode,
+  consumeRecoveryCodeAndChallenge,
+  consumeTwoFactorChallenge,
   createUser,
   findAuthById,
   findByEmail,
@@ -287,6 +371,7 @@ module.exports = {
   findByUsername,
   findSafeById,
   findTokenUserById,
+  issueTwoFactorChallenge,
   replacePendingTwoFactorSetup,
   updatePasswordById,
   updatePasswordByIdInTransaction,

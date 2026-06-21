@@ -1,28 +1,70 @@
-# Postman Flows
+# Postman Collections
 
-Available collections:
+This folder contains documentation for local Trackscendence Postman checks.
 
-- `trackscendence-auth-security.postman_collection.json`
-- `trackscendence-friendship.postman_collection.json`
+The actual Postman collections and environments now live in `tests/postman/`.
 
-Shared environment:
+Recommended taxonomy for future additions:
 
-- `trackscendence-local.postman_environment.json`
+- `tests/postman/<domain>/<feature>/`
 
-Import the environment plus whichever collection you want to run.
+Current structure:
+
+- `tests/postman/auth/security/`
+- `tests/postman/friends/friendship/`
+
+Each collection keeps reusable test variables in a matching environment file, so the collection JSON stays generic and easy to rerun.
+
+## Auth Security
+
+Import:
+
+- [tests/postman/auth/security/trackscendence-auth-security.postman_collection.json](/home/ogrativ/Projects/trackscendence/tests/postman/auth/security/trackscendence-auth-security.postman_collection.json:1)
+- [tests/postman/auth/security/trackscendence-auth-local.postman_environment.json](/home/ogrativ/Projects/trackscendence/tests/postman/auth/security/trackscendence-auth-local.postman_environment.json:1)
 
 Recommended usage:
 
-1. Select the `Trackscendence Local` environment.
-2. For the auth collection, run `01 Initialize / Initialize Test Variables`.
-3. For the friendship collection, run `01 Initialize / Initialize Friendship Variables`.
-4. Run the remaining requests top-to-bottom, or run the full collection in order.
+1. Select the imported environment named `Trackscendence Auth Local`.
+2. Run `01 Initialize / Initialize Test Variables`.
+3. Run the remaining requests top-to-bottom, or run the full collection in order.
+
+Coverage:
+
+- register, login, and `/auth/me`
+- password change flow
+- forgot/reset password flow with Mailpit
+- single-use reset token check
+- weak-password and validation guards
 
 Notes:
 
 - The collection assumes the Docker production-style stack is running on `http://localhost:8080`.
 - Mail-based reset testing uses Mailpit on `http://localhost:8025`.
 - The collection auto-saves `token`, `oldToken`, `messageId`, `resetToken`, and `resetLink`.
-- The friendship collection auto-saves two users, their ids, and both bearer tokens.
-- The friendship collection now covers happy paths plus duplicate pending requests, reverse-request conflicts, self-request validation, and unauthenticated access guards.
 - UI-only behavior such as redirecting on expired sessions is not covered by Postman.
+
+## Friendship Flow
+
+Import:
+
+- [tests/postman/friends/friendship/trackscendence-friendship.postman_collection.json](/home/ogrativ/Projects/trackscendence/tests/postman/friends/friendship/trackscendence-friendship.postman_collection.json:1)
+- [tests/postman/friends/friendship/trackscendence-friendship-local.postman_environment.json](/home/ogrativ/Projects/trackscendence/tests/postman/friends/friendship/trackscendence-friendship-local.postman_environment.json:1)
+
+Recommended usage:
+
+1. Select the imported environment named `Trackscendence Friendship Local`.
+2. Run `01 Initialize / Initialize Friendship Variables`.
+3. Run the remaining requests top-to-bottom, or run the full collection in order.
+
+Coverage:
+
+- send, accept, reject, cancel, and remove friendship flows
+- duplicate pending requests and reverse-request conflicts
+- self-request validation
+- unauthenticated and invalid-input guards
+
+Notes:
+
+- The collection assumes the Docker production-style stack is running on `http://localhost:8080`.
+- The friendship collection auto-saves two users, their ids, and both bearer tokens.
+- UI-only behavior is not covered by Postman.

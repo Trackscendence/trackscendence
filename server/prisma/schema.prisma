@@ -25,9 +25,9 @@ model User {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   games                   GamePlayer[]
-  sentFriendships         Friendship[] @relation("FriendshipRequester")
-  receivedFriendships     Friendship[] @relation("FriendshipAddressee")
-  blockedFriendships      Friendship[] @relation("FriendshipBlocker")
+  outgoingFriendships      Friendship[] @relation("FriendshipRequester")
+  incomingFriendships      Friendship[] @relation("FriendshipAddressee")
+  friendshipsBlockedByUser Friendship[] @relation("FriendshipBlocker")
 }
 
 enum GameStatus {
@@ -80,6 +80,9 @@ model Friendship {
   addressee   User             @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
   blockedBy   User?            @relation("FriendshipBlocker", fields: [blockedById], references: [id], onDelete: SetNull)
 
+  // This is an explicit relationship entity, not an implicit many-to-many table,
+  // because we need lifecycle state (PENDING / ACCEPTED / BLOCKED), timestamps,
+  // and knowledge of who initiated or blocked the relationship.
   // A follow-up SQL migration also enforces unordered-pair uniqueness via LEAST/GREATEST.
   @@unique([requesterId, addresseeId])
   @@index([requesterId, status])

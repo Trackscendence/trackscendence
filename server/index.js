@@ -12,21 +12,33 @@ const io = new Server(server, {
   path: '/websocket/',
 })
 
-io.on('connection', (socket) => {
-  socket.timeout(5000).emit('token', async (err, response) => {
-    if (err) {
-      socket.disconnect()
-    } else {
-      try {
-        const user = await authService.getUserFromToken(response)
-        socket.user = { id: user.id, username: user.username }
-        socket.join('channel:#general')
-        logger.info('user connected:', socket.user)
-      } catch (error) {
-        console.log(error)
-      }
+io.use(async (socket, next) => {
+  try {
+    let token =
+      socket.handshake.auth?.token || socket.handshake.headers?.authorization
+    if (!token) {
+      return next(new Error('Authentication error'))
     }
-  })
+
+    // Normalize in case headers.authorization is an array
+    if (Array.isArray(token)) {
+      token = token[0]
+    }
+
+    const extractedToken = token.startsWith('Bearer ')
+      ? token.split(' ')[1]
+      : token
+    const user = await authService.getUserFromToken(extractedToken)
+    socket.user = { id: user.id, username: user.username }
+    next()
+  } catch (error) {
+    next(new Error('Authentication error'))
+  }
+})
+
+io.on('connection', (socket) => {
+  socket.join('channel:#general')
+  logger.info('user connected:', socket.user)
 
   socket.on('disconnect', () => {
     logger.info('user disconnected', socket.user)

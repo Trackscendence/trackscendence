@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent } from 'react'
+import { useEffect } from 'react'
 import useAuthStore from '@/stores/useAuthStore'
 import { socket } from '@/services/socket'
 import BasicChat from './_components/BasicChat'
@@ -6,23 +6,19 @@ import BasicChat from './_components/BasicChat'
 const Session = () => {
   const { user, token } = useAuthStore()
 
-  const handleSocketToken = useEffectEvent((callback) => {
-    callback(token)
-  })
-
   useEffect(() => {
-    const onToken = (callback) => {
-      handleSocketToken(callback)
+    if (token) {
+      socket.auth = { token }
+      socket.connect()
+    } else {
+      socket.auth = {}
     }
-
-    socket.connect()
-    socket.on('token', onToken)
 
     return () => {
-      socket.off('token', onToken)
+      socket.auth = {}
       socket.disconnect()
     }
-  }, [])
+  }, [token])
 
   return (
     <div>

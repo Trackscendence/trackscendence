@@ -26,6 +26,12 @@ const MAX_LOGIN_ATTEMPTS = 8
 const LOCKED_DURATION_MINUTES = 2
 const GENERIC_ACCOUNT_LOCKED_MESSAGE = 'Account temporarily locked'
 
+//WIP
+const EMAIL_MAX_LENGTH = 254
+const USERNAME_REGEX = /^[A-Za-z][A-Za-z0-9]*$/
+const USERNAME_MIN_LENGTH = 6
+const USERNAME_MAX_LENGTH = 32
+
 const normalizeEmail = (email) => email.trim().toLowerCase()
 const normalizeIdentifier = (identifier) => {
   const trimmedIdentifier = identifier.trim()
@@ -60,6 +66,10 @@ const getPasswordValidationMessages = (password) => {
     details.push(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
   }
 
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    details.push(`Password must be less than ${PASSWORD_MAX_LENGTH} characters`)
+  }
+
   if (!PASSWORD_COMPLEXITY_REGEX.test(password)) {
     details.push(
       'Password must include uppercase, lowercase, a number, and a special character',
@@ -79,10 +89,20 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
     details.push('Email is required')
   } else if (!EMAIL_REGEX.test(normalizedEmail)) {
     details.push('Email must be valid')
+  } else if (normalizedEmail.length >= EMAIL_MAX_LENGTH) {
+    details.push(
+      `Email must be equal to or less than ${EMAIL_MAX_LENGTH} characters`,
+    )
   }
 
   if (!normalizedUsername) {
     details.push('Username is required')
+  } else if (!USERNAME_REGEX.test(normalizedUsername)) {
+    details.push('Username must be valid')
+  } else if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
+    details.push(`Username must more than ${USERNAME_MIN_LENGTH} characters`)
+  } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
+    details.push(`Username must less than ${USERNAME_MAX_LENGTH} characters`)
   }
 
   details.push(...getPasswordValidationMessages(normalizedPassword))
@@ -265,9 +285,8 @@ const login = async (payload) => {
 
   const isValidPassword = await bcrypt.compare(password, user.passwordHash)
 
-  //WIP
   if (!isValidPassword) {
-    const attempts = user.failedLoginCount + 1
+    const attempts = user.tailedLoginCount + 1
 
     if (attempts >= MAX_LOGIN_ATTEMPTS) {
       await authRepository.updateUserLoginAttempts(user.id, {

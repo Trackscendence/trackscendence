@@ -16,13 +16,19 @@ const normalizeIdentifier = (identifier) => {
     : trimmedIdentifier
 }
 
+const PASSWORD_WHITESPACE_REGEX = /\s/
+const PASSWORD_UPPERCASE_REGEX = /[A-Z]/
+const PASSWORD_LOWERCASE_REGEX = /[a-z]/
+const PASSWORD_NUMBER_REGEX = /\d/
+const PASSWORD_SYMBOL_REGEX = /^A-Za-z0-9/
+
 //SIGNUP PAGE VALIDATIONS
 export const validateSignupInput = ({ email, username, password }) => {
   const errors = {}
 
   const normalizedEmail = email.trim().toLowerCase()
   const normalizedUsername = username.trim().toLowerCase()
-  const normalizedPassword = password.trim()
+  const normalizedPassword = typeof password === 'string' ? password : ''
 
   if (!normalizedEmail) {
     errors.email = 'Email address is required'
@@ -47,6 +53,16 @@ export const validateSignupInput = ({ email, username, password }) => {
     errors.password = 'Password is required'
   } else if (normalizedPassword.length < PASSWORD_MIN_LENGTH) {
     errors.password = `Password must be at least ${PASSWORD_MIN_LENGTH} characters`
+  } else if (PASSWORD_WHITESPACE_REGEX.test(normalizedPassword)) {
+    errors.password = 'Password must not contain whitespace'
+  } else if (!PASSWORD_UPPERCASE_REGEX.test(normalizedPassword)) {
+    errors.password = 'Password must contain an uppercase letter'
+  } else if (!PASSWORD_LOWERCASE_REGEX.test(normalizedPassword)) {
+    errors.password = 'Password must contain an lowercase letter'
+  } else if (!PASSWORD_NUMBER_REGEX.test(normalizedPassword)) {
+    errors.password = 'Password must contain a number'
+  } else if (!PASSWORD_SYMBOL_REGEX.test(normalizedPassword)) {
+    errors.password = 'Password must contain a symbol'
   }
 
   return {

@@ -1,5 +1,5 @@
 const EMAIL_REGEX = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/
-const USERNAME_REGEX = /^[a-z][a-z0-9]*$/i
+const USERNAME_REGEX = /^[a-z][a-z0-9]*$/
 
 const PASSWORD_MIN_LENGTH = 8
 
@@ -20,7 +20,7 @@ const PASSWORD_WHITESPACE_REGEX = /\s/
 const PASSWORD_UPPERCASE_REGEX = /[A-Z]/
 const PASSWORD_LOWERCASE_REGEX = /[a-z]/
 const PASSWORD_NUMBER_REGEX = /\d/
-const PASSWORD_SYMBOL_REGEX = /^A-Za-z0-9/
+const PASSWORD_SYMBOL_REGEX = /[^a-z0-9]/i
 
 //SIGNUP PAGE VALIDATIONS
 export const validateSignupInput = ({ email, username, password }) => {
@@ -61,7 +61,7 @@ export const validateSignupInput = ({ email, username, password }) => {
     errors.password = 'Password must contain an lowercase letter'
   } else if (!PASSWORD_NUMBER_REGEX.test(normalizedPassword)) {
     errors.password = 'Password must contain a number'
-  } else if (PASSWORD_SYMBOL_REGEX.test(normalizedPassword)) {
+  } else if (!PASSWORD_SYMBOL_REGEX.test(normalizedPassword)) {
     errors.password = 'Password must contain a symbol'
   }
 

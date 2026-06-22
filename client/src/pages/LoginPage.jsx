@@ -115,9 +115,9 @@ const LoginPage = () => {
               required
             />
 
-            {validationDetails.email ? (
+            {validationDetails.password ? (
               <p className="mt-1 text-sm text-[#8a321f]">
-                {validationDetails.email}
+                {validationDetails.password}
               </p>
             ) : null}
           </label>

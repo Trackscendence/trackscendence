@@ -53,12 +53,14 @@ We use Docker to ensure consistent runtime environments. However, you can also r
 This method spins up the frontend, backend, PostgreSQL database, and Adminer (database viewer) automatically.
 
 - **Start Development (Hot-reloading enabled):**
+
   ```bash
   npm run compose:dev   # or: just dev
   ```
 
   - Frontend: `http://localhost:5173`
   - Backend: `http://localhost:3001`
+
 - **Follow Logs:**
   ```bash
   npm run compose:logs  # or: just logs

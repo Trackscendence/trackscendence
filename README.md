@@ -1,259 +1,211 @@
-Hello, my name is Skyy. Please add a sentence with your name below.
+_This project has been created as part of the 42 curriculum by smoore, srodrigo, szhong, ogrativ, and dmelnyk._
 
-Bon dia! El meu nom és Sergi
+<div align="center">
+  <h1>🎮 Trackscendence</h1>
+  <p>A modern, real-time multiplayer online web application featuring the classic UNO card game.</p>
 
-Hello, Miha was here.
+  <!-- Tech Stack Badges -->
 
-Wild Muktim appeared
+<a href="https://react.dev/"><img src="https://img.shields.io/badge/Frontend-React%20%7C%20Vite-blue?style=flat-square&logo=react" alt="React" /></a>
+<a href="https://expressjs.com/"><img src="https://img.shields.io/badge/Backend-Express%20%7C%20Node.js-green?style=flat-square&logo=node.js" alt="Express" /></a>
+<a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/Database-PostgreSQL-blue?style=flat-square&logo=postgresql" alt="PostgreSQL" /></a>
+<a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/ORM-Prisma-black?style=flat-square&logo=prisma" alt="Prisma" /></a>
+<a href="https://socket.io/"><img src="https://img.shields.io/badge/RealTime-Socket.io-black?style=flat-square&logo=socket.io" alt="Socket.io" /></a>
+<a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Container-Docker-blue?style=flat-square&logo=docker" alt="Docker" /></a>
 
-David said hi from Beijing (travelling in Beijing)
+</div>
 
-# UNO Trackscendence
+<br />
 
-### Modules we are doing
+---
 
-### Tools we are using
+## Table of Contents
 
-- Frontend: React
-- Backend: Express
-- CSS: Tailwind
-- ORM: Prisma
-- Database: PostgreSQL
-- Proxy: Nginx in production mode
-- Container: Docker / Docker Compose
+1. [Description & Key Features](#1-description--key-features)
+2. [UNO Game Rules](#2-uno-game-rules)
+3. [System Architecture & Database Schema](#3-system-architecture--database-schema)
+4. [Implemented Modules (18-19 Points Target)](#4-implemented-modules-18-19-points-target)
+5. [Getting Started](#5-getting-started)
+6. [Developer Documentation](#6-developer-documentation)
+7. [Team Information](#7-team-information)
+8. [Resources & AI Usage](#8-resources--ai-usage)
 
-In production mode, Nginx serves the built React frontend and proxies `/api/*` requests to Express. The backend and database stay inside the Docker network.
+---
 
-### Branches Policy
+## 1. Description & Key Features
 
-Moving forward create a new branch for each ticket/feature/bug. Any one thing you work on should have it's own branch. Once the feature is finish, merge to dev, and then we will push from dev to main.
+**Trackscendence** is a full-stack, secure, and highly performant web application built from scratch to deliver a seamless online multiplayer gaming experience. The platform synchronizes game sessions, handles real-time peer interactions, and ensures robust account security.
 
-### How to run it
+### Key Features
 
-#### 1. Prepare environment
+- **Real-Time Gameplay**: Live multiplayer matching and an advanced UNO game engine logic via WebSockets.
+- **Secure Authentication**: JWT-based auth, anonymous guest login, and 2FA support.
+- **User Ecosystem**: Customizable user profiles, statistics, peer friendships, and relationship status tracking.
+- **Live Interaction**: Real-time messaging, chat lobbies, and secure WebSocket authentication.
 
-Prerequisites: [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed.
+---
 
-1. Clone the repository
+## 2. UNO Game Rules
 
-```
-git clone git@github.com:Trackscendence/trackscendence.git
-cd trackscendence
-```
+Our multiplayer engine implements the classic rules of UNO:
 
-2. Copy the environment file and adjust values if needed
+- **Players & Age**: Supports **2 to 10 players**, recommended for ages 7+.
+- **Setup**: Every player is dealt **7 cards** face down. Remaining cards form the _Draw Pile_. The top card is flipped face up to form the _Discard Pile_.
+- **Gameplay**:
+  - The player to the left of the dealer starts.
+  - Players must match the top card of the Discard Pile by **Color, Number, or Action/Symbol**.
+  - **Wild Cards** can be played at any time, allowing the player to select the active color.
+  - If a player has no matches (or chooses not to play), they must **draw one card** from the Draw Pile.
+  - If the first card flipped from the Draw Pile is an Action card, its effect applies to the first player.
+- **Yelling "UNO!"**: When a player has exactly **1 card** remaining, they must yell **"UNO!"**. If caught by another player before the next turn begins, they must draw 2 penalty cards.
+- **Winning**: The first player to discard all of their cards wins the game.
+- **Reshuffling**: If the Draw Pile is exhausted, the Discard Pile is reshuffled (leaving the top card) to rebuild the Draw Pile.
 
-```
-cp .env.example .env
-```
+---
 
-Ports are configured through `.env`.
+## 3. System & Database Architecture
 
-Important port values:
+### System Architecture
 
-```env
-PORT=3001
-SERVER_PORT=3001
-CLIENT_PORT=8080
-CLIENT_DEV_PORT=5173
-DB_PORT=5432
-```
+The platform is orchestrated using Docker Compose, decoupling services into distinct containers managed under a shared virtual network:
 
-`PORT` is the port Express listens on inside the server container. `SERVER_PORT` is the port exposed on your machine in Docker development mode. If another local process already uses `3001`, change only `SERVER_PORT`, for example:
+- **Nginx (Reverse Proxy)**: Acts as the single entry point on port `8080`, routing traffic to the frontend or API gateway.
+- **Frontend (Client)**: A React SPA served via Vite in development, and built/served through Nginx in production.
+- **Backend (Server)**: An Express API handling REST endpoints and real-time state synchronization via Socket.IO.
+- **Database**: PostgreSQL database managed through Prisma ORM migrations.
 
-```env
-PORT=3001
-SERVER_PORT=4242
-```
+### Database Schema
 
-Then the backend is available at `http://localhost:4242`, while Express still logs that it is listening on port `3001` inside Docker.
+Our database relational schema is defined in Prisma and is automatically kept up-to-date. You can view the live entity-relationship diagram here:
 
-#### 2. Development mode with Docker
+👉 **[Live Database ERD Diagram](docs/ERD.md)**
 
-Use this for normal project development:
+_Note: The ERD diagram is automatically regenerated inside the `/docs` folder whenever you run `npx prisma generate` or `just db-generate`._
 
-```
+---
+
+## 4. Implemented Modules (18-19 Points Target)
+
+To exceed the mandatory 14 points required for evaluation, we have implemented the following modules:
+
+<details>
+<summary><strong>Click to expand all implemented modules</strong></summary>
+<br>
+
+| Category     | Module                         | Type         | Justification                                                                             |
+| ------------ | ------------------------------ | ------------ | ----------------------------------------------------------------------------------------- |
+| **Web**      | Framework for Frontend/Backend | Major (2pts) | Used React for the frontend and Express for the backend.                                  |
+| **Web**      | WebSockets                     | Major (2pts) | Real-time updates, graceful disconnections, and efficient broadcasting via Socket.IO.     |
+| **Web**      | User Chat                      | Major (2pts) | Live messaging, profile viewing, and a robust friend system.                              |
+| **Web**      | Public API                     | Major (2pts) | Secure API key, rate limiting, documentation, and RESTful endpoints.                      |
+| **Web**      | Use an ORM                     | Minor (1pt)  | Used Prisma for strict typing and automated migrations.                                   |
+| **Web**      | Search Functionality           | Minor (1pt)  | Implemented filtering, sorting, and pagination.                                           |
+| **Web**      | File Upload                    | Minor (1pt)  | Avatar and asset management system.                                                       |
+| **User Mgt** | Standard User Management       | Major (2pts) | JWT Auth, profile updates, avatars, and status tracking.                                  |
+| **AI**       | AI Opponent                    | Major (2pts) | _[TODO: Verify if implemented]_ Intelligent bots capable of playing the game effectively. |
+| **Gaming**   | Web-based Game                 | Major (2pts) | Real-time multiplayer UNO engine.                                                         |
+| **Gaming**   | Multiplayer 3+                 | Major (2pts) | Scaled game engine to handle 3 or more concurrent players.                                |
+
+</details>
+
+---
+
+## 5. Getting Started
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine
+- [Node.js](https://nodejs.org/en) & npm (if running locally without Docker)
+
+### Installation & Configuration
+
+1. **Clone the repository**
+   ```bash
+   git clone git@github.com:Trackscendence/trackscendence.git
+   cd trackscendence
+   ```
+2. **Setup Environment Variables**
+   ```bash
+   cp .env.example .env
+   ```
+   > **Note:** The `.env.example` file is heavily documented inline. Review it to understand port configurations, database credentials, and security keys. Make sure ports `3001` (Backend API), `5173` (Frontend), and `5432` (PostgreSQL) are free on your host machine.
+
+### Execution
+
+We use Docker to guarantee environment parity across development and production deployments.
+
+**Development Mode (Hot-reloading enabled):**
+
+```bash
 npm run compose:dev
 ```
 
-This starts:
+- Frontend Application: `http://localhost:5173`
+- Backend API: `http://localhost:3001`
 
-- Frontend: `http://localhost:<CLIENT_DEV_PORT>` (default `5173`)
-- Backend: `http://localhost:<SERVER_PORT>` (default `3001`)
-- Database: `localhost:<DB_PORT>` (default `5432`)
-- Adminer: `http://localhost:8081`
-- Mailpit: `http://localhost:8025`
+**Production Mode (Nginx Reverse Proxy):**
 
-This mode uses hot reload:
-
-- The client container runs Vite.
-- The server container runs Node with `--watch`.
-- The server applies pending Prisma migrations before it starts accepting requests.
-- The database runs in Docker.
-- Password reset emails are delivered to Mailpit.
-
-Nginx is not used in development mode.
-
-#### 3. Production-style mode with Docker
-
-Use this to test the production container setup:
-
-```
+```bash
 npm run compose:up
 ```
 
-Open the app at:
+- Consolidated Web Application: `http://localhost:8080`
 
-```
-http://localhost:<CLIENT_PORT>
-```
+---
 
-Default:
+## 6. Developer Documentation
 
-```
-http://localhost:8080
-```
+For details on database migrations, project directory structures, lints/spelling tools, and git contribution workflows, please check out our dedicated **[Developer & Contribution Guide](docs/DEVELOPER_GUIDE.md)**.
 
-In this mode, Nginx serves the frontend and proxies backend requests under `/api/*`.
-The server also applies pending Prisma migrations on startup, which bootstraps a fresh database volume automatically.
-Password reset emails are delivered to Mailpit at `http://localhost:8025`.
+---
 
-Other useful commands:
+## 7. Team Information
 
-```
-npm run compose:logs     # Follow logs from all services
-npm run compose:down     # Stop all services
-npm run compose:clean    # Stop and remove all data (volumes)
-npm run db:shell         # Open a psql shell in the database
-```
+_(Note: As per 42 evaluation guidelines, only active team members participating in the final evaluation are listed)._
 
-#### 4. Development mode without Docker
+| GitHub Login | Intra 42 Login | Assigned Role(s) | Responsibilities |
+| ------------ | -------------- | ---------------- | ---------------- |
+| `skyy`       | `smoore`       | _[TODO]_         | _[TODO]_         |
+| `sergi`      | `srodrigo`     | _[TODO]_         | _[TODO]_         |
+| `adshz`      | `szhong`       | _[TODO]_         | _[TODO]_         |
+| `olehov`     | `ogrativ`      | _[TODO]_         | _[TODO]_         |
+| `demm05`     | `dmelnyk`      | _[TODO]_         | _[TODO]_         |
 
-```
-npm run install:all
-npm run dev
-```
+<details>
+<summary><strong>Click to view detailed individual contributions</strong></summary>
+<br>
 
-This runs the frontend and backend directly on your machine:
+### `smoore` (skyy)
 
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:3001`
+- **Contributions**: _[TODO]_
+- **Challenges Faced**: _[TODO]_
 
-You still need a reachable PostgreSQL database and a valid `DATABASE_URL`.
+### `srodrigo` (sergi)
 
-For non-Docker development, password reset email delivery can use any SMTP provider by setting `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and optionally `PASSWORD_RESET_URL_BASE` in `.env`.
-If you open the app through a different public origin such as `127.0.0.1`, a tunnel URL, or a staging domain, set `APP_BASE_URL` or `PASSWORD_RESET_URL_BASE` to that exact frontend URL so reset links point to the right place.
+- **Contributions**: _[TODO]_
+- **Challenges Faced**: _[TODO]_
 
-### Backend API
+### `szhong` (adshz)
 
-The backend uses versioned API routes.
+- **Contributions**: _[TODO]_
+- **Challenges Faced**: _[TODO]_
 
-Current development endpoints:
+### `ogrativ` (olehov)
 
-- `GET /` - backend API metadata
-- `GET /api/v1/ping` - API process check
-- `GET /api/v1/health` - database connection check
-- `GET /api/docs/` - Swagger docs, development only
+- **Contributions**: _[TODO]_
+- **Challenges Faced**: _[TODO]_
 
-Examples in Docker development mode:
+### `dmelnyk` (demm05)
 
-```
-curl http://localhost:<SERVER_PORT>/
-curl http://localhost:<SERVER_PORT>/api/v1/ping
-curl http://localhost:<SERVER_PORT>/api/v1/health
-```
+- **Contributions**: _[TODO]_
+- **Challenges Faced**: _[TODO]_
 
-If `SERVER_PORT=4242`:
+</details>
 
-```
-curl http://localhost:4242/api/v1/ping
-```
+---
 
-Old unversioned API routes such as `/api/ping` and `/api/health` are not used.
+## 8. Resources & AI Usage
 
-### Backend Structure
-
-The backend keeps `app.js` and `index.js` at the server root:
-
-- `server/app.js` creates and configures the Express app.
-- `server/index.js` starts the HTTP server.
-
-Initial backend setup structure:
-
-```
-server/
-  app.js
-  index.js
-  prisma/
-    schema.prisma
-  src/
-    db/
-      prisma.js
-    docs/
-      swagger.js
-    exceptions/
-      app.exception.js
-      bad-request.exception.js
-      conflict.exception.js
-      forbidden.exception.js
-      not-found.exception.js
-      unauthorized.exception.js
-    middleware/
-      auth.middleware.js
-      error.middleware.js
-      morgan.middleware.js
-      rate-limit.middleware.js
-      validation.middleware.js
-    modules/
-      system/
-        system.controller.js
-        system.routes.js
-    routes/
-      v1/
-        index.js
-  utils/
-    config.js
-    logger.js
-```
-
-Route mounting flow:
-
-```
-server/app.js
-  -> app.use('/api/v1', v1Router)
-
-server/src/routes/v1/index.js
-  -> v1Router.use('/', systemRoutes)
-```
-
-This produces API URLs like:
-
-```
-/api/v1/ping
-/api/v1/health
-```
-
-Future versions can be added as:
-
-```
-server/src/routes/v2/index.js
-server/src/routes/v3/index.js
-```
-
-### Backend Import Aliases
-
-The backend uses native Node package import aliases with `#` in `server/package.json`.
-
-Use:
-
-```js
-const config = require('#utils/config')
-const prisma = require('#db/prisma')
-const v1Router = require('#routes/v1')
-```
-
-Avoid deep relative imports like:
-
-```js
-require('../../../utils/config')
-```
+- **Core Documentation**: [React Docs](https://react.dev/), [Zustand](https://zustand-demo.pmnd.rs/), [Prisma](https://www.prisma.io/docs), [Socket.io](https://socket.io/docs/v4/).
+- **AI Usage**:
+  - _[TODO: Describe how AI was used — specifying for which tasks and which parts of the project.]_

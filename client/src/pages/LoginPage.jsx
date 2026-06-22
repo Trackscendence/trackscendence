@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useAuth from '../context/useAuth'
+import { validateLoginInput } from '../services/auth.validations'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -11,6 +12,7 @@ const LoginPage = () => {
     password: '',
   })
   const [error, setError] = useState('')
+  const [validationDetails, setValidationDetails] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const from = location.state?.from?.pathname || '/'
   const params = new URLSearchParams(location.search)
@@ -34,6 +36,8 @@ const LoginPage = () => {
   }
 
   const handleChange = (event) => {
+    setError('')
+    setValidationDetails({})
     setForm((currentForm) => ({
       ...currentForm,
       [event.target.name]: event.target.value,
@@ -43,10 +47,18 @@ const LoginPage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
+
+    const validations = validateLoginInput(form)
+
+    if (!validations.isValid) {
+      setValidationDetails(validations.errors)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      await login(form)
+      await login(validations.normalizedData)
       navigate(from, { replace: true })
     } catch (requestError) {
       setError(requestError.message)
@@ -83,6 +95,12 @@ const LoginPage = () => {
               onChange={handleChange}
               required
             />
+
+            {validationDetails.identifier ? (
+              <p className="mt-1 text-sm text-[#8a321f]">
+                {validationDetails.identifier}
+              </p>
+            ) : null}
           </label>
 
           <label className="block">
@@ -96,6 +114,12 @@ const LoginPage = () => {
               onChange={handleChange}
               required
             />
+
+            {validationDetails.email ? (
+              <p className="mt-1 text-sm text-[#8a321f]">
+                {validationDetails.email}
+              </p>
+            ) : null}
           </label>
 
           {error ? (

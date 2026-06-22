@@ -8,7 +8,7 @@ This guide is designed for developers contributing to the Trackscendence project
 
 The repository is structured as a monorepo, separating frontend and backend logic.
 
-```
+```text
 trackscendence/
 ├── .agents/               # Agent-specific instructions (ignored locally)
 ├── assets/                # Design assets (e.g., PERN stack diagrams, logos)
@@ -134,7 +134,7 @@ We follow conventional development practices to keep the repository history clea
 
 We enforce conventionally formatted commit messages via Husky + Commitlint. Format commits as:
 
-```
+```text
 <type>(<scope>): <short description>
 ```
 

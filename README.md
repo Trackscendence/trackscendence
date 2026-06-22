@@ -23,8 +23,8 @@ _This project has been created as part of the 42 curriculum by smoore, srodrigo,
 
 1. [Description & Key Features](#1-description--key-features)
 2. [UNO Game Rules](#2-uno-game-rules)
-3. [System Architecture & Database Schema](#3-system-architecture--database-schema)
-4. [Implemented Modules (18-19 Points Target)](#4-implemented-modules-18-19-points-target)
+3. [System & Database Architecture](#3-system--database-architecture)
+4. [Target Modules (17 Points Target)](#4-target-modules-17-points-target)
 5. [Getting Started](#5-getting-started)
 6. [Developer Documentation](#6-developer-documentation)
 7. [Team Information](#7-team-information)
@@ -82,29 +82,26 @@ Our database relational schema is defined in Prisma and is automatically kept up
 
 _Note: The ERD diagram is automatically regenerated inside the `/docs` folder whenever you run `npx prisma generate` or `just db-generate`._
 
----
+## 4. Target Modules (17 Points Target)
 
-## 4. Implemented Modules (18-19 Points Target)
-
-To exceed the mandatory 14 points required for evaluation, we have implemented the following modules:
+To exceed the mandatory 14 points required for evaluation, our roadmap implements the following modules (targeting a total of 17 points):
 
 <details>
-<summary><strong>Click to expand all implemented modules</strong></summary>
+<summary><strong>Click to expand target modules status</strong></summary>
 <br>
 
-| Category     | Module                         | Type         | Justification                                                                             |
-| ------------ | ------------------------------ | ------------ | ----------------------------------------------------------------------------------------- |
-| **Web**      | Framework for Frontend/Backend | Major (2pts) | Used React for the frontend and Express for the backend.                                  |
-| **Web**      | WebSockets                     | Major (2pts) | Real-time updates, graceful disconnections, and efficient broadcasting via Socket.IO.     |
-| **Web**      | User Chat                      | Major (2pts) | Live messaging, profile viewing, and a robust friend system.                              |
-| **Web**      | Public API                     | Major (2pts) | Secure API key, rate limiting, documentation, and RESTful endpoints.                      |
-| **Web**      | Use an ORM                     | Minor (1pt)  | Used Prisma for strict typing and automated migrations.                                   |
-| **Web**      | Search Functionality           | Minor (1pt)  | Implemented filtering, sorting, and pagination.                                           |
-| **Web**      | File Upload                    | Minor (1pt)  | Avatar and asset management system.                                                       |
-| **User Mgt** | Standard User Management       | Major (2pts) | JWT Auth, profile updates, avatars, and status tracking.                                  |
-| **AI**       | AI Opponent                    | Major (2pts) | _[TODO: Verify if implemented]_ Intelligent bots capable of playing the game effectively. |
-| **Gaming**   | Web-based Game                 | Major (2pts) | Real-time multiplayer UNO engine.                                                         |
-| **Gaming**   | Multiplayer 3+                 | Major (2pts) | Scaled game engine to handle 3 or more concurrent players.                                |
+| Category     | Module                         | Type         | Status         | Justification                                                                              |
+| ------------ | ------------------------------ | ------------ | -------------- | ------------------------------------------------------------------------------------------ |
+| **Web**      | Framework for Frontend/Backend | Major (2pts) | 🟢 Implemented | Used React for the frontend and Express for the backend.                                   |
+| **Web**      | WebSockets                     | Major (2pts) | 🟢 Implemented | Real-time updates, graceful disconnections, and efficient broadcasting via Socket.IO.      |
+| **Web**      | User Chat                      | Major (2pts) | 🟡 In Progress | Live room messaging active; friendships, profile page view, and group lobbies in progress. |
+| **Web**      | Public API                     | Major (2pts) | 🔴 Planned     | Secure API key validation, route rate-limiting, and RESTful query endpoints.               |
+| **Web**      | Use an ORM                     | Minor (1pt)  | 🟢 Implemented | Used Prisma for type-safe relational mapping and migrations.                               |
+| **Web**      | Search Functionality           | Minor (1pt)  | 🔴 Planned     | Search filters, sorting, and pagination logic.                                             |
+| **Web**      | File Upload                    | Minor (1pt)  | 🔴 Planned     | Profile avatar upload and asset management system.                                         |
+| **User Mgt** | Standard User Management       | Major (2pts) | 🟡 In Progress | User register, login, session security, and 2FA completed; user settings in progress.      |
+| **Gaming**   | Web-based Game                 | Major (2pts) | 🟡 In Progress | Real-time multiplayer UNO engine logic under development.                                  |
+| **Gaming**   | Multiplayer 3+                 | Major (2pts) | 🟡 In Progress | Extending the game room structures to support 3 or more concurrent players.                |
 
 </details>
 

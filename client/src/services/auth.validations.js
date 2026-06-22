@@ -42,7 +42,7 @@ export const validateSignupInput = ({ email, username, password }) => {
     errors.username = 'Username is required'
   } else if (!USERNAME_REGEX.test(normalizedUsername)) {
     errors.username =
-      'Username must start with a letter and contain only letter and numbers'
+      'Username must start with a letter and contain only lowercase letters and numbers'
   } else if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
     errors.username = `Username must not be less than ${USERNAME_MIN_LENGTH} characters`
   } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {

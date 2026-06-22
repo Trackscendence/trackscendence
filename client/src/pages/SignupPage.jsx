@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuth from '../context/useAuth'
+import { validateSignupInput } from '../services/auth.validations'
 
 const SignupPage = () => {
   const navigate = useNavigate()
@@ -11,12 +12,12 @@ const SignupPage = () => {
     password: '',
   })
   const [error, setError] = useState('')
-  const [validationDetails, setValidationDetails] = useState([])
+  const [validationDetails, setValidationDetails] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (event) => {
     setError('')
-    setValidationDetails([])
+    setValidationDetails({})
 
     setForm((currentForm) => ({
       ...currentForm,
@@ -27,11 +28,19 @@ const SignupPage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
-    setValidationDetails([])
+    setValidationDetails({})
+
+    const validations = validateSignupInput(form)
+
+    if (!validations.isValid) {
+      setValidationDetails(validations.errors)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      await register(form)
+      await register(validations.normalizedData)
       navigate('/login', {
         replace: true,
         state: { message: 'Account created. Sign in to continue.' },
@@ -70,6 +79,12 @@ const SignupPage = () => {
               onChange={handleChange}
               required
             />
+
+            {validationDetails.email ? (
+              <p className="mt-1 text-sm text-[#8a321f]">
+                {validationDetails.email}
+              </p>
+            ) : null}
           </label>
 
           <label className="block">
@@ -83,6 +98,12 @@ const SignupPage = () => {
               onChange={handleChange}
               required
             />
+
+            {validationDetails.username ? (
+              <p className="mt-1 text-sm text-[#8a321f]">
+                {validationDetails.username}
+              </p>
+            ) : null}
           </label>
 
           <label className="block">
@@ -97,19 +118,18 @@ const SignupPage = () => {
               onChange={handleChange}
               required
             />
+
+            {validationDetails.password ? (
+              <p className="mt-1 text-sm text-[#8a321f]">
+                {validationDetails.password}
+              </p>
+            ) : null}
+
             <p className="mt-2 text-xs text-[#50635a]">
               Use 8+ characters with upper/lowercase letters, a number, and a
               symbol.
             </p>
           </label>
-
-          {validationDetails.length > 0 ? (
-            <div className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
-              {validationDetails.map((detail) => (
-                <p key={detail}>{detail}</p>
-              ))}
-            </div>
-          ) : null}
 
           {error ? (
             <p className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">

@@ -31,6 +31,7 @@ const EMAIL_MAX_LENGTH = 254
 const USERNAME_REGEX = /^[A-Za-z][A-Za-z0-9]*$/
 const USERNAME_MIN_LENGTH = 6
 const USERNAME_MAX_LENGTH = 32
+const PASSWORD_MAX_LENGTH = 254
 
 const normalizeEmail = (email) => email.trim().toLowerCase()
 const normalizeIdentifier = (identifier) => {
@@ -124,6 +125,7 @@ const validateLoginInput = ({ identifier, password } = {}) => {
   const normalizedPassword = typeof password === 'string' ? password : ''
   const details = []
 
+  //WIP
   if (!normalizedIdentifier) {
     details.push('Identifier is required')
   }

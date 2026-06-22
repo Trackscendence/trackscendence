@@ -11,7 +11,7 @@ import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
 import ChangePassword from '@/pages/ChangePassword'
 import Session from '@/pages/Session'
-import PrivacyPolicy from '@/pages/PrivacyPolicy'
+import PrivacyPolicy from '@/pages/Privacy'
 import TermsOfService from '@/pages/TermsOfService'
 
 const App = () => {

@@ -171,7 +171,7 @@ router.post('/forgot-password', authController.requestPasswordReset)
  *               token:
  *                 type: string
  *                 description: Password rest token received via email
- *                 example: 123e4567-e89b-112d4-a456-4242424242424.abcd1234ffff5678
+ *                 example: 123e4567-e89b-12d3-a456-426614174000.abcd1234ffff5678
  *               newPassword:
  *                 type: string
  *                 minLength: 8

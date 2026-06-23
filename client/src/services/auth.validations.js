@@ -22,7 +22,7 @@ const PASSWORD_LOWERCASE_REGEX = /[a-z]/
 const PASSWORD_NUMBER_REGEX = /\d/
 const PASSWORD_SYMBOL_REGEX = /[^a-z0-9]/i
 
-//SIGNUP PAGE VALIDATIONS
+//FRONTEND VALIDATIONS FOR SIGNUP PAGE
 export const validateSignupInput = ({ email, username, password }) => {
   const errors = {}
 
@@ -76,7 +76,7 @@ export const validateSignupInput = ({ email, username, password }) => {
   }
 }
 
-//LOGIN PAGE VALIDATIONS
+//FRONTEND VALIDATIONS FOR LOGIN PAGE
 export const validateLoginInput = ({ identifier, password }) => {
   const errors = {}
 

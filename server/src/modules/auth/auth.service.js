@@ -26,7 +26,6 @@ const MAX_LOGIN_ATTEMPTS = 8
 const LOCKED_DURATION_MINUTES = 2
 const GENERIC_ACCOUNT_LOCKED_MESSAGE = 'Account temporarily locked'
 
-//WIP
 const EMAIL_MAX_LENGTH = 254
 const USERNAME_REGEX = /^[A-Za-z][A-Za-z0-9]*$/
 const USERNAME_MIN_LENGTH = 6
@@ -80,6 +79,7 @@ const getPasswordValidationMessages = (password) => {
   return details
 }
 
+// BACKEND VALIDATIONS FOR SIGNUP PAGE
 const validateRegistrationInput = ({ email, username, password } = {}) => {
   const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
   const normalizedUsername = typeof username === 'string' ? username.trim() : ''
@@ -119,13 +119,13 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
   }
 }
 
+// BACKEND VALIDATIONS FOR LOGIN PAGE
 const validateLoginInput = ({ identifier, password } = {}) => {
   const normalizedIdentifier =
     typeof identifier === 'string' ? normalizeIdentifier(identifier) : ''
   const normalizedPassword = typeof password === 'string' ? password : ''
   const details = []
 
-  //WIP
   if (!normalizedIdentifier) {
     details.push('Identifier is required')
   }

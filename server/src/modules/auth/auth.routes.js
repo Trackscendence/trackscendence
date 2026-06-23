@@ -287,7 +287,7 @@ router.post('/change-password', requireAuth, authController.changePassword)
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Current  authenticated user returned successfully
+ *         description: Current authenticated user returned successfully
  *       401:
  *         description: Missing, invalid, or expired token
  *         content:

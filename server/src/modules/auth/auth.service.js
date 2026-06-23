@@ -76,19 +76,23 @@ const getPasswordValidationMessages = (password) => {
     details.push(`Password must be less than ${PASSWORD_MAX_LENGTH} characters`)
   }
 
-  if (!normalizedPassword) {
-    details.push('Password is required')
-  } else if (normalizedPassword.length < PASSWORD_MIN_LENGTH) {
-    details.push(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
-  } else if (PASSWORD_WHITESPACE_REGEX.test(normalizedPassword)) {
+  if (PASSWORD_WHITESPACE_REGEX.test(password)) {
     details.push('Password must not contain whitespace')
-  } else if (!PASSWORD_UPPERCASE_REGEX.test(normalizedPassword)) {
+  }
+
+  if (!PASSWORD_UPPERCASE_REGEX.test(password)) {
     details.push('Password must contain an uppercase letter')
-  } else if (!PASSWORD_LOWERCASE_REGEX.test(normalizedPassword)) {
-    details.push('Password must contain an lowercase letter')
-  } else if (!PASSWORD_NUMBER_REGEX.test(normalizedPassword)) {
+  }
+
+  if (!PASSWORD_LOWERCASE_REGEX.test(password)) {
+    details.push('Password must contain a lowercase letter')
+  }
+
+  if (!PASSWORD_NUMBER_REGEX.test(password)) {
     details.push('Password must contain a number')
-  } else if (!PASSWORD_SYMBOL_REGEX.test(normalizedPassword)) {
+  }
+
+  if (!PASSWORD_SYMBOL_REGEX.test(password)) {
     details.push('Password must contain a symbol')
   }
 
@@ -108,7 +112,7 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
   } else if (!EMAIL_REGEX.test(normalizedEmail)) {
     details.push('Email must be valid')
   } else if (normalizedEmail.length > EMAIL_MAX_LENGTH) {
-    details.push(`Email must not be more that ${EMAIL_MAX_LENGTH} characters`)
+    details.push(`Email must not be more than ${EMAIL_MAX_LENGTH} characters`)
   }
 
   if (!normalizedUsername) {

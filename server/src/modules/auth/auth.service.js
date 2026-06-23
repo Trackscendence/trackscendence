@@ -313,7 +313,7 @@ const login = async (payload) => {
   const isValidPassword = await bcrypt.compare(password, user.passwordHash)
 
   if (!isValidPassword) {
-    const attempts = user.tailedLoginCount + 1
+    const attempts = user.failedLoginCount + 1
 
     if (attempts >= MAX_LOGIN_ATTEMPTS) {
       await authRepository.updateUserLoginAttempts(user.id, {

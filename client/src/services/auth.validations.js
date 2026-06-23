@@ -59,7 +59,7 @@ export const validateSignupInput = ({ email, username, password }) => {
   } else if (!PASSWORD_UPPERCASE_REGEX.test(normalizedPassword)) {
     errors.password = 'Password must contain an uppercase letter'
   } else if (!PASSWORD_LOWERCASE_REGEX.test(normalizedPassword)) {
-    errors.password = 'Password must contain an lowercase letter'
+    errors.password = 'Password must contain a lowercase letter'
   } else if (!PASSWORD_NUMBER_REGEX.test(normalizedPassword)) {
     errors.password = 'Password must contain a number'
   } else if (!PASSWORD_SYMBOL_REGEX.test(normalizedPassword)) {

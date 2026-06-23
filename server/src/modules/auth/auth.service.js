@@ -11,7 +11,7 @@ const authToken = require('#modules/auth/auth.token')
 
 const PASSWORD_MIN_LENGTH = 8
 const PASSWORD_RESET_TOKEN_EXPIRES_MS = 60 * 60 * 1000
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMAIL_REGEX = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/
 
 const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email/username or password'

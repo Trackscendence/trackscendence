@@ -2,6 +2,7 @@ const EMAIL_REGEX = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/
 const USERNAME_REGEX = /^[a-z][a-z0-9]*$/
 
 const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_MAX_LENGTH = 254
 
 const USERNAME_MIN_LENGTH = 6
 const USERNAME_MAX_LENGTH = 32
@@ -53,6 +54,8 @@ export const validateSignupInput = ({ email, username, password }) => {
     errors.password = 'Password is required'
   } else if (normalizedPassword.length < PASSWORD_MIN_LENGTH) {
     errors.password = `Password must be at least ${PASSWORD_MIN_LENGTH} characters`
+  } else if (normalizedPassword.length > PASSWORD_MAX_LENGTH) {
+    errors.password = `Password must be less than ${PASSWORD_MAX_LENGTH} characters`
   } else if (PASSWORD_WHITESPACE_REGEX.test(normalizedPassword)) {
     errors.password = 'Password must not contain whitespace'
   } else if (!PASSWORD_UPPERCASE_REGEX.test(normalizedPassword)) {

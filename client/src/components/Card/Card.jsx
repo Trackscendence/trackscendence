@@ -65,25 +65,25 @@ const Card = ({
       >
         {type === 'number' ? (
           <>
-            <span className="absolute top-1.5 left-2 text-sm leading-none font-black text-white">
+            <span className="absolute top-2 left-2 text-xl leading-none font-black text-white">
               {value}
             </span>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="relative flex h-[99px] w-[99px] items-center justify-center">
                 <div className="absolute h-[70px] w-[70px] rotate-45 bg-white" />
                 <span
-                  className={`relative z-10 text-5xl leading-none font-black ${textClass}`}
+                  className={`relative z-10 text-6xl leading-none font-black ${textClass}`}
                 >
                   {value}
                 </span>
               </div>
             </div>
-            <span className="absolute right-2 bottom-1.5 rotate-180 text-sm leading-none font-black text-white">
+            <span className="absolute right-2 bottom-2 rotate-180 text-xl leading-none font-black text-white">
               {value}
             </span>
           </>
         ) : (
-          <Symbol type={type} />
+          <Symbol colorClass={textClass} type={type} />
         )}
       </div>
     </button>

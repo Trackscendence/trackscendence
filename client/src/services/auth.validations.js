@@ -35,7 +35,7 @@ export const validateSignupInput = ({ email, username, password }) => {
   } else if (!EMAIL_REGEX.test(normalizedEmail)) {
     errors.email = 'Email must be valid'
   } else if (normalizedEmail.length > EMAIL_MAX_LENGTH) {
-    errors.email = `Email must not be more than ${EMAIL_MAX_LENGTH}`
+    errors.email = `Email must not be more than ${EMAIL_MAX_LENGTH} characters`
   }
 
   if (!normalizedUsername) {

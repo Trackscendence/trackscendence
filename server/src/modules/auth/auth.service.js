@@ -12,8 +12,7 @@ const authToken = require('#modules/auth/auth.token')
 const PASSWORD_MIN_LENGTH = 8
 const PASSWORD_RESET_TOKEN_EXPIRES_MS = 60 * 60 * 1000
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const PASSWORD_COMPLEXITY_REGEX =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])(?=.{8,})(?!.*\s).*$/
+
 const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email/username or password'
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
@@ -27,10 +26,16 @@ const LOCKED_DURATION_MINUTES = 2
 const GENERIC_ACCOUNT_LOCKED_MESSAGE = 'Account temporarily locked'
 
 const EMAIL_MAX_LENGTH = 254
-const USERNAME_REGEX = /^[A-Za-z][A-Za-z0-9]*$/
+const USERNAME_REGEX = /^[a-z][a-z0-9]*$/
 const USERNAME_MIN_LENGTH = 6
 const USERNAME_MAX_LENGTH = 32
 const PASSWORD_MAX_LENGTH = 254
+
+const PASSWORD_WHITESPACE_REGEX = /\s/
+const PASSWORD_UPPERCASE_REGEX = /[A-Z]/
+const PASSWORD_LOWERCASE_REGEX = /[a-z]/
+const PASSWORD_NUMBER_REGEX = /\d/
+const PASSWORD_SYMBOL_REGEX = /[^a-z0-9]/i
 
 const normalizeEmail = (email) => email.trim().toLowerCase()
 const normalizeIdentifier = (identifier) => {
@@ -54,6 +59,7 @@ const getTokenVersionFromPayload = (payload) => {
   return Number.isInteger(tokenVersion) ? tokenVersion : null
 }
 
+//BACKEND PASSWORD VALIDATIONS FOR SIGNUP PAGE
 const getPasswordValidationMessages = (password) => {
   const details = []
 
@@ -70,10 +76,20 @@ const getPasswordValidationMessages = (password) => {
     details.push(`Password must be less than ${PASSWORD_MAX_LENGTH} characters`)
   }
 
-  if (!PASSWORD_COMPLEXITY_REGEX.test(password)) {
-    details.push(
-      'Password must include uppercase, lowercase, a number, and a special character',
-    )
+  if (!normalizedPassword) {
+    details.push('Password is required')
+  } else if (normalizedPassword.length < PASSWORD_MIN_LENGTH) {
+    details.push(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+  } else if (PASSWORD_WHITESPACE_REGEX.test(normalizedPassword)) {
+    details.push('Password must not contain whitespace')
+  } else if (!PASSWORD_UPPERCASE_REGEX.test(normalizedPassword)) {
+    details.push('Password must contain an uppercase letter')
+  } else if (!PASSWORD_LOWERCASE_REGEX.test(normalizedPassword)) {
+    details.push('Password must contain an lowercase letter')
+  } else if (!PASSWORD_NUMBER_REGEX.test(normalizedPassword)) {
+    details.push('Password must contain a number')
+  } else if (!PASSWORD_SYMBOL_REGEX.test(normalizedPassword)) {
+    details.push('Password must contain a symbol')
   }
 
   return details
@@ -82,28 +98,33 @@ const getPasswordValidationMessages = (password) => {
 // BACKEND VALIDATIONS FOR SIGNUP PAGE
 const validateRegistrationInput = ({ email, username, password } = {}) => {
   const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
-  const normalizedUsername = typeof username === 'string' ? username.trim() : ''
+  const normalizedUsername =
+    typeof username === 'string' ? username.trim().toLowerCase() : ''
   const normalizedPassword = typeof password === 'string' ? password : ''
   const details = []
 
   if (!normalizedEmail) {
-    details.push('Email is required')
+    details.push('Email address is required')
   } else if (!EMAIL_REGEX.test(normalizedEmail)) {
     details.push('Email must be valid')
-  } else if (normalizedEmail.length >= EMAIL_MAX_LENGTH) {
-    details.push(
-      `Email must be equal to or less than ${EMAIL_MAX_LENGTH} characters`,
-    )
+  } else if (normalizedEmail.length > EMAIL_MAX_LENGTH) {
+    details.push(`Email must not be more that ${EMAIL_MAX_LENGTH} characters`)
   }
 
   if (!normalizedUsername) {
     details.push('Username is required')
   } else if (!USERNAME_REGEX.test(normalizedUsername)) {
-    details.push('Username must be valid')
+    details.push(
+      'Username must start with a letter and contain only lowercase letters and numbers',
+    )
   } else if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
-    details.push(`Username must more than ${USERNAME_MIN_LENGTH} characters`)
+    details.push(
+      `Username must not be less than ${USERNAME_MIN_LENGTH} characters`,
+    )
   } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
-    details.push(`Username must less than ${USERNAME_MAX_LENGTH} characters`)
+    details.push(
+      `Username must not be more than ${USERNAME_MAX_LENGTH} characters`,
+    )
   }
 
   details.push(...getPasswordValidationMessages(normalizedPassword))

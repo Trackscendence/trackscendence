@@ -225,8 +225,6 @@ router.post('/reset-password', authController.resetPassword)
  *       required: true
  *       content:
  *         application/json:
- *           example:
- *             message: Password updated successfully
  *           schema:
  *             type: object
  *             required:

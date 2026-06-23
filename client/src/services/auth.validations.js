@@ -12,9 +12,7 @@ const EMAIL_MAX_LENGTH = 254
 const normalizeIdentifier = (identifier) => {
   const trimmedIdentifier = identifier.trim()
 
-  return trimmedIdentifier.includes('@')
-    ? trimmedIdentifier.toLowerCase()
-    : trimmedIdentifier
+  return trimmedIdentifier.toLowerCase()
 }
 
 const PASSWORD_WHITESPACE_REGEX = /\s/

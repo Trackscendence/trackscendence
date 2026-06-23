@@ -38,7 +38,6 @@ trackscendence/
 │   └── index.js           # HTTP server, WebSocket connection, and process entrypoint
 ├── compose.yaml           # Primary Docker Compose configuration
 ├── compose.dev.yaml       # Development-specific Docker overrides (hot-reloading)
-├── justfile               # Just command runner targets (alternative to npm scripts)
 └── package.json           # Root package defining development scripts
 ```
 
@@ -166,3 +165,31 @@ To maintain a consistent codebase, we run automatic checks before commits (Husky
   ```bash
   npm run spellcheck   # or: just spellcheck
   ```
+
+---
+
+## 6. Docker & CI/CD Architecture
+
+We use Docker Compose overlays to support both local development and production-like builds, combined with GitHub Actions for automated verification and deployment.
+
+### 6.1 Docker Compose Overlay Model
+
+Rather than maintaining separate, duplicated configuration files, we use Docker Compose overlays:
+
+1. **`compose.yaml` (Base)**: Sets up the production-style configuration. It compiles React and builds self-contained, production-ready images without mounting host directories.
+2. **`compose.dev.yaml` (Override)**: Applied on top of the base file via `npm run compose:dev` (or `just dev`). It:
+   - Mounts local source directories (`./client` and `./server`) into the containers for **hot reloading**.
+   - Runs development servers (`npm run dev` and `node --watch`).
+   - Exposes database ports (`5432`) and Vite's dev port (`5173`) to the host.
+   - Spins up **Adminer** on `http://localhost:8081` for visual database inspection.
+
+### 6.2 CI/CD & GitHub Container Registry (GHCR)
+
+Our workflows in `.github/workflows/` automate checks and releases:
+
+- **CI Pipeline (`ci.yml`)**: Triggered on pull requests to `dev` and `main`. It runs formatting, spelling, lints, and executes `docker compose build` to verify the production build compiles. It also blocks direct PRs to `main` from branches other than `dev`.
+- **CD Release Pipeline (`cd.yml`)**: Triggered on pushes/merges to `dev` or `main`.
+  - **Dev Release**: Builds and pushes Docker images to GHCR tagged with `:dev` and the git commit SHA:
+    - Client: `ghcr.io/<owner>/trackscendence-client:dev`
+    - Server: `ghcr.io/<owner>/trackscendence-server:dev`
+  - **Production Release**: When merged to `main`, the CD pipeline pulls the existing `:dev` images from GHCR, retags them as `:main` and `:latest`, and pushes them back. This **promotion strategy** guarantees that the exact image verified in dev is deployed to production without rebuilding.

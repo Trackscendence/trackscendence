@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken')
 const config = require('#utils/config')
 
+const TWO_FACTOR_CHALLENGE_PURPOSE = 'login-2fa'
+
 const getBearerToken = (authorizationHeader) => {
   if (!authorizationHeader) {
     return null
@@ -28,7 +30,24 @@ const signAccessToken = (user) => {
   )
 }
 
+const signTwoFactorChallengeToken = (user, challengeVersion) => {
+  return jwt.sign(
+    {
+      sub: user.id,
+      tokenVersion: user.tokenVersion,
+      purpose: TWO_FACTOR_CHALLENGE_PURPOSE,
+      challengeVersion,
+    },
+    config.JWT_SECRET,
+    { expiresIn: config.TWO_FACTOR_CHALLENGE_EXPIRES_IN },
+  )
+}
+
 const verifyAccessToken = (token) => {
+  return jwt.verify(token, config.JWT_SECRET)
+}
+
+const verifyTwoFactorChallengeToken = (token) => {
   return jwt.verify(token, config.JWT_SECRET)
 }
 
@@ -43,5 +62,8 @@ module.exports = {
   getBearerToken,
   isTokenError,
   signAccessToken,
+  signTwoFactorChallengeToken,
   verifyAccessToken,
+  verifyTwoFactorChallengeToken,
+  TWO_FACTOR_CHALLENGE_PURPOSE,
 }

@@ -21,13 +21,30 @@ model User {
   passwordResetTokenHash  String?
   passwordResetTokenExpiry DateTime?
   tokenVersion            Int      @default(0)
+  twoFactorChallengeVersion Int    @default(0)
+  twoFactorEnabled        Boolean  @default(false)
+  twoFactorSecretCiphertext String?
+  twoFactorPendingSecretCiphertext String?
   role                    Role     @default(USER)
+  twoFactorRecoveryCodes  UserTwoFactorRecoveryCode[]
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   games                   GamePlayer[]
 
   failedLoginCount        Int      @default(0)
   lockedOutUntil          DateTime?
+}
+
+model UserTwoFactorRecoveryCode {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  codeHash  String
+  isPending Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, codeHash])
+  @@index([userId, isPending])
 }
 
 enum GameStatus {

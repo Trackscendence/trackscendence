@@ -14,7 +14,6 @@ import Session from '@/pages/Session'
 import PrivacyPolicy from '@/pages/Privacy'
 import TermsOfService from '@/pages/TermsOfService'
 import SettingsPage from './pages/SettingsPage'
-import ProfilePage from './pages/ProfilePage'
 
 const App = () => {
   useEffect(() => {
@@ -41,10 +40,8 @@ const App = () => {
 
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
-        <Route path="/users/:username" element={<ProfilePage />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/profile" element={<ProfilePage />} />
           <Route element={<AppLayout />}>
             <Route path="/" element={<Session />} />
             <Route path="/change-password" element={<ChangePassword />} />

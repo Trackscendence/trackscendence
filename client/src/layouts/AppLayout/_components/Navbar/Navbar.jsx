@@ -29,12 +29,6 @@ const Navbar = () => {
             </span>
           )}
           <Link
-            to="/profile"
-            className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
-          >
-            Profile
-          </Link>
-          <Link
             to="/settings"
             className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
           >

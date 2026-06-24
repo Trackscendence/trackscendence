@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a72e7f30-c637-4b2d-925c-a09e2cfa9f5a",
     "name": "Trackscendence Auth Security",
-    "description": "End-to-end auth and password-reset checks for the local Trackscendence Docker stack. Run the collection from top to bottom, or at minimum run 'Initialize Test Variables' first.",
+    "description": "End-to-end auth, 2FA, and password-reset checks for the local Trackscendence Docker stack. Run the collection from top to bottom, or at minimum run 'Initialize Test Variables' first.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -30,7 +30,12 @@
                   "pm.environment.unset('oldToken');",
                   "pm.environment.unset('messageId');",
                   "pm.environment.unset('resetToken');",
-                  "pm.environment.unset('resetLink');"
+                  "pm.environment.unset('resetLink');",
+                  "pm.environment.unset('challengeToken');",
+                  "pm.environment.unset('twoFactorSecret');",
+                  "pm.environment.unset('recoveryCode');",
+                  "pm.environment.unset('backupRecoveryCode');",
+                  "pm.environment.unset('twoFactorCode');"
                 ]
               }
             },
@@ -182,7 +187,583 @@
       ]
     },
     {
-      "name": "03 Change Password",
+      "name": "03 Two-Factor Authentication",
+      "item": [
+        {
+          "name": "Start Two-Factor Setup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2FA setup returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('twoFactorSecret', json.setup.manualEntryKey);",
+                  "pm.environment.set('recoveryCode', json.setup.recoveryCodes[0]);",
+                  "pm.environment.set('backupRecoveryCode', json.setup.recoveryCodes[1]);",
+                  "pm.test('2FA setup returns setup payload', function () {",
+                  "  pm.expect(json.message).to.eql('Two-factor authentication setup started');",
+                  "  pm.expect(json.setup.manualEntryKey).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.setup.qrCodeDataUrl).to.include('data:image/png;base64');",
+                  "  pm.expect(json.setup.recoveryCodes).to.be.an('array').with.lengthOf(8);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/two-factor/setup"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Two-Factor Setup",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const secret = (pm.environment.get('twoFactorSecret') || '').toUpperCase().replace(/=+$/g, '').replace(/[^A-Z2-7]/g, '');",
+                  "const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';",
+                  "let bits = '';",
+                  "for (const character of secret) {",
+                  "  const index = alphabet.indexOf(character);",
+                  "  pm.expect(index, `invalid base32 character: ${character}`).to.not.eql(-1);",
+                  "  bits += index.toString(2).padStart(5, '0');",
+                  "}",
+                  "let hex = '';",
+                  "for (let index = 0; index + 8 <= bits.length; index += 8) {",
+                  "  hex += Number.parseInt(bits.slice(index, index + 8), 2).toString(16).padStart(2, '0');",
+                  "}",
+                  "const key = CryptoJS.enc.Hex.parse(hex);",
+                  "const counter = Math.floor(Date.now() / 1000 / 30);",
+                  "const counterHex = counter.toString(16).padStart(16, '0');",
+                  "const message = CryptoJS.enc.Hex.parse(counterHex);",
+                  "const digest = CryptoJS.HmacSHA1(message, key).toString(CryptoJS.enc.Hex);",
+                  "const offset = Number.parseInt(digest.slice(-1), 16);",
+                  "const binary = Number.parseInt(digest.slice(offset * 2, offset * 2 + 8), 16) & 0x7fffffff;",
+                  "const code = String(binary % 1000000).padStart(6, '0');",
+                  "pm.environment.set('twoFactorCode', code);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2FA confirm returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('2FA confirm enables 2FA', function () {",
+                  "  pm.expect(json.message).to.eql('Two-factor authentication enabled successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{twoFactorCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/two-factor/confirm"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Returns Two-Factor Challenge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login challenge returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('challengeToken', json.challengeToken);",
+                  "pm.test('login challenge requires second factor', function () {",
+                  "  pm.expect(json.requiresTwoFactor).to.eql(true);",
+                  "  pm.expect(json.methods).to.include('totp');",
+                  "  pm.expect(json.methods).to.include('recovery_code');",
+                  "  pm.expect(pm.environment.get('challengeToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Login With TOTP",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const secret = (pm.environment.get('twoFactorSecret') || '').toUpperCase().replace(/=+$/g, '').replace(/[^A-Z2-7]/g, '');",
+                  "const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';",
+                  "let bits = '';",
+                  "for (const character of secret) {",
+                  "  const index = alphabet.indexOf(character);",
+                  "  pm.expect(index, `invalid base32 character: ${character}`).to.not.eql(-1);",
+                  "  bits += index.toString(2).padStart(5, '0');",
+                  "}",
+                  "let hex = '';",
+                  "for (let index = 0; index + 8 <= bits.length; index += 8) {",
+                  "  hex += Number.parseInt(bits.slice(index, index + 8), 2).toString(16).padStart(2, '0');",
+                  "}",
+                  "const key = CryptoJS.enc.Hex.parse(hex);",
+                  "const counter = Math.floor(Date.now() / 1000 / 30);",
+                  "const counterHex = counter.toString(16).padStart(16, '0');",
+                  "const message = CryptoJS.enc.Hex.parse(counterHex);",
+                  "const digest = CryptoJS.HmacSHA1(message, key).toString(CryptoJS.enc.Hex);",
+                  "const offset = Number.parseInt(digest.slice(-1), 16);",
+                  "const binary = Number.parseInt(digest.slice(offset * 2, offset * 2 + 8), 16) & 0x7fffffff;",
+                  "const code = String(binary % 1000000).padStart(6, '0');",
+                  "pm.environment.set('twoFactorCode', code);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2FA login returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('token', json.token);",
+                  "pm.test('2FA login returns authenticated session', function () {",
+                  "  pm.expect(pm.environment.get('token')).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.user.twoFactorEnabled).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challengeToken\": \"{{challengeToken}}\",\n  \"code\": \"{{twoFactorCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login/2fa"
+          },
+          "response": []
+        },
+        {
+          "name": "Regenerate Two-Factor Setup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2FA regenerate returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('twoFactorSecret', json.setup.manualEntryKey);",
+                  "pm.environment.set('recoveryCode', json.setup.recoveryCodes[0]);",
+                  "pm.environment.set('backupRecoveryCode', json.setup.recoveryCodes[1]);",
+                  "pm.test('2FA regenerate returns replacement setup payload', function () {",
+                  "  pm.expect(json.message).to.eql('Two-factor authentication reset started');",
+                  "  pm.expect(json.setup.qrCodeDataUrl).to.include('data:image/png;base64');",
+                  "  pm.expect(json.setup.recoveryCodes).to.be.an('array').with.lengthOf(8);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/two-factor/regenerate"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Regenerated Two-Factor Setup",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const secret = (pm.environment.get('twoFactorSecret') || '').toUpperCase().replace(/=+$/g, '').replace(/[^A-Z2-7]/g, '');",
+                  "const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';",
+                  "let bits = '';",
+                  "for (const character of secret) {",
+                  "  const index = alphabet.indexOf(character);",
+                  "  pm.expect(index, `invalid base32 character: ${character}`).to.not.eql(-1);",
+                  "  bits += index.toString(2).padStart(5, '0');",
+                  "}",
+                  "let hex = '';",
+                  "for (let index = 0; index + 8 <= bits.length; index += 8) {",
+                  "  hex += Number.parseInt(bits.slice(index, index + 8), 2).toString(16).padStart(2, '0');",
+                  "}",
+                  "const key = CryptoJS.enc.Hex.parse(hex);",
+                  "const counter = Math.floor(Date.now() / 1000 / 30);",
+                  "const counterHex = counter.toString(16).padStart(16, '0');",
+                  "const message = CryptoJS.enc.Hex.parse(counterHex);",
+                  "const digest = CryptoJS.HmacSHA1(message, key).toString(CryptoJS.enc.Hex);",
+                  "const offset = Number.parseInt(digest.slice(-1), 16);",
+                  "const binary = Number.parseInt(digest.slice(offset * 2, offset * 2 + 8), 16) & 0x7fffffff;",
+                  "const code = String(binary % 1000000).padStart(6, '0');",
+                  "pm.environment.set('twoFactorCode', code);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2FA regenerate confirm returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('2FA regenerate confirm updates 2FA', function () {",
+                  "  pm.expect(json.message).to.eql('Two-factor authentication updated successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{twoFactorCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/two-factor/confirm"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Returns Recovery-Code Challenge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('recovery-code login challenge returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('challengeToken', json.challengeToken);",
+                  "pm.test('recovery-code login challenge requires second factor', function () {",
+                  "  pm.expect(json.requiresTwoFactor).to.eql(true);",
+                  "  pm.expect(pm.environment.get('challengeToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Login With Recovery Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('recovery-code login returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('token', json.token);",
+                  "pm.test('recovery-code login returns authenticated session', function () {",
+                  "  pm.expect(pm.environment.get('token')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challengeToken\": \"{{challengeToken}}\",\n  \"recoveryCode\": \"{{recoveryCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login/2fa"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Returns Challenge For Used Recovery Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('used recovery-code challenge returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('challengeToken', json.challengeToken);",
+                  "pm.test('used recovery-code challenge still requires 2FA', function () {",
+                  "  pm.expect(json.requiresTwoFactor).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Used Recovery Code Is Rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('used recovery code is rejected with 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('used recovery code returns exact error message', function () {",
+                  "  pm.expect(json.error.message).to.eql('Invalid two-factor authentication code');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challengeToken\": \"{{challengeToken}}\",\n  \"recoveryCode\": \"{{recoveryCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login/2fa"
+          },
+          "response": []
+        },
+        {
+          "name": "Disable Two-Factor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2FA disable returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('2FA disable returns success message', function () {",
+                  "  pm.expect(json.message).to.eql('Two-factor authentication disabled successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/two-factor/disable"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Works Without Two-Factor After Disable",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('post-disable login returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('token', json.token);",
+                  "pm.test('post-disable login no longer requires second factor', function () {",
+                  "  pm.expect(Boolean(json.requiresTwoFactor)).to.eql(false);",
+                  "  pm.expect(pm.environment.get('token')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 Change Password",
       "item": [
         {
           "name": "Change Password Success",
@@ -343,7 +924,7 @@
       ]
     },
     {
-      "name": "04 Forgot Password And Mailpit",
+      "name": "05 Forgot Password And Mailpit",
       "item": [
         {
           "name": "Forgot Password For Known Email",
@@ -459,7 +1040,7 @@
       ]
     },
     {
-      "name": "05 Reset Password",
+      "name": "06 Reset Password",
       "item": [
         {
           "name": "Reset Password With Emailed Token",
@@ -652,7 +1233,7 @@
       ]
     },
     {
-      "name": "06 Negative Checks",
+      "name": "07 Negative Checks",
       "item": [
         {
           "name": "Forgot Password For Unknown Email",

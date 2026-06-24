@@ -26,12 +26,28 @@ const Session = () => {
         <h2 className="text-lg font-semibold">Signed in</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
+            <p className="text-sm font-medium text-[#617267]">Email</p>
+            <p className="mt-1 text-base font-semibold">{user.email}</p>
+          </div>
+          <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
             <p className="text-sm font-medium text-[#617267]">Username</p>
             <p className="mt-1 text-base font-semibold">{user.username}</p>
           </div>
           <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
             <p className="text-sm font-medium text-[#617267]">Role</p>
             <p className="mt-1 text-base font-semibold">{user.role}</p>
+          </div>
+          <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
+            <p className="text-sm font-medium text-[#617267]">
+              Two-factor authentication
+            </p>
+            <p className="mt-1 text-base font-semibold">
+              {user.twoFactorEnabled
+                ? 'Enabled'
+                : user.twoFactorSetupPending
+                  ? 'Setup pending'
+                  : 'Disabled'}
+            </p>
           </div>
         </div>
       </div>

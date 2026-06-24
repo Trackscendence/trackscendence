@@ -1,11 +1,23 @@
 import { create } from 'zustand'
 import {
   AUTH_TOKEN_KEY,
+  completeTwoFactorLogin as completeTwoFactorLoginRequest,
   fetchCurrentUser,
   login as loginRequest,
   logout as logoutRequest,
   register as registerRequest,
 } from '@/services/auth'
+
+const applyAuthenticatedResult = (set, result) => {
+  if (!result?.token || !result?.user) {
+    return result
+  }
+
+  localStorage.setItem(AUTH_TOKEN_KEY, result.token)
+  set({ token: result.token, user: result.user, isAuthenticated: true })
+
+  return result
+}
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -36,9 +48,12 @@ const useAuthStore = create((set, get) => ({
 
   login: async (payload) => {
     const result = await loginRequest(payload)
-    localStorage.setItem(AUTH_TOKEN_KEY, result.token)
-    set({ token: result.token, user: result.user, isAuthenticated: true })
-    return result
+    return applyAuthenticatedResult(set, result)
+  },
+
+  completeTwoFactorLogin: async (payload) => {
+    const result = await completeTwoFactorLoginRequest(payload)
+    return applyAuthenticatedResult(set, result)
   },
 
   logout: async () => {
@@ -59,6 +74,20 @@ const useAuthStore = create((set, get) => ({
     if (expiredToken && get().token !== expiredToken) return
     localStorage.removeItem(AUTH_TOKEN_KEY)
     set({ token: null, user: null, isAuthenticated: false })
+  },
+
+  refreshUser: async () => {
+    const activeToken = get().token || localStorage.getItem(AUTH_TOKEN_KEY)
+
+    if (!activeToken) {
+      set({ token: null, user: null, isAuthenticated: false })
+      return null
+    }
+
+    const { user } = await fetchCurrentUser(activeToken)
+    set({ token: activeToken, user, isAuthenticated: true })
+
+    return user
   },
 }))
 

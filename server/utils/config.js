@@ -55,6 +55,18 @@ const defaultClientPort =
 const defaultAppBaseUrl = `http://localhost:${defaultClientPort}`
 const appBaseUrl = parseUrl('APP_BASE_URL', defaultAppBaseUrl)
 
+const resolveTwoFactorEncryptionSecret = () => {
+  if (process.env.TWO_FACTOR_ENCRYPTION_SECRET) {
+    return process.env.TWO_FACTOR_ENCRYPTION_SECRET
+  }
+
+  if (NODE_ENV === 'development') {
+    return process.env.JWT_SECRET
+  }
+
+  throw new Error('Missing value for env var TWO_FACTOR_ENCRYPTION_SECRET')
+}
+
 const optionalConfigs = {
   NODE_ENV,
   PORT: parseNumber('PORT', Number(process.env.SERVER_PORT) || 3001),
@@ -63,6 +75,10 @@ const optionalConfigs = {
   RATE_LIMIT_WINDOW_MS: parseNumber('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
   RATE_LIMIT_LIMIT: parseNumber('RATE_LIMIT_LIMIT', 100),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+  TWO_FACTOR_CHALLENGE_EXPIRES_IN:
+    process.env.TWO_FACTOR_CHALLENGE_EXPIRES_IN || '5m',
+  TWO_FACTOR_ENCRYPTION_SECRET: resolveTwoFactorEncryptionSecret(),
+  TWO_FACTOR_ISSUER: process.env.TWO_FACTOR_ISSUER || 'Trackscendence',
   APP_BASE_URL: appBaseUrl,
   PASSWORD_RESET_URL_BASE: parseUrl(
     'PASSWORD_RESET_URL_BASE',

@@ -8,6 +8,7 @@ const logger = require('#utils/logger')
 const authMailer = require('#modules/auth/auth.mailer')
 const authRepository = require('#modules/auth/auth.repository')
 const authToken = require('#modules/auth/auth.token')
+const authTwoFactor = require('#modules/auth/auth.two-factor')
 
 const PASSWORD_MIN_LENGTH = 8
 const PASSWORD_RESET_TOKEN_EXPIRES_MS = 60 * 60 * 1000
@@ -16,8 +17,18 @@ const EMAIL_REGEX = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/
 const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email/username or password'
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
+const INVALID_TWO_FACTOR_CODE_MESSAGE = 'Invalid two-factor authentication code'
 const PASSWORD_RESET_REQUEST_MESSAGE =
   'If that email is registered, password reset instructions have been sent'
+const TWO_FACTOR_REQUIRED_MESSAGE = 'Two-factor authentication code required'
+const TWO_FACTOR_ALREADY_ENABLED_MESSAGE =
+  'Two-factor authentication is already enabled'
+const TWO_FACTOR_NOT_ENABLED_MESSAGE =
+  'Two-factor authentication is not enabled'
+const TWO_FACTOR_SETUP_NOT_STARTED_MESSAGE =
+  'Start two-factor authentication setup first'
+const TWO_FACTOR_SETUP_INVALID_MESSAGE =
+  'Stored two-factor setup is invalid. Restart setup and try again'
 const NEW_PASSWORD_MUST_DIFFER_MESSAGE =
   'New password must differ from current password'
 
@@ -51,6 +62,8 @@ const toSafeAuthUser = (user) => ({
   email: user.email,
   username: user.username,
   role: user.role,
+  twoFactorEnabled: Boolean(user.twoFactorEnabled),
+  twoFactorSetupPending: Boolean(user.twoFactorPendingSecretCiphertext),
 })
 
 const getTokenVersionFromPayload = (payload) => {
@@ -169,6 +182,55 @@ const validateLoginInput = ({ identifier, password } = {}) => {
   }
 }
 
+const validateTwoFactorLoginInput = ({
+  challengeToken,
+  code,
+  recoveryCode,
+} = {}) => {
+  const normalizedChallengeToken =
+    typeof challengeToken === 'string' ? challengeToken.trim() : ''
+  const normalizedCode = authTwoFactor.normalizeTotpCode(code)
+  const normalizedRecoveryCode =
+    authTwoFactor.normalizeRecoveryCode(recoveryCode)
+  const details = []
+
+  if (!normalizedChallengeToken) {
+    details.push('Challenge token is required')
+  }
+
+  if (!normalizedCode && !normalizedRecoveryCode) {
+    details.push('Either a two-factor code or a recovery code is required')
+  }
+
+  if (normalizedCode && normalizedRecoveryCode) {
+    details.push('Use either a two-factor code or a recovery code, not both')
+  }
+
+  if (details.length > 0) {
+    throw new BadRequestException('Invalid request data', { details })
+  }
+
+  return {
+    challengeToken: normalizedChallengeToken,
+    code: normalizedCode,
+    recoveryCode: normalizedRecoveryCode,
+  }
+}
+
+const validateTwoFactorConfirmationInput = ({ code } = {}) => {
+  const normalizedCode = authTwoFactor.normalizeTotpCode(code)
+
+  if (!normalizedCode) {
+    throw new BadRequestException('Invalid request data', {
+      details: ['Two-factor code is required'],
+    })
+  }
+
+  return {
+    code: normalizedCode,
+  }
+}
+
 const validateChangePasswordInput = ({ currentPassword, newPassword } = {}) => {
   const normalizedCurrent =
     typeof currentPassword === 'string' ? currentPassword : ''
@@ -268,6 +330,85 @@ const getUniqueConflictMessage = (error) => {
   return 'User already exists'
 }
 
+const buildTwoFactorSetupResponse = async ({
+  accountName,
+  secret,
+  recoveryCodes,
+}) => {
+  const otpauthUrl = authTwoFactor.buildOtpauthUrl({
+    accountName,
+    secret,
+  })
+
+  return {
+    manualEntryKey: secret,
+    otpauthUrl,
+    qrCodeDataUrl: await authTwoFactor.buildQrCodeDataUrl(otpauthUrl),
+    recoveryCodes,
+  }
+}
+
+const createPendingTwoFactorSetup = async (
+  user,
+  { allowEnabled = false } = {},
+) => {
+  if (!allowEnabled && user.twoFactorEnabled) {
+    throw new ConflictException(TWO_FACTOR_ALREADY_ENABLED_MESSAGE)
+  }
+
+  const secret = authTwoFactor.generateSecret()
+  const encryptedSecret = authTwoFactor.encryptSecret(secret)
+  const recoveryCodes = authTwoFactor.generateRecoveryCodes()
+  const recoveryCodeHashes = recoveryCodes.map((code) =>
+    authTwoFactor.hashRecoveryCode(code),
+  )
+
+  await authRepository.replacePendingTwoFactorSetup(
+    user.id,
+    encryptedSecret,
+    recoveryCodeHashes,
+  )
+
+  return await buildTwoFactorSetupResponse({
+    accountName: user.email,
+    secret,
+    recoveryCodes,
+  })
+}
+
+const getTwoFactorChallengePayload = (challengeToken) => {
+  let payload
+
+  try {
+    payload = authToken.verifyTwoFactorChallengeToken(challengeToken)
+  } catch (error) {
+    if (authToken.isTokenError(error)) {
+      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+    }
+
+    throw error
+  }
+
+  const userId = Number(payload.sub)
+  const tokenVersion = getTokenVersionFromPayload(payload)
+  const challengeVersion = Number(payload.challengeVersion)
+
+  if (
+    !Number.isInteger(userId) ||
+    tokenVersion === null ||
+    !Number.isInteger(challengeVersion) ||
+    payload.purpose !== authToken.TWO_FACTOR_CHALLENGE_PURPOSE
+  ) {
+    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+  }
+
+  return {
+    challengeVersion,
+    userId,
+    tokenVersion,
+  }
+}
+
 const register = async (payload) => {
   const { email, username, password } = validateRegistrationInput(payload)
 
@@ -336,10 +477,83 @@ const login = async (payload) => {
     lockedOutUntil: null,
   })
 
+  if (user.twoFactorEnabled) {
+    const challenge = await authRepository.issueTwoFactorChallenge(user.id)
+
+    return {
+      requiresTwoFactor: true,
+      message: TWO_FACTOR_REQUIRED_MESSAGE,
+      challengeToken: authToken.signTwoFactorChallengeToken(
+        challenge,
+        challenge.twoFactorChallengeVersion,
+      ),
+      methods: ['totp', 'recovery_code'],
+    }
+  }
+
   const token = authToken.signAccessToken(user)
 
   return {
     token,
+    user: toSafeAuthUser(user),
+  }
+}
+
+const completeTwoFactorLogin = async (payload) => {
+  const { challengeToken, code, recoveryCode } =
+    validateTwoFactorLoginInput(payload)
+  const challenge = getTwoFactorChallengePayload(challengeToken)
+  const user = await authRepository.findAuthById(challenge.userId)
+
+  if (
+    !user ||
+    !user.twoFactorEnabled ||
+    !user.twoFactorSecretCiphertext ||
+    user.tokenVersion !== challenge.tokenVersion
+  ) {
+    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+  }
+
+  if (recoveryCode) {
+    const consumed = await authRepository.consumeRecoveryCodeAndChallenge(
+      user.id,
+      authTwoFactor.hashRecoveryCode(recoveryCode),
+      challenge.challengeVersion,
+    )
+
+    if (!consumed) {
+      throw new UnauthorizedException(INVALID_TWO_FACTOR_CODE_MESSAGE)
+    }
+  } else {
+    let secret
+
+    try {
+      secret = authTwoFactor.decryptSecret(user.twoFactorSecretCiphertext)
+    } catch (error) {
+      logger.warn('Failed to decrypt stored two-factor secret during login', {
+        userId: user.id,
+        error: error.message,
+      })
+
+      throw new UnauthorizedException(INVALID_TWO_FACTOR_CODE_MESSAGE)
+    }
+
+    if (!authTwoFactor.verifyTotpCode(secret, code)) {
+      throw new UnauthorizedException(INVALID_TWO_FACTOR_CODE_MESSAGE)
+    }
+
+    const consumed = await authRepository.consumeTwoFactorChallenge(
+      user.id,
+      challenge.challengeVersion,
+    )
+
+    if (!consumed) {
+      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+    }
+  }
+
+  return {
+    token: authToken.signAccessToken(user),
     user: toSafeAuthUser(user),
   }
 }
@@ -360,7 +574,11 @@ const getUserFromToken = async (token) => {
   const userId = Number(payload.sub)
   const tokenVersion = getTokenVersionFromPayload(payload)
 
-  if (!Number.isInteger(userId) || tokenVersion === null) {
+  if (
+    !Number.isInteger(userId) ||
+    tokenVersion === null ||
+    payload.purpose !== undefined
+  ) {
     throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
   }
 
@@ -381,6 +599,99 @@ const getAuthenticatedUser = async (authorizationHeader) => {
   }
 
   return await getUserFromToken(token)
+}
+
+const setupTwoFactor = async (user) => {
+  const authUser = await authRepository.findAuthById(user.id)
+
+  if (!authUser) {
+    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+  }
+
+  return {
+    setup: await createPendingTwoFactorSetup(authUser),
+    message: 'Two-factor authentication setup started',
+  }
+}
+
+const regenerateTwoFactor = async (user) => {
+  const authUser = await authRepository.findAuthById(user.id)
+
+  if (!authUser) {
+    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+  }
+
+  return {
+    setup: await createPendingTwoFactorSetup(authUser, {
+      allowEnabled: true,
+    }),
+    message: authUser.twoFactorEnabled
+      ? 'Two-factor authentication reset started'
+      : 'Two-factor authentication setup restarted',
+  }
+}
+
+const confirmTwoFactorSetup = async (user, payload) => {
+  const { code } = validateTwoFactorConfirmationInput(payload)
+  const authUser = await authRepository.findAuthById(user.id)
+
+  if (!authUser) {
+    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+  }
+
+  if (!authUser.twoFactorPendingSecretCiphertext) {
+    throw new BadRequestException(TWO_FACTOR_SETUP_NOT_STARTED_MESSAGE)
+  }
+
+  let pendingSecret
+
+  try {
+    pendingSecret = authTwoFactor.decryptSecret(
+      authUser.twoFactorPendingSecretCiphertext,
+    )
+  } catch (error) {
+    logger.warn('Failed to decrypt pending two-factor setup secret', {
+      userId: user.id,
+      error: error.message,
+    })
+
+    throw new BadRequestException(TWO_FACTOR_SETUP_INVALID_MESSAGE)
+  }
+
+  if (!authTwoFactor.verifyTotpCode(pendingSecret, code)) {
+    throw new BadRequestException(INVALID_TWO_FACTOR_CODE_MESSAGE)
+  }
+
+  await authRepository.activatePendingTwoFactorSetup(
+    user.id,
+    authUser.twoFactorPendingSecretCiphertext,
+  )
+
+  return {
+    message: authUser.twoFactorEnabled
+      ? 'Two-factor authentication updated successfully'
+      : 'Two-factor authentication enabled successfully',
+  }
+}
+
+const disableTwoFactor = async (user) => {
+  const authUser = await authRepository.findAuthById(user.id)
+
+  if (!authUser) {
+    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+  }
+
+  if (
+    !authUser.twoFactorEnabled &&
+    !authUser.twoFactorSecretCiphertext &&
+    !authUser.twoFactorPendingSecretCiphertext
+  ) {
+    throw new BadRequestException(TWO_FACTOR_NOT_ENABLED_MESSAGE)
+  }
+
+  await authRepository.clearTwoFactorById(user.id)
+
+  return { message: 'Two-factor authentication disabled successfully' }
 }
 
 const changePassword = async (user, payload) => {
@@ -516,12 +827,17 @@ const resetPassword = async (payload) => {
 
 module.exports = {
   INVALID_CREDENTIALS_MESSAGE,
-  getUserFromToken,
-  getAuthenticatedUser,
-  register,
-  login,
-  toSafeAuthUser,
   changePassword,
+  completeTwoFactorLogin,
+  confirmTwoFactorSetup,
+  disableTwoFactor,
+  getAuthenticatedUser,
+  getUserFromToken,
+  login,
+  regenerateTwoFactor,
+  register,
   requestPasswordReset,
   resetPassword,
+  setupTwoFactor,
+  toSafeAuthUser,
 }

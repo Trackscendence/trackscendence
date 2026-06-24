@@ -11,11 +11,14 @@ const safeUserSelect = {
   losses: true,
   rank: true,
   role: true,
+  twoFactorEnabled: true,
 }
 
 const tokenUserSelect = {
   ...safeUserSelect,
   tokenVersion: true,
+  twoFactorChallengeVersion: true,
+  twoFactorPendingSecretCiphertext: true,
 }
 
 const registeredUserSelect = {
@@ -29,9 +32,21 @@ const passwordResetFields = {
   passwordResetTokenExpiry: true,
 }
 
+const twoFactorFields = {
+  twoFactorSecretCiphertext: true,
+  twoFactorPendingSecretCiphertext: true,
+}
+
+const lockoutFields = {
+  failedLoginCount: true,
+  lockedOutUntil: true,
+}
+
 const authUserSelect = {
   ...tokenUserSelect,
   passwordHash: true,
+  ...twoFactorFields,
+  ...lockoutFields,
 }
 
 const authUserWithResetSelect = {
@@ -171,18 +186,202 @@ const withLockedPasswordResetToken = (tokenId, callback) => {
   })
 }
 
+const replacePendingTwoFactorSetup = async (
+  id,
+  pendingSecretCiphertext,
+  recoveryCodeHashes,
+) => {
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id },
+      data: {
+        twoFactorPendingSecretCiphertext: pendingSecretCiphertext,
+      },
+    })
+
+    await tx.userTwoFactorRecoveryCode.deleteMany({
+      where: {
+        userId: id,
+        isPending: true,
+      },
+    })
+
+    await tx.userTwoFactorRecoveryCode.createMany({
+      data: recoveryCodeHashes.map((codeHash) => ({
+        userId: id,
+        codeHash,
+        isPending: true,
+      })),
+    })
+  })
+}
+
+const activatePendingTwoFactorSetup = async (id, activeSecretCiphertext) => {
+  await prisma.$transaction(async (tx) => {
+    await tx.userTwoFactorRecoveryCode.deleteMany({
+      where: {
+        userId: id,
+        isPending: false,
+      },
+    })
+
+    await tx.userTwoFactorRecoveryCode.updateMany({
+      where: {
+        userId: id,
+        isPending: true,
+      },
+      data: {
+        isPending: false,
+      },
+    })
+
+    await tx.user.update({
+      where: { id },
+      data: {
+        twoFactorEnabled: true,
+        twoFactorSecretCiphertext: activeSecretCiphertext,
+        twoFactorPendingSecretCiphertext: null,
+      },
+    })
+  })
+}
+
+const clearTwoFactorById = async (id) => {
+  await prisma.$transaction(async (tx) => {
+    await tx.userTwoFactorRecoveryCode.deleteMany({
+      where: { userId: id },
+    })
+
+    await tx.user.update({
+      where: { id },
+      data: {
+        twoFactorEnabled: false,
+        twoFactorSecretCiphertext: null,
+        twoFactorPendingSecretCiphertext: null,
+      },
+    })
+  })
+}
+
+const consumeRecoveryCode = async (userId, codeHash) => {
+  const result = await prisma.userTwoFactorRecoveryCode.deleteMany({
+    where: {
+      userId,
+      codeHash,
+      isPending: false,
+    },
+  })
+
+  return result.count > 0
+}
+
+const issueTwoFactorChallenge = (userId) => {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      twoFactorChallengeVersion: {
+        increment: 1,
+      },
+    },
+    select: {
+      id: true,
+      tokenVersion: true,
+      twoFactorChallengeVersion: true,
+    },
+  })
+}
+
+const consumeTwoFactorChallenge = async (userId, challengeVersion) => {
+  const result = await prisma.user.updateMany({
+    where: {
+      id: userId,
+      twoFactorChallengeVersion: challengeVersion,
+    },
+    data: {
+      twoFactorChallengeVersion: {
+        increment: 1,
+      },
+    },
+  })
+
+  return result.count > 0
+}
+
+const consumeRecoveryCodeAndChallenge = async (
+  userId,
+  codeHash,
+  challengeVersion,
+) => {
+  try {
+    await prisma.$transaction(async (tx) => {
+      const challengeResult = await tx.user.updateMany({
+        where: {
+          id: userId,
+          twoFactorChallengeVersion: challengeVersion,
+        },
+        data: {
+          twoFactorChallengeVersion: {
+            increment: 1,
+          },
+        },
+      })
+
+      if (challengeResult.count !== 1) {
+        throw new Error('INVALID_TWO_FACTOR_CHALLENGE')
+      }
+
+      const codeResult = await tx.userTwoFactorRecoveryCode.deleteMany({
+        where: {
+          userId,
+          codeHash,
+          isPending: false,
+        },
+      })
+
+      if (codeResult.count !== 1) {
+        throw new Error('INVALID_TWO_FACTOR_RECOVERY_CODE')
+      }
+    })
+
+    return true
+  } catch (error) {
+    if (
+      error.message === 'INVALID_TWO_FACTOR_CHALLENGE' ||
+      error.message === 'INVALID_TWO_FACTOR_RECOVERY_CODE'
+    ) {
+      return false
+    }
+
+    throw error
+  }
+}
+
+const updateUserLoginAttempts = (userId, data) => {
+  return prisma.user.update({
+    where: { id: userId },
+    data,
+  })
+}
 module.exports = {
+  activatePendingTwoFactorSetup,
+  clearPasswordResetToken,
+  clearTwoFactorById,
+  consumeRecoveryCode,
+  consumeRecoveryCodeAndChallenge,
+  consumeTwoFactorChallenge,
   createUser,
+  findAuthById,
   findByEmail,
-  findByUsername,
   findByIdentifier,
   findByPasswordResetTokenId,
-  findAuthById,
+  findByUsername,
   findSafeById,
+  findTokenUserById,
+  issueTwoFactorChallenge,
+  replacePendingTwoFactorSetup,
   updatePasswordById,
   updatePasswordByIdInTransaction,
   updatePasswordResetToken,
-  clearPasswordResetToken,
-  findTokenUserById,
   withLockedPasswordResetToken,
+  updateUserLoginAttempts,
 }

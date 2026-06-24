@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import useAuth from '../context/useAuth'
-import { fetchUserProfile, updateCurrentUserProfile } from '../services/users'
+import useAuthStore from '@/stores/useAuthStore'
+import {
+  fetchUserProfile,
+  updateCurrentUserProfile,
+} from '@/services/users'
 
 const joinedDateFormatter = new Intl.DateTimeFormat('en', {
   dateStyle: 'medium',
@@ -51,7 +54,7 @@ const formatRank = (rank) => {
 const ProfilePage = () => {
   const navigate = useNavigate()
   const { username: routeUsername } = useParams()
-  const { token, updateUser, user } = useAuth()
+  const { token, updateUser, user } = useAuthStore()
   const profileUsername = routeUsername || user?.username || ''
   const isOwnProfile = Boolean(user) && profileUsername === user.username
   const [profile, setProfile] = useState(null)

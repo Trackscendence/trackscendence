@@ -22,6 +22,8 @@ const selfProfileSelect = {
   ...publicProfileSelect,
   email: true,
   role: true,
+  twoFactorEnabled: true,
+  twoFactorPendingSecretCiphertext: true,
 }
 
 const matchHistorySelect = {

@@ -144,6 +144,23 @@ You still need a reachable PostgreSQL database and a valid `DATABASE_URL`.
 For non-Docker development, password reset email delivery can use any SMTP provider by setting `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and optionally `PASSWORD_RESET_URL_BASE` in `.env`.
 If you open the app through a different public origin such as `127.0.0.1`, a tunnel URL, or a staging domain, set `APP_BASE_URL` or `PASSWORD_RESET_URL_BASE` to that exact frontend URL so reset links point to the right place.
 
+### Auth Security And 2FA
+
+The current auth/security implementation includes:
+
+- password strength validation
+- authenticated password change
+- forgot-password and reset-password flows
+- expiring password reset emails through Mailpit or SMTP
+- TOTP-based two-factor authentication
+- recovery codes as a backup second factor
+- 2FA management from the authenticated `Settings` page
+
+For the detailed 2FA flow, security notes, endpoint list, and local demo steps, see:
+
+- [Two-Factor Authentication Documentation](docs/two-factor-auth.md)
+- [Postman Auth And 2FA Flow](docs/postman/README.md)
+
 ### Backend API
 
 The backend uses versioned API routes.

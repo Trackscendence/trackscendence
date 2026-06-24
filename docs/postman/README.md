@@ -1,15 +1,40 @@
-# Postman Auth And 2FA Flow
+# Postman Collections
 
-Import these two files into Postman:
+This folder contains documentation for local Trackscendence Postman checks.
 
-- `trackscendence-auth-security.postman_collection.json`
-- `trackscendence-local.postman_environment.json`
+The actual Postman collections and environments now live in `tests/postman/`.
+
+Recommended taxonomy for future additions:
+
+- `tests/postman/<domain>/<feature>/`
+
+Current structure:
+
+- `tests/postman/auth/security/`
+- `tests/postman/friends/friendship/`
+
+Each collection keeps reusable test variables in a matching environment file, so the collection JSON stays generic and easy to rerun.
+
+## Auth Security
+
+Import:
+
+- [tests/postman/auth/security/trackscendence-auth-security.postman_collection.json](/home/ogrativ/Projects/trackscendence/tests/postman/auth/security/trackscendence-auth-security.postman_collection.json:1)
+- [tests/postman/auth/security/trackscendence-auth-local.postman_environment.json](/home/ogrativ/Projects/trackscendence/tests/postman/auth/security/trackscendence-auth-local.postman_environment.json:1)
 
 Recommended usage:
 
-1. Select the `Trackscendence Local` environment.
+1. Select the imported environment named `Trackscendence Auth Local`.
 2. Run `01 Initialize / Initialize Test Variables`.
-3. Run the rest of the requests top-to-bottom, or run the full collection in order.
+3. Run the remaining requests top-to-bottom, or run the full collection in order.
+
+Coverage:
+
+- register, login, and `/auth/me`
+- password change flow
+- forgot/reset password flow with Mailpit
+- single-use reset token check
+- weak-password and validation guards
 
 Notes:
 
@@ -20,3 +45,29 @@ Notes:
 - The collection auto-saves `token`, `oldToken`, `challengeToken`, `twoFactorSecret`, `recoveryCode`, `messageId`, `resetToken`, and `resetLink`.
 - Run the collection in order if you want the full end-to-end scenario: it enables 2FA, verifies login with a second factor, disables 2FA again, and then continues into the password-reset checks.
 - UI-only behavior such as redirecting on expired sessions is not covered by Postman.
+
+## Friendship Flow
+
+Import:
+
+- [tests/postman/friends/friendship/trackscendence-friendship.postman_collection.json](/home/ogrativ/Projects/trackscendence/tests/postman/friends/friendship/trackscendence-friendship.postman_collection.json:1)
+- [tests/postman/friends/friendship/trackscendence-friendship-local.postman_environment.json](/home/ogrativ/Projects/trackscendence/tests/postman/friends/friendship/trackscendence-friendship-local.postman_environment.json:1)
+
+Recommended usage:
+
+1. Select the imported environment named `Trackscendence Friendship Local`.
+2. Run `01 Initialize / Initialize Friendship Variables`.
+3. Run the remaining requests top-to-bottom, or run the full collection in order.
+
+Coverage:
+
+- send, accept, reject, cancel, and remove friendship flows
+- duplicate pending requests and reverse-request conflicts
+- self-request validation
+- unauthenticated and invalid-input guards
+
+Notes:
+
+- The collection assumes the Docker production-style stack is running on `http://localhost:8080`.
+- The friendship collection auto-saves two users, their ids, and both bearer tokens.
+- UI-only behavior is not covered by Postman.

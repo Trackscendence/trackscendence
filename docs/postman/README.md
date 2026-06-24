@@ -66,6 +66,8 @@ Coverage:
 - protected self-update via `PATCH /api/v1/users/me`
 - zero-state lifetime stats contract for new users
 - public/private field exposure checks
+- username validation for public profile lookups
+- profile-field normalization, trimming, and clearing to `null`
 - validation and auth guards for profile updates
 
 Variables stored in the separate environment file:

@@ -17,6 +17,7 @@ David said hi from Beijing (travelling in Beijing)
 - Frontend: React
 - Backend: Express
 - CSS: Tailwind
+- UI workshop: Storybook
 - ORM: Prisma
 - Database: PostgreSQL
 - Proxy: Nginx in production mode
@@ -143,6 +144,28 @@ You still need a reachable PostgreSQL database and a valid `DATABASE_URL`.
 
 For non-Docker development, password reset email delivery can use any SMTP provider by setting `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and optionally `PASSWORD_RESET_URL_BASE` in `.env`.
 If you open the app through a different public origin such as `127.0.0.1`, a tunnel URL, or a staging domain, set `APP_BASE_URL` or `PASSWORD_RESET_URL_BASE` to that exact frontend URL so reset links point to the right place.
+
+#### 5. Storybook for frontend components
+
+Use Storybook to review shared UI primitives outside the application routes:
+
+```
+npm run storybook
+```
+
+Open:
+
+```
+http://localhost:6006
+```
+
+Build the static Storybook bundle with:
+
+```
+npm run build-storybook
+```
+
+Storybook is especially useful for components such as `Card` that may be completed before a page consumes them. See `docs/storybook.md` for the project workflow and rationale.
 
 ### Auth Security And 2FA
 

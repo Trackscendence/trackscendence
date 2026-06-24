@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import Button from '@/components/Button'
-import Card from '@/components/Card'
+import Panel from '@/components/Panel'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
 
@@ -48,7 +48,7 @@ const Signup = () => {
   }
 
   return (
-    <Card>
+    <Panel>
       <div className="mb-7">
         <p className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase">
           Trackscendence
@@ -122,7 +122,7 @@ const Signup = () => {
           Log in
         </Link>
       </p>
-    </Card>
+    </Panel>
   )
 }
 

@@ -21,7 +21,9 @@
     "compose:clean": "docker compose down -v",
     "db:shell": "docker compose exec database psql -U trackscendence -d trackscendence",
     "prisma:generate": "docker compose exec server npm run prisma:generate",
-    "prisma:migrate": "docker compose exec server npm run prisma:migrate"
+    "prisma:migrate": "docker compose exec server npm run prisma:migrate",
+    "storybook": "npm run storybook --prefix client",
+    "build-storybook": "npm run build-storybook --prefix client"
   },
   "dependencies": {
     "concurrently": "^9.2.1"

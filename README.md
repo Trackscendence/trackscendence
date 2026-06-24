@@ -166,6 +166,7 @@ npm run build-storybook
 ```
 
 Storybook is especially useful for components such as `Card` that may be completed before a page consumes them. See `docs/storybook.md` for the project workflow and rationale.
+
 ### Auth Security And 2FA
 
 The current auth/security implementation includes:

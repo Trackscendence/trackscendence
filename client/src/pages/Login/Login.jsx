@@ -254,17 +254,29 @@ const Login = () => {
           className="mt-5"
           onClick={resetTwoFactorStep}
         >
-          Create an account
-        </Link>
-      </p>
-      <p className="mt-3 text-center text-sm text-[#50635a]">
-        <Link
-          className="font-semibold text-[#2f6f86] hover:text-[#24586a]"
-          to="/forgot-password"
-        >
-          Forgot your password?
-        </Link>
-      </p>
+          Back to password step
+        </Button>
+      ) : (
+        <>
+          <p className="mt-5 text-center text-sm text-[#50635a]">
+            New player?{' '}
+            <Link
+              className="font-semibold text-[#2f6f86] hover:text-[#24586a]"
+              to="/signup"
+            >
+              Create an account
+            </Link>
+          </p>
+          <p className="mt-3 text-center text-sm text-[#50635a]">
+            <Link
+              className="font-semibold text-[#2f6f86] hover:text-[#24586a]"
+              to="/forgot-password"
+            >
+              Forgot your password?
+            </Link>
+          </p>
+        </>
+      )}
     </Panel>
   )
 }

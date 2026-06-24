@@ -166,6 +166,22 @@ npm run build-storybook
 ```
 
 Storybook is especially useful for components such as `Card` that may be completed before a page consumes them. See `docs/storybook.md` for the project workflow and rationale.
+### Auth Security And 2FA
+
+The current auth/security implementation includes:
+
+- password strength validation
+- authenticated password change
+- forgot-password and reset-password flows
+- expiring password reset emails through Mailpit or SMTP
+- TOTP-based two-factor authentication
+- recovery codes as a backup second factor
+- 2FA management from the authenticated `Settings` page
+
+For the detailed 2FA flow, security notes, endpoint list, and local demo steps, see:
+
+- [Two-Factor Authentication Documentation](docs/two-factor-auth.md)
+- [Postman Auth And 2FA Flow](docs/postman/README.md)
 
 ### Backend API
 

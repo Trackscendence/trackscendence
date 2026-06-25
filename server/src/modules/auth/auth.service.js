@@ -50,11 +50,7 @@ const PASSWORD_SYMBOL_REGEX = /[^a-z0-9]/i
 
 const normalizeEmail = (email) => email.trim().toLowerCase()
 const normalizeIdentifier = (identifier) => {
-  const trimmedIdentifier = identifier.trim()
-
-  return trimmedIdentifier.includes('@')
-    ? trimmedIdentifier.toLowerCase()
-    : trimmedIdentifier
+  return identifier.trim().toLowerCase()
 }
 
 const toSafeAuthUser = (user) => ({

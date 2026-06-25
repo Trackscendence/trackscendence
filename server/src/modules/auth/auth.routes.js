@@ -42,7 +42,7 @@ const router = Router()
  *           application/json:
  *             example:
  *               error:
- *                 code: REQUEST_ERROR
+ *                 code: BAD_REQUEST
  *                 message: Invalid request data
  *                 payload:
  *                   details:
@@ -54,7 +54,7 @@ const router = Router()
  *           application/json:
  *             example:
  *               error:
- *                 code: REQUEST_ERROR
+ *                 code: CONFLICT
  *                 message: Email is already registered
  */
 router.post('/register', authController.register)
@@ -92,7 +92,7 @@ router.post('/register', authController.register)
  *           application/json:
  *             example:
  *               error:
- *                 code: REQUEST_ERROR
+ *                 code: BAD_REQUEST
  *                 message: Invalid request data
  *                 payload:
  *                   details:
@@ -103,7 +103,7 @@ router.post('/register', authController.register)
  *           application/json:
  *             example:
  *               error:
- *                 code: REQUEST_ERROR
+ *                 code: UNAUTHORIZED
  *                 message: Invalid email/username or password
  */
 router.post('/login', authController.login)
@@ -143,7 +143,7 @@ router.post('/login', authController.login)
  *           application/json:
  *             example:
  *               error:
- *                 code: REQUEST_ERROR
+ *                 code: BAD_REQUEST
  *                 message: Invalid request data
  *                 payload:
  *                   details:
@@ -189,19 +189,12 @@ router.post('/login/2fa', authController.completeTwoFactorLogin)
  *         content:
  *           application/json:
  *             example:
- *               validations:
- *                 value:
- *                   error:
- *                     code: REQUEST_ERROR
- *                     message: Invalid request data
- *                     payload:
- *                       details:
- *                         - Password must be at least 8 characters
- *               passwordReuse:
- *                 value:
- *                   error:
- *                     code: REQUEST_ERROR
- *                     message: New password must differ from current password
+ *               error:
+ *                 code: BAD_REQUEST
+ *                 message: Invalid request data
+ *                 payload:
+ *                   details:
+ *                     - Password must be at least 8 characters
  *       401:
  *         description: Invalid or expired reset token
  *         content:
@@ -251,21 +244,9 @@ router.post('/reset-password', authController.resetPassword)
  *         content:
  *           application/json:
  *             example:
- *               validations:
- *                 value:
- *                   error:
- *                     code: REQUEST_ERROR
- *                     message: Invalid request data
- *               incorrectCurrentPassword:
- *                 value:
- *                   error:
- *                     code: REQUEST_ERROR
- *                     message: Current password is incorrect
- *               passwordReuse:
- *                 value:
- *                   error:
- *                     code: REQUEST_ERROR
- *                     message: New password must differ from current password
+ *               error:
+ *                 code: BAD_REQUEST
+ *                 message: Current password is incorrect
  *       401:
  *         description: Missing, invalid, or expired token
  *         content:
@@ -295,7 +276,7 @@ router.post('/change-password', requireAuth, authController.changePassword)
  *           application/json:
  *             example:
  *               error:
- *                 code: REQUEST_ERROR
+ *                 code: UNAUTHORIZED
  *                 message: Invalid or expired token
  */
 router.get('/me', requireAuth, authController.me)

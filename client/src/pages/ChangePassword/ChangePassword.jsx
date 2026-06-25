@@ -1,138 +1,31 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import useAuthStore from '@/stores/useAuthStore'
-import { AUTH_TOKEN_KEY, changePassword } from '@/services/auth'
-import Button from '@/components/Button'
-import Card from '@/components/Card'
-import FormField from '@/components/FormField'
-import Input from '@/components/Input'
+import { AUTH_TOKEN_KEY } from '@/services/auth'
+import ChangePasswordForm from './_components/ChangePasswordForm'
 
 const ChangePassword = () => {
-  const { token } = useAuthStore()
-  const [form, setForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  })
-  const [error, setError] = useState('')
-  const [validationDetails, setValidationDetails] = useState([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleChange = (event) => {
-    setError('')
-    setValidationDetails([])
-    setForm((current) => ({
-      ...current,
-      [event.target.name]: event.target.value,
-    }))
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-    setError('')
-    setValidationDetails([])
-
-    if (form.newPassword !== form.confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      await changePassword(
-        {
-          currentPassword: form.currentPassword,
-          newPassword: form.newPassword,
-        },
-        token,
-      )
-      localStorage.removeItem(AUTH_TOKEN_KEY)
-      window.location.replace('/login?passwordChanged=1')
-    } catch (requestError) {
-      const details = Array.isArray(requestError.payload?.details)
-        ? requestError.payload.details
-        : []
-
-      setValidationDetails(details)
-      setError(details.length > 0 ? '' : requestError.message)
-    } finally {
-      setIsSubmitting(false)
-    }
+  const handleSuccess = () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY)
+    window.location.replace('/login?passwordChanged=1')
   }
 
   return (
-    <div className="flex justify-center">
-      <Card>
-        <div className="mb-7">
-          <h1 className="text-2xl font-semibold">Change password</h1>
-        </div>
+    <div className="flex flex-1 items-center justify-center px-5 py-10">
+      <div className="w-full max-w-[414px]">
+        <h1 className="mb-8 text-center text-4xl font-semibold text-[#081934] uppercase">
+          Change password
+        </h1>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <FormField label="Current password">
-            <Input
-              name="currentPassword"
-              type="password"
-              autoComplete="current-password"
-              value={form.currentPassword}
-              onChange={handleChange}
-              required
-            />
-          </FormField>
+        <ChangePasswordForm onSuccess={handleSuccess} />
 
-          <FormField
-            label="New password"
-            hint="Use 8+ characters with upper/lowercase letters, a number, and a symbol."
-          >
-            <Input
-              name="newPassword"
-              type="password"
-              autoComplete="new-password"
-              value={form.newPassword}
-              onChange={handleChange}
-              required
-            />
-          </FormField>
-
-          <FormField label="Confirm new password">
-            <Input
-              name="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              required
-            />
-          </FormField>
-
-          {validationDetails.length > 0 ? (
-            <div className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
-              {validationDetails.map((detail) => (
-                <p key={detail}>{detail}</p>
-              ))}
-            </div>
-          ) : null}
-
-          {error ? (
-            <p className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
-              {error}
-            </p>
-          ) : null}
-
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Updating password' : 'Change password'}
-          </Button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-[#50635a]">
+        <p className="mt-5 text-center text-sm text-[#081934]">
           <Link
-            className="font-semibold text-[#2f6f86] hover:text-[#24586a]"
+            className="font-semibold text-[#0196FF] hover:text-[#0080e0]"
             to="/"
           >
             Back to home
           </Link>
         </p>
-      </Card>
+      </div>
     </div>
   )
 }

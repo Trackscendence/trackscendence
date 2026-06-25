@@ -10,6 +10,7 @@ import Signup from '@/pages/Signup'
 import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
 import ChangePassword from '@/pages/ChangePassword'
+import SignupSuccess from '@/pages/SignupSuccess'
 import Session from '@/pages/Session'
 import PrivacyPolicy from '@/pages/Privacy'
 import TermsOfService from '@/pages/TermsOfService'
@@ -35,6 +36,7 @@ const App = () => {
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/signup/success" element={<SignupSuccess />} />
         </Route>
 
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />

@@ -42,5 +42,8 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "prisma-erd-generator": "^2.4.3"
   }
 }

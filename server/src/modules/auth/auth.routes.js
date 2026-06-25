@@ -313,7 +313,6 @@ router.post(
   authController.regenerateTwoFactor,
 )
 
-
 /**
  * @swagger
  * /auth/logout:

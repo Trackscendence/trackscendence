@@ -228,7 +228,7 @@ const Login = () => {
                 onChange={handleChange}
                 required
               />
-           
+
               {validationDetails.identifier ? (
                 <p className="mt-1 text-sm text-[#8a321f]">
                   {validationDetails.identifier}
@@ -245,7 +245,7 @@ const Login = () => {
                 onChange={handleChange}
                 required
               />
-                  
+
               {validationDetails.password ? (
                 <p className="mt-1 text-sm text-[#8a321f]">
                   {validationDetails.password}

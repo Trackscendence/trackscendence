@@ -23,12 +23,13 @@ _This project has been created as part of the 42 curriculum by smoore, srodrigo,
 
 1. [Description & Key Features](#1-description--key-features)
 2. [UNO Game Rules](#2-uno-game-rules)
-3. [System & Database Architecture](#3-system--database-architecture)
-4. [Target Modules (17 Points Target)](#4-target-modules-17-points-target)
-5. [Getting Started](#5-getting-started)
-6. [Developer Documentation](#6-developer-documentation)
-7. [Team Information](#7-team-information)
-8. [Resources & AI Usage](#8-resources--ai-usage)
+3. [Security & Authentication](#3-security--authentication)
+4. [System & Database Architecture](#4-system--database-architecture)
+5. [Target Modules (17 Points Target)](#5-target-modules-17-points-target)
+6. [Getting Started](#6-getting-started)
+7. [Developer Documentation](#7-developer-documentation)
+8. [Team Information](#8-team-information)
+9. [Resources & AI Usage](#9-resources--ai-usage)
 
 ---
 
@@ -63,7 +64,23 @@ Our multiplayer engine implements the classic rules of UNO:
 
 ---
 
-## 3. System & Database Architecture
+## 3. Security & Authentication
+
+Our platform enforces robust security mechanisms to protect user accounts and game history:
+
+- **Password Policies**: Strong password strength validation and secure authenticated password change procedures.
+- **Password Reset**: Expiring password reset tokens delivered securely via Mailpit or configured SMTP server.
+- **Two-Factor Authentication (2FA)**: TOTP-based 2FA with backup recovery codes. Managed directly via the authenticated User Settings page.
+- **Account Protection**: Automated failed login lockout thresholds and session security features.
+
+For detailed configurations, endpoints, flowcharts, and Postman setups:
+
+- 📖 **[Two-Factor Authentication Guide](docs/two-factor-auth.md)**
+- 🚀 **[Postman Auth & 2FA Flow Setup](docs/postman/README.md)**
+
+---
+
+## 4. System & Database Architecture
 
 ### System Architecture
 
@@ -82,7 +99,7 @@ Our database relational schema is defined in Prisma and is automatically kept up
 
 _Note: The ERD diagram is automatically regenerated inside the `/docs` folder whenever you run `npx prisma generate` or `just db-generate`._
 
-## 4. Target Modules (17 Points Target)
+## 5. Target Modules (17 Points Target)
 
 To exceed the mandatory 14 points required for evaluation, our roadmap implements the following modules (targeting a total of 17 points):
 
@@ -107,7 +124,7 @@ To exceed the mandatory 14 points required for evaluation, our roadmap implement
 
 ---
 
-## 5. Getting Started
+## 6. Getting Started
 
 ### Prerequisites
 
@@ -150,13 +167,13 @@ npm run compose:up
 
 ---
 
-## 6. Developer Documentation
+## 7. Developer Documentation
 
 For details on database migrations, project directory structures, lints/spelling tools, and git contribution workflows, please check out our dedicated **[Developer & Contribution Guide](docs/DEVELOPER_GUIDE.md)**.
 
 ---
 
-## 7. Team Information
+## 8. Team Information
 
 _(Note: As per 42 evaluation guidelines, only active team members participating in the final evaluation are listed)._
 
@@ -201,7 +218,7 @@ _(Note: As per 42 evaluation guidelines, only active team members participating 
 
 ---
 
-## 8. Resources & AI Usage
+## 9. Resources & AI Usage
 
 - **Core Documentation**: [React Docs](https://react.dev/), [Zustand](https://zustand-demo.pmnd.rs/), [Prisma](https://www.prisma.io/docs), [Socket.io](https://socket.io/docs/v4/).
 - **AI Usage**:

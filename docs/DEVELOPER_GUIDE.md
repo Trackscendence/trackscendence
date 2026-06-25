@@ -4,7 +4,44 @@ This guide is designed for developers contributing to the Trackscendence project
 
 ---
 
-## 1. Project Directory Map
+## Table of Contents
+
+1. [Documentation Strategy & Guidelines](#1-documentation-strategy--guidelines)
+2. [Project Directory Map](#2-project-directory-map)
+3. [Local & Dockerized Development](#3-local--dockerized-development)
+4. [Database Workflows (Prisma ORM)](#4-database-workflows-prisma-orm)
+5. [Git & Contribution Workflow](#5-git--contribution-workflow)
+6. [Coding Standards & Lints](#6-coding-standards--lints)
+7. [Docker & CI/CD Architecture](#7-docker--cicd-architecture)
+8. [UI Workshop (Storybook)](#8-ui-workshop-storybook)
+9. [Backend API & Directory Architecture](#9-backend-api--directory-architecture)
+
+---
+
+## 1. Documentation Strategy & Guidelines
+
+To maintain a clean and production-grade repository, we separate high-level product documentation from developer workflows and detailed technical guides.
+
+### Where to Document:
+
+- **`README.md` (Root)**:
+  - **Audience**: Evaluators, users, and newcomers.
+  - **Content**: Project title, tech stack badges, high-level features, core product requirements (e.g., security & authentication overview), targeted points module matrix, classic gameplay rules, and quick docker run commands.
+- **`docs/DEVELOPER_GUIDE.md` (Here)**:
+  - **Audience**: Active developers and contributors.
+  - **Content**: Detailed monorepo layouts, local and containerized build setups, Prisma migrations, Git branching strategies, Husky formatting lints, CI/CD promotion systems, Storybook workshops, and backend directory structure.
+- **`docs/*.md` (Specialized Guides)**:
+  - **Audience**: Developers working on specific features.
+  - **Content**: Deep-dive designs, diagrams, and Postman setups for particular modules (e.g. [Two-Factor Authentication Guide](./two-factor-auth.md) and [Storybook Guide](./storybook.md)).
+
+When updating documentation:
+
+1. Avoid repeating raw command guides or folder lists in the main `README.md`—delegate them to this Developer Guide.
+2. Ensure all internal file references use relative repository links (e.g. `[Two-Factor Guide](./two-factor-auth.md)`) so they render and navigate correctly on the GitHub web interface.
+
+---
+
+## 2. Project Directory Map
 
 The repository is structured as a monorepo, separating frontend and backend logic.
 
@@ -43,7 +80,7 @@ trackscendence/
 
 ---
 
-## 2. Local & Dockerized Development
+## 3. Local & Dockerized Development
 
 We use Docker to ensure consistent runtime environments. However, you can also run components locally.
 
@@ -88,7 +125,7 @@ If you prefer running without Docker (requires node.js and an active external Po
 
 ---
 
-## 3. Database Workflows (Prisma ORM)
+## 4. Database Workflows (Prisma ORM)
 
 Database schemas are defined in [schema.prisma](../server/prisma/schema.prisma).
 
@@ -113,7 +150,7 @@ Database schemas are defined in [schema.prisma](../server/prisma/schema.prisma).
 
 ---
 
-## 4. Git & Contribution Workflow
+## 5. Git & Contribution Workflow
 
 We follow conventional development practices to keep the repository history clean.
 
@@ -149,7 +186,7 @@ We enforce conventionally formatted commit messages via Husky + Commitlint. Form
 
 ---
 
-## 5. Coding Standards & Lints
+## 6. Coding Standards & Lints
 
 To maintain a consistent codebase, we run automatic checks before commits (Husky + lint-staged).
 
@@ -168,11 +205,11 @@ To maintain a consistent codebase, we run automatic checks before commits (Husky
 
 ---
 
-## 6. Docker & CI/CD Architecture
+## 7. Docker & CI/CD Architecture
 
 We use Docker Compose overlays to support both local development and production-like builds, combined with GitHub Actions for automated verification and deployment.
 
-### 6.1 Docker Compose Overlay Model
+### 7.1 Docker Compose Overlay Model
 
 Rather than maintaining separate, duplicated configuration files, we use Docker Compose overlays:
 
@@ -183,7 +220,7 @@ Rather than maintaining separate, duplicated configuration files, we use Docker 
    - Exposes database ports (`5432`) and Vite's dev port (`5173`) to the host.
    - Spins up **Adminer** on `http://localhost:8081` for visual database inspection.
 
-### 6.2 CI/CD & GitHub Container Registry (GHCR)
+### 7.2 CI/CD & GitHub Container Registry (GHCR)
 
 Our workflows in `.github/workflows/` automate checks and releases:
 
@@ -193,3 +230,67 @@ Our workflows in `.github/workflows/` automate checks and releases:
     - Client: `ghcr.io/<owner>/trackscendence-client:dev`
     - Server: `ghcr.io/<owner>/trackscendence-server:dev`
   - **Production Release**: When merged to `main`, the CD pipeline pulls the existing `:dev` images from GHCR, retags them as `:main` and `:latest`, and pushes them back. This **promotion strategy** guarantees that the exact image verified in dev is deployed to production without rebuilding.
+
+---
+
+## 8. UI Workshop (Storybook)
+
+We use Storybook to review shared UI components outside the main application routes. This is especially useful for styling and isolating primitives (such as the `Card` component) before integrating them into a page.
+
+- **Start Storybook (Port 6006):**
+  ```bash
+  npm run storybook
+  ```
+  Open: `http://localhost:6006`
+- **Build Static Storybook Bundle:**
+  ```bash
+  npm run build-storybook
+  ```
+
+For more details on the Storybook configuration and workflow, see [docs/storybook.md](storybook.md).
+
+---
+
+## 9. Backend API & Directory Architecture
+
+### 9.1 API Versioning
+
+The Express backend uses versioned API routes under `/api/v1/`.
+
+Current baseline endpoints:
+
+- `GET /` — API metadata
+- `GET /api/v1/ping` — Service process check
+- `GET /api/v1/health` — Database connection check
+- `GET /api/docs/` — Swagger API Documentation (development only)
+
+### 9.2 Backend Directory Structure
+
+The server follows a modular architecture:
+
+```text
+server/
+  app.js                 # App configuration & routing setup
+  index.js               # Entrypoint (HTTP & Socket.io server startup)
+  prisma/
+    schema.prisma        # Database schema
+  src/
+    db/                  # Prisma client instance
+    exceptions/          # Custom API error exceptions
+    middleware/          # Custom middleware (auth, rate-limit, validation)
+    modules/             # Feature domains (e.g. auth, game, friends)
+    routes/
+      v1/                # v1 Router mounting
+  utils/                 # App configurations and logging utilities
+```
+
+### 9.3 Import Aliases
+
+We use Node.js subpath imports (`#` aliases) defined in `server/package.json` to prevent deep relative imports. Always use aliases:
+
+```javascript
+const config = require('#utils/config')
+const prisma = require('#db/prisma')
+```
+
+Avoid relative paths like `require('../../../utils/config')`.

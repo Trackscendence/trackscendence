@@ -7,6 +7,12 @@ const REDIRECT_SECONDS = 5
 const SignupSuccess = () => {
   const navigate = useNavigate()
   const [countdown, setCountdown] = useState(REDIRECT_SECONDS)
+  const [showCheck, setShowCheck] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowCheck(false), 1000)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     if (countdown === 0) {
@@ -21,21 +27,25 @@ const SignupSuccess = () => {
     <div className="flex flex-1 items-center justify-center px-5 py-10">
       <div className="w-full max-w-[414px] text-center">
         <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-[#0196FF]">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 48 48"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M10 24L20 34L38 14"
-              stroke="white"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          {showCheck ? (
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 48 48"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M10 24L20 34L38 14"
+                stroke="white"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : (
+            <span className="text-4xl font-bold text-white">{countdown}</span>
+          )}
         </div>
 
         <h1 className="mb-4 text-4xl font-semibold text-[#081934] uppercase">
@@ -43,7 +53,7 @@ const SignupSuccess = () => {
         </h1>
 
         <p className="mb-8 text-[#081934]">
-          Your account is ready. Redirecting to sign in in {countdown}…
+          Your account is ready. Redirecting to sign in…
         </p>
 
         <Button

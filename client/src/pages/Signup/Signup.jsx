@@ -13,12 +13,7 @@ const Signup = () => {
         </h1>
 
         <SignupForm
-          onSuccess={() =>
-            navigate('/login', {
-              replace: true,
-              state: { message: 'Account created. Sign in to continue.' },
-            })
-          }
+          onSuccess={() => navigate('/signup/success', { replace: true })}
         />
 
         <div className="my-5 flex items-center gap-4">

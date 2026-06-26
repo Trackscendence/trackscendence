@@ -7,6 +7,11 @@ import {
 import { getLeaderboard } from '@/services/game'
 import { getProfile, getUserByUsername, updateProfile } from '@/services/users'
 import useAuthStore from '@/stores/useAuthStore'
+import {
+  withMockFriends,
+  withMockLeaderboard,
+  withMockProfileStats,
+} from './profileStore.mocks'
 
 export const emptyFriendContext = {
   friends: [],
@@ -26,7 +31,7 @@ export const loadFriendContext = async (token) => {
   ])
 
   return {
-    friends: friendsResult.friends || [],
+    friends: withMockFriends(friendsResult.friends || []),
     incomingRequests: requestsResult.incoming || [],
     outgoingRequests: requestsResult.outgoing || [],
   }
@@ -52,12 +57,16 @@ export const loadCurrentProfileData = async (token) => {
     loadFriendContext(token),
     loadLeaderboardContext(token),
   ])
+  const currentProfile = withMockProfileStats(profileResult.user)
 
   return {
-    currentProfile: profileResult.user,
+    currentProfile,
     relationship: profileResult.relationship,
     ...friendContext,
-    ...leaderboardContext,
+    leaderboard: withMockLeaderboard({
+      leaderboard: leaderboardContext.leaderboard,
+      profile: currentProfile,
+    }),
   }
 }
 
@@ -66,11 +75,15 @@ export const loadPublicProfileData = async ({ token, username }) => {
     getUserByUsername(username, token),
     loadLeaderboardContext(token),
   ])
+  const publicProfile = withMockProfileStats(result.user)
 
   return {
-    publicProfile: result.user,
+    publicProfile,
     relationship: result.relationship,
-    ...leaderboardContext,
+    leaderboard: withMockLeaderboard({
+      leaderboard: leaderboardContext.leaderboard,
+      profile: publicProfile,
+    }),
   }
 }
 

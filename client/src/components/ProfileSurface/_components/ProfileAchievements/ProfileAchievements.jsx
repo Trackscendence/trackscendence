@@ -1,3 +1,8 @@
+import drawFourIcon from '@/assets/achievements/draw-four.svg'
+import firstUnoIcon from '@/assets/achievements/first-uno.svg'
+import socialButterflyIcon from '@/assets/achievements/social-butterfly.svg'
+import speedDemonIcon from '@/assets/achievements/speed-demon.svg'
+import winStreakIcon from '@/assets/achievements/win-streak.svg'
 import profileFormatters from '../../_utils/profileFormatters'
 
 const getAchievements = ({ friendsCount, stats }) => {
@@ -6,24 +11,34 @@ const getAchievements = ({ friendsCount, stats }) => {
   const winRate = profileFormatters.getWinRate(stats)
 
   return [
-    { id: 'first-win', label: 'First win', mark: '1', unlocked: wins >= 1 },
-    { id: 'five-wins', label: 'Five wins', mark: '5', unlocked: wins >= 5 },
     {
-      id: 'ten-games',
-      label: '10 games',
-      mark: '10',
+      id: 'first-uno',
+      icon: firstUnoIcon,
+      label: 'First UNO!',
+      unlocked: gamesPlayed >= 1,
+    },
+    {
+      id: 'win-streak',
+      icon: winStreakIcon,
+      label: 'Win Streak x5',
+      unlocked: wins >= 5,
+    },
+    {
+      id: 'draw-four',
+      icon: drawFourIcon,
+      label: 'Draw Four x10',
       unlocked: gamesPlayed >= 10,
     },
     {
-      id: 'sharp-rate',
-      label: '50% rate',
-      mark: '%',
+      id: 'speed-demon',
+      icon: speedDemonIcon,
+      label: 'Speed Demon',
       unlocked: gamesPlayed > 0 && winRate >= 50,
     },
     {
-      id: 'connected',
-      label: 'Friend list',
-      mark: '+',
+      id: 'social-butterfly',
+      icon: socialButterflyIcon,
+      label: 'Social Butterfly',
       unlocked: friendsCount > 0,
     },
   ]
@@ -46,13 +61,17 @@ const ProfileAchievements = ({ friendsCount = 0, stats = {} }) => {
           >
             <span
               aria-hidden="true"
-              className={`flex h-12 w-12 items-center justify-center rounded-full border-2 text-base font-semibold ${
+              className={`flex h-12 w-12 items-center justify-center rounded-full border-2 ${
                 achievement.unlocked
-                  ? 'border-[#e86d2f] bg-[#ffd099] text-[#e86d2f]'
-                  : 'border-[#ddd] bg-[#f0f0f0] text-[#9b8b82] opacity-45'
+                  ? 'border-[#e86d2f] bg-[#ffd099]'
+                  : 'border-[#ddd] bg-[#f0f0f0] opacity-45'
               }`}
             >
-              {achievement.mark}
+              <img
+                alt=""
+                className="h-6 w-6 object-contain"
+                src={achievement.icon}
+              />
             </span>
             <span className="text-center text-[10px] leading-tight text-[#7a3810]">
               {achievement.label}

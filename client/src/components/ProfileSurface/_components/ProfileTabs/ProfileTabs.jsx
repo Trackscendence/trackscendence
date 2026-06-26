@@ -6,7 +6,7 @@ const TABS = [
 
 const ProfileTabs = ({ activeTab, onTabChange }) => {
   return (
-    <div className="mt-6 flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1">
       {TABS.map((tab) => (
         <button
           key={tab.id}

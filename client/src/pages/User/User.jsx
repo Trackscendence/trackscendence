@@ -13,6 +13,7 @@ const User = () => {
   const error = useProfileStore((state) => state.error)
   const isLoading = useProfileStore((state) => state.isLoading)
   const isSubmitting = useProfileStore((state) => state.isSubmitting)
+  const leaderboard = useProfileStore((state) => state.leaderboard)
   const profile = useProfileStore((state) => state.publicProfile)
   const relationship = useProfileStore((state) => state.relationship)
 
@@ -58,6 +59,7 @@ const User = () => {
       friends={[]}
       isOwnProfile={false}
       isSubmitting={isSubmitting}
+      leaderboard={leaderboard}
       profile={profile}
       relationship={relationship}
       onFriendRequest={useProfileStore.getState().sendFriendRequest}

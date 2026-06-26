@@ -11,6 +11,7 @@ const Profile = () => {
   const friends = useProfileStore((state) => state.friends)
   const isLoading = useProfileStore((state) => state.isLoading)
   const isSubmitting = useProfileStore((state) => state.isSubmitting)
+  const leaderboard = useProfileStore((state) => state.leaderboard)
   const relationship = useProfileStore((state) => state.relationship)
 
   useEffect(() => {
@@ -51,6 +52,7 @@ const Profile = () => {
       friends={friends}
       isOwnProfile
       isSubmitting={isSubmitting}
+      leaderboard={leaderboard}
       profile={currentProfile}
       relationship={relationship}
       onFriendRequest={useProfileStore.getState().sendFriendRequest}

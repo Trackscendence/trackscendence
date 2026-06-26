@@ -4,6 +4,7 @@ import {
   listFriends,
   sendFriendRequest,
 } from '@/services/friends'
+import { getLeaderboard } from '@/services/game'
 import { getProfile, getUserByUsername, updateProfile } from '@/services/users'
 import useAuthStore from '@/stores/useAuthStore'
 
@@ -11,6 +12,7 @@ export const emptyFriendContext = {
   friends: [],
   incomingRequests: [],
   outgoingRequests: [],
+  leaderboard: [],
 }
 
 export const getActiveToken = () => {
@@ -30,25 +32,45 @@ export const loadFriendContext = async (token) => {
   }
 }
 
+export const loadLeaderboardContext = async (token) => {
+  try {
+    const result = await getLeaderboard(token)
+
+    return {
+      leaderboard: result.leaderboard || [],
+    }
+  } catch {
+    return {
+      leaderboard: [],
+    }
+  }
+}
+
 export const loadCurrentProfileData = async (token) => {
-  const [profileResult, friendContext] = await Promise.all([
+  const [profileResult, friendContext, leaderboardContext] = await Promise.all([
     getProfile(token),
     loadFriendContext(token),
+    loadLeaderboardContext(token),
   ])
 
   return {
     currentProfile: profileResult.user,
     relationship: profileResult.relationship,
     ...friendContext,
+    ...leaderboardContext,
   }
 }
 
 export const loadPublicProfileData = async ({ token, username }) => {
-  const result = await getUserByUsername(username, token)
+  const [result, leaderboardContext] = await Promise.all([
+    getUserByUsername(username, token),
+    loadLeaderboardContext(token),
+  ])
 
   return {
     publicProfile: result.user,
     relationship: result.relationship,
+    ...leaderboardContext,
   }
 }
 

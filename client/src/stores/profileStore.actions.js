@@ -59,6 +59,7 @@ export const createProfileActions = (set, get) => ({
     } catch (error) {
       set({
         error: error.message,
+        leaderboard: [],
         isLoading: false,
         publicProfile: null,
         relationship: null,

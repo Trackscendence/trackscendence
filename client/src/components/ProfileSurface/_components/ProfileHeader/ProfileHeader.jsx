@@ -23,7 +23,7 @@ const ProfileHeader = ({
 
   return (
     <header>
-      <div className="bg-[#ffd099] px-4 py-6 text-[#3d1200] sm:px-6 lg:px-8">
+      <div className="relative min-h-[260px] bg-[#ffd099] px-4 pt-6 pb-18 text-[#3d1200] sm:px-6 lg:px-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center lg:gap-10">
             <ProfileAvatar profile={profile} />
@@ -50,7 +50,9 @@ const ProfileHeader = ({
           </Button>
         </div>
 
-        <ProfileTabs activeTab={activeTab} onTabChange={onTabChange} />
+        <div className="absolute bottom-0 left-0">
+          <ProfileTabs activeTab={activeTab} onTabChange={onTabChange} />
+        </div>
       </div>
     </header>
   )

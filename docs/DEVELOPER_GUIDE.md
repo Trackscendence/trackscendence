@@ -143,6 +143,10 @@ Database schemas are defined in [schema.prisma](../server/prisma/schema.prisma).
   ```bash
   just db-generate   # or: npm run prisma:generate
   ```
+- **Regenerate the ERD docs:**
+  ```bash
+  npm run docs:erd --prefix server
+  ```
 - **Access PostgreSQL CLI directly:**
   ```bash
   just db-shell      # or: npm run db:shell

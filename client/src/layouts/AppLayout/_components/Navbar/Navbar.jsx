@@ -15,7 +15,7 @@ const Navbar = () => {
 
   return (
     <header className="border-b border-[#d8dfd4] bg-white">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-5 py-4">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4">
         <Link
           to="/"
           className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase"
@@ -24,7 +24,12 @@ const Navbar = () => {
         </Link>
         <div className="flex items-center gap-3">
           {user && (
-            <span className="text-sm text-[#617267]">{user.username}</span>
+            <Link
+              to="/profile"
+              className="text-sm font-semibold text-[#617267] hover:text-[#1f2d28]"
+            >
+              {user.displayName || user.username}
+            </Link>
           )}
           <Link
             to="/settings"

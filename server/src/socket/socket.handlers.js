@@ -14,32 +14,32 @@ const registerHandlers = (io, socket) => {
     logger.info(`User ${socket.user.username} joined the lobby`)
     socket.join('lobby')
     lobbyStore.addPlayer(socket)
-    
+
     // Broadcast the new lobby count
     io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
 
     if (lobbyStore.getLobbyCount() >= REQUIRED_PLAYERS) {
       const matchPlayers = lobbyStore.extractMatchPlayers(REQUIRED_PLAYERS)
       const gameId = crypto.randomUUID()
-      
+
       const gameState = {
         id: gameId,
         status: 'IN_PROGRESS',
-        players: matchPlayers.map(p => ({
+        players: matchPlayers.map((p) => ({
           userId: p.user.id,
           username: p.user.username,
         })),
         startedAt: new Date(),
       }
-      
+
       await gameStore.saveGame(gameId, gameState)
-      
-      matchPlayers.forEach(p => {
+
+      matchPlayers.forEach((p) => {
         p.leave('lobby')
         p.join(`game:${gameId}`)
         p.emit('game_start', { gameId, players: gameState.players })
       })
-      
+
       // Update remaining lobby players
       io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
     }

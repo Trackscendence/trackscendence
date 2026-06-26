@@ -10,7 +10,7 @@ const bottomHand = [
     id: 'you-red-draw-2',
     color: 'red',
     type: 'draw2',
-    playable: true,
+    playable: false,
   },
   {
     id: 'you-wild',
@@ -36,7 +36,7 @@ const bottomHand = [
 const baseState = {
   id: 'mock-game-120',
   currentTurnPlayerId: 'player-2',
-  currentColor: 'wild',
+  currentColor: 'blue',
   direction: 'clockwise',
   deckSize: 51,
   pendingDraw: 3,

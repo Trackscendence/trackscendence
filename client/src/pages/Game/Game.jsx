@@ -6,6 +6,7 @@ import { getMockGameState } from './_utils/mockState'
 
 const SUPPORTED_PLAYER_COUNTS = new Set(['2', '3', '4'])
 const SUPPORTED_DIRECTIONS = new Set(['clockwise', 'counter-clockwise'])
+const SUPPORTED_SEATS = new Set(['bottom', 'top', 'left', 'right'])
 
 const getPlayerCount = (value) => {
   if (SUPPORTED_PLAYER_COUNTS.has(value)) return Number(value)
@@ -24,6 +25,11 @@ const getNonNegativeInteger = (value) => {
   return parsedValue
 }
 
+const getSeat = (value) => {
+  if (SUPPORTED_SEATS.has(value)) return value
+  return 'bottom'
+}
+
 const Game = () => {
   const [searchParams] = useSearchParams()
   const game = getMockGameState({
@@ -32,8 +38,10 @@ const Game = () => {
     pendingDraw: getNonNegativeInteger(searchParams.get('pendingDraw')),
     playerCount: getPlayerCount(searchParams.get('players')),
   })
+  const currentSeat = getSeat(searchParams.get('current-player'))
   const currentPlayer =
-    game.players.find((player) => player.seat === 'bottom') ?? game.players[0]
+    game.players.find((player) => player.seat === currentSeat) ??
+    game.players[0]
   const opponents = game.players.filter(
     (player) => player.id !== currentPlayer.id,
   )

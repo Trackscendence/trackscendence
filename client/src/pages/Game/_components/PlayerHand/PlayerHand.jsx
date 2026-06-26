@@ -14,7 +14,7 @@ const PlayerHand = ({ cards, player }) => {
             className={`relative ${CARD_LAYER_CLASSES[cardPosition] ?? 'z-50'} ${cardPosition === 0 ? 'shrink-0' : '-ml-9 shrink-0'}`}
             key={card.id}
           >
-            <Card {...card} />
+            <Card {...card} playable={false} />
           </li>
         ))}
       </ul>

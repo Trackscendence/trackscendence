@@ -56,6 +56,7 @@ const OpponentCardStack = ({ orientation, player }) => {
   return (
     <div
       aria-label={`${player.username} has ${player.cardCount} cards`}
+      role="img"
       className={`relative shrink-0 ${stackSize}`}
       role="img"
     >

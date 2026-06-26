@@ -1,7 +1,8 @@
 import MatchTable from '../MatchTable'
+import ProfileAchievements from '../ProfileAchievements'
 import profileFormatters from '../../_utils/profileFormatters'
 
-const ProfileOverview = ({ onShowGames, profile }) => {
+const ProfileOverview = ({ friendsCount = 0, onShowGames, profile }) => {
   const stats = profile.stats || {}
   const cards = [
     { label: 'Games Won', value: stats.wins || 0 },
@@ -25,14 +26,16 @@ const ProfileOverview = ({ onShowGames, profile }) => {
         ))}
       </div>
 
-      <section className="bg-white p-5">
-        <h2 className="text-sm font-semibold tracking-wide text-[#3d1200] uppercase">
-          Bio
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-[#7a3810]">
-          {profile.bio || 'No bio has been added yet.'}
-        </p>
-      </section>
+      <ProfileAchievements friendsCount={friendsCount} stats={stats} />
+
+      {profile.bio && (
+        <section className="bg-white p-5">
+          <h2 className="text-sm font-semibold tracking-wide text-[#3d1200] uppercase">
+            Bio
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-[#7a3810]">{profile.bio}</p>
+        </section>
+      )}
 
       <section className="bg-white">
         <div className="flex items-center justify-between gap-4 border-b border-[#fceee0] px-5 py-3">

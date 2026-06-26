@@ -58,6 +58,7 @@ const ProfileSurface = ({
 
           {activeTab === 'overview' && (
             <ProfileOverview
+              friendsCount={friends.length}
               profile={profile}
               onShowGames={() => setActiveTab('games')}
             />

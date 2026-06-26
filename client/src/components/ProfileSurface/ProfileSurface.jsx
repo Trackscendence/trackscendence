@@ -52,12 +52,6 @@ const ProfileSurface = ({
 
       <div className="mt-[28px] flex flex-col gap-7 lg:flex-row lg:gap-[66px]">
         <main className="min-w-0 flex-1 bg-[#ffd099] p-4 sm:p-8">
-          {actionError && !isOwnProfile && (
-            <p className="mb-5 rounded-sm border border-[#e2a496] bg-white px-4 py-3 text-sm font-semibold text-[#8a321f]">
-              {actionError}
-            </p>
-          )}
-
           {activeTab === 'overview' && (
             <ProfileOverview
               friendsCount={visibleFriends.length}

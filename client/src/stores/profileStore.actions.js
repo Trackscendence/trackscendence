@@ -7,6 +7,7 @@ import {
   requestFriendship,
   saveCurrentProfile,
 } from './profileStore.helpers'
+import useNotificationStore from './useNotificationStore'
 
 const requireToken = (set) => {
   const token = getActiveToken()
@@ -78,8 +79,14 @@ export const createProfileActions = (set, get) => ({
   sendFriendRequest: async () => {
     const token = getActiveToken()
     const profile = get().publicProfile
+    const notifications = useNotificationStore.getState()
 
-    if (!token || !profile) return
+    if (!token) {
+      notifications.push('Authentication required', 'error')
+      return
+    }
+
+    if (!profile) return
 
     set({ actionError: '', isSubmitting: true })
 
@@ -88,8 +95,10 @@ export const createProfileActions = (set, get) => ({
         ...(await requestFriendship({ profileId: profile.id, token })),
         isSubmitting: false,
       })
+      notifications.push('Friend request sent', 'success')
     } catch (error) {
-      set({ actionError: error.message, isSubmitting: false })
+      notifications.push(error.message, 'error')
+      set({ actionError: '', isSubmitting: false })
     }
   },
 

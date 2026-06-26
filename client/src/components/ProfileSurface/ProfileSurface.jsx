@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import ProfileEditDialog from './_components/ProfileEditDialog'
 import ProfileFriends from './_components/ProfileFriends'
 import ProfileGames from './_components/ProfileGames'
@@ -17,7 +16,6 @@ const ProfileSurface = ({
   profile,
   relationship,
 }) => {
-  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
   const [isEditOpen, setIsEditOpen] = useState(false)
 
@@ -39,19 +37,18 @@ const ProfileSurface = ({
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl bg-white">
+    <div className="w-full bg-white">
       <ProfileHeader
         activeTab={activeTab}
         isOwnProfile={isOwnProfile}
         isSubmitting={isSubmitting}
         profile={profile}
         relationship={relationship}
-        onBack={() => navigate(-1)}
         onPrimaryAction={handlePrimaryAction}
         onTabChange={setActiveTab}
       />
 
-      <div className="mt-7 flex flex-col gap-7 lg:flex-row">
+      <div className="mt-[28px] flex flex-col gap-7 lg:flex-row lg:gap-[66px]">
         <main className="min-w-0 flex-1 bg-[#ffd099] p-4 sm:p-8">
           {actionError && !isOwnProfile && (
             <p className="mb-5 rounded-sm border border-[#e2a496] bg-white px-4 py-3 text-sm font-semibold text-[#8a321f]">

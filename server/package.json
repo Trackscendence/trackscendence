@@ -20,7 +20,7 @@
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development node --watch index.js",
     "prisma:migrate": "npx prisma migrate dev",
-    "prisma:generate": "npx prisma generate",
+    "prisma:generate": "npx prisma generate --generator client",
     "test": "node --test src/modules/game/game.engine.test.js"
   },
   "dependencies": {

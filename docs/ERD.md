@@ -13,6 +13,14 @@ ADMIN ADMIN
 ABANDONED ABANDONED
         }
 
+
+
+        FriendshipStatus {
+            PENDING PENDING
+ACCEPTED ACCEPTED
+BLOCKED BLOCKED
+        }
+
   "User" {
     Int id "🗝️"
     String email
@@ -22,11 +30,23 @@ ABANDONED ABANDONED
     String passwordResetTokenHash "❓"
     DateTime passwordResetTokenExpiry "❓"
     Int tokenVersion
+    Int twoFactorChallengeVersion
+    Boolean twoFactorEnabled
+    String twoFactorSecretCiphertext "❓"
+    String twoFactorPendingSecretCiphertext "❓"
     Role role
     DateTime createdAt
     DateTime updatedAt
     Int failedLoginCount
     DateTime lockedOutUntil "❓"
+    }
+
+
+  "UserTwoFactorRecoveryCode" {
+    Int id "🗝️"
+    String codeHash
+    Boolean isPending
+    DateTime createdAt
     }
 
 
@@ -48,8 +68,21 @@ ABANDONED ABANDONED
     DateTime updatedAt
     }
 
+
+  "Friendship" {
+    Int id "🗝️"
+    FriendshipStatus status
+    DateTime createdAt
+    DateTime updatedAt
+    }
+
     "User" |o--|| "Role" : "enum:role"
+    "UserTwoFactorRecoveryCode" }o--|| "User" : "user"
     "Game" |o--|| "GameStatus" : "enum:status"
     "GamePlayer" }o--|| "Game" : "game"
     "GamePlayer" }o--|| "User" : "user"
+    "Friendship" |o--|| "FriendshipStatus" : "enum:status"
+    "Friendship" }o--|| "User" : "requester"
+    "Friendship" }o--|| "User" : "addressee"
+    "Friendship" }o--|o "User" : "blockedBy"
 ```

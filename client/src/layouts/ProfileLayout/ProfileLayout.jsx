@@ -48,8 +48,10 @@ const ProfileLayout = () => {
         Lobby
       </Link>
 
-      <main className="w-full flex-1 px-5 pt-[69px] pb-12 lg:px-[90px]">
-        <Outlet />
+      <main className="w-full flex-1 px-5 pt-[69px] pb-12">
+        <div className="mx-auto w-full max-w-[1344px]">
+          <Outlet />
+        </div>
       </main>
       <footer className="border-t border-[#d8dfd4] bg-white py-4">
         <div className="flex w-full items-center justify-center gap-6 px-5 text-xs text-[#50635a]">

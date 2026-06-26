@@ -10,10 +10,10 @@ const ProfileTabs = ({ activeTab, onTabChange }) => {
       {TABS.map((tab) => (
         <button
           key={tab.id}
-          className={`rounded-t-sm px-5 py-2 text-sm font-semibold text-[#24356F] transition focus:ring-2 focus:ring-[#24356F]/30 focus:outline-none ${
+          className={`rounded-t-sm bg-[#AB7FE8] px-5 py-2 text-sm font-semibold text-white transition [text-shadow:0_1px_1px_rgba(61,18,0,0.35)] hover:brightness-95 focus:ring-2 focus:ring-[#AB7FE8]/40 focus:outline-none ${
             activeTab === tab.id
-              ? 'bg-[#F4C745] shadow-[inset_0_-2px_0_#24356F]'
-              : 'bg-[#F4C745]/45 hover:bg-[#F4C745]/75'
+              ? 'shadow-[inset_0_-2px_0_#fff]'
+              : 'shadow-[inset_0_-1px_0_rgba(255,255,255,0.35)]'
           }`}
           type="button"
           onClick={() => onTabChange(tab.id)}

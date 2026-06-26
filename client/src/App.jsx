@@ -13,6 +13,7 @@ import Signup from '@/pages/Signup'
 import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
 import ChangePassword from '@/pages/ChangePassword'
+import Leaderboard from '@/pages/Leaderboard'
 import Profile from '@/pages/Profile'
 import Session from '@/pages/Session'
 import User from '@/pages/User'
@@ -53,6 +54,7 @@ const App = () => {
           <Route element={<ProfileLayout />}>
             <Route path="/profile" element={<Profile />} />
             <Route path="/users/:username" element={<User />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
           </Route>
 
           <Route element={<AppLayout />}>

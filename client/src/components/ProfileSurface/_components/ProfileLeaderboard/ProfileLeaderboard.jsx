@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const formatNumber = (value) => {
   return new Intl.NumberFormat('en').format(value || 0)
 }
@@ -27,9 +29,18 @@ const ProfileLeaderboard = ({ leaderboard = [], profile }) => {
 
   return (
     <section className="bg-white p-4">
-      <p className="mb-3 text-xs font-semibold tracking-wide text-[#3d1200] uppercase">
-        Leaderboard
-      </p>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold tracking-wide text-[#3d1200] uppercase">
+          Leaderboard
+        </p>
+        <Link
+          aria-label="View full leaderboard"
+          className="bg-[#ffd099] px-3 py-1 text-[10px] font-bold tracking-wide text-[#3d1200] uppercase transition hover:bg-[#f2652a] hover:text-white focus:ring-2 focus:ring-[#f2652a]/35 focus:outline-none"
+          to="/leaderboard"
+        >
+          More
+        </Link>
+      </div>
 
       {rows.length === 0 ? (
         <p className="text-sm text-[#7a3810]">No ranked players yet.</p>

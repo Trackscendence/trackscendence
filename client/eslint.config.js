@@ -11,7 +11,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import globals from 'globals'
 
 export default defineConfig([
-  globalIgnores(['coverage', 'dist']),
+  globalIgnores(['coverage', 'dist', 'storybook-static']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

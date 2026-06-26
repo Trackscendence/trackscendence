@@ -14,6 +14,7 @@ import SignupSuccess from '@/pages/SignupSuccess'
 import Session from '@/pages/Session'
 import PrivacyPolicy from '@/pages/Privacy'
 import TermsOfService from '@/pages/TermsOfService'
+import SettingsPage from './pages/SettingsPage'
 
 const App = () => {
   useEffect(() => {
@@ -46,6 +47,11 @@ const App = () => {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Session />} />
             <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/two-factor"
+              element={<Navigate to="/settings" replace />}
+            />
           </Route>
         </Route>
 

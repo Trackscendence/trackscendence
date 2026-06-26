@@ -20,7 +20,9 @@
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development node --watch index.js",
     "prisma:migrate": "npx prisma migrate dev",
-    "prisma:generate": "npx prisma generate"
+    "prisma:generate": "npx prisma generate --generator client",
+    "docs:erd": "mkdir -p ../docs && npx prisma generate --generator erd",
+    "test": "node --test src/modules/game/game.engine.test.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -34,10 +36,15 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "nodemailer": "^8.0.10",
+    "otplib": "^13.4.1",
     "prisma": "^6.19.3",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "prisma-erd-generator": "^2.4.3"
   }
 }

@@ -39,6 +39,7 @@ const baseState = {
   currentColor: 'wild',
   direction: 'clockwise',
   deckSize: 51,
+  pendingDraw: 3,
   topCard: {
     id: 'discard-wild-draw-3',
     color: 'wild',
@@ -75,22 +76,49 @@ const opponentBySeat = {
   },
 }
 
-const createState = (opponentSeats) => ({
+const getCurrentPlayer = (handSize) => ({
+  ...currentPlayer,
+  cards:
+    handSize == null
+      ? bottomHand
+      : bottomHand.slice(0, Math.min(handSize, bottomHand.length)),
+})
+
+const createState = (opponentSeats, options = {}) => ({
   ...baseState,
+  direction: options.direction ?? baseState.direction,
+  pendingDraw: options.pendingDraw ?? baseState.pendingDraw,
   players: [
-    currentPlayer,
+    getCurrentPlayer(options.handSize),
     ...opponentSeats.map((seat) => opponentBySeat[seat]),
   ],
 })
 
-const MOCK_GAME_STATES = {
-  2: createState(['top']),
-  3: createState(['top', 'left']),
-  4: createState(['top', 'left', 'right']),
+const MOCK_PLAYER_SEATS = {
+  2: ['top'],
+  3: ['top', 'left'],
+  4: ['top', 'left', 'right'],
 }
 
-export const getMockGameState = (playerCount = 4) => {
-  return MOCK_GAME_STATES[playerCount] ?? MOCK_GAME_STATES[4]
+const getPlayerSeats = (playerCount) => {
+  return MOCK_PLAYER_SEATS[playerCount] ?? MOCK_PLAYER_SEATS[4]
 }
 
-export default MOCK_GAME_STATES
+export const getMockGameState = ({
+  direction,
+  handSize,
+  pendingDraw,
+  playerCount = 4,
+} = {}) => {
+  return createState(getPlayerSeats(playerCount), {
+    direction,
+    handSize,
+    pendingDraw,
+  })
+}
+
+export default {
+  2: createState(MOCK_PLAYER_SEATS[2]),
+  3: createState(MOCK_PLAYER_SEATS[3]),
+  4: createState(MOCK_PLAYER_SEATS[4]),
+}

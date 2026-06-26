@@ -43,10 +43,10 @@ const App = () => {
         <Route path="/terms-of-service" element={<TermsOfService />} />
 
         <Route element={<ProtectedRoute />}>
+          <Route path="/game" element={<Game />} />
           <Route element={<AppLayout />}>
             <Route path="/" element={<Session />} />
             <Route path="/change-password" element={<ChangePassword />} />
-            <Route path="/game" element={<Game />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/two-factor"

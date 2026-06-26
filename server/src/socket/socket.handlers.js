@@ -32,7 +32,19 @@ const registerHandlers = (io, socket) => {
         startedAt: new Date(),
       }
 
-      await gameStore.saveGame(gameId, gameState)
+      try {
+        await gameStore.saveGame(gameId, gameState)
+      } catch (error) {
+        logger.error('Failed to create game', error)
+        matchPlayers.forEach((p) => lobbyStore.addPlayer(p))
+        io.to('lobby').emit('lobby_update', {
+          count: lobbyStore.getLobbyCount(),
+        })
+        matchPlayers.forEach((p) =>
+          p.emit('lobby_error', { message: 'Unable to start game' }),
+        )
+        return
+      }
 
       matchPlayers.forEach((p) => {
         p.leave('lobby')
@@ -52,9 +64,18 @@ const registerHandlers = (io, socket) => {
   })
 
   socket.on('message', (data) => {
-    logger.info(data)
-    data.user = socket.user
-    io.to(data.room).emit('message', data)
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return
+    }
+
+    const room = typeof data.room === 'string' ? data.room : ''
+    if (!room || !socket.rooms.has(room)) {
+      return
+    }
+
+    const payload = { ...data, user: socket.user }
+    logger.info(payload)
+    io.to(room).emit('message', payload)
   })
 }
 

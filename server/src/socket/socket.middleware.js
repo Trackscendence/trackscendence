@@ -8,9 +8,11 @@ const authenticate = async (socket, next) => {
     if (!token) {
       return next(new Error('Authentication error'))
     }
-    const extractedToken = token.startsWith('Bearer ')
-      ? token.split(' ')[1]
-      : token
+    const extractedToken =
+      typeof token === 'string' ? token.replace(/^Bearer\s+/i, '').trim() : ''
+    if (!extractedToken) {
+      return next(new Error('Authentication error'))
+    }
     const user = await authService.getUserFromToken(extractedToken)
     socket.user = { id: user.id, username: user.username }
     next()

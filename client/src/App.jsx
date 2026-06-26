@@ -5,6 +5,7 @@ import ErrorBoundary from '@/components/ErrorBoundary'
 import ProtectedRoute from '@/router/ProtectedRoute'
 import AppLayout from '@/layouts/AppLayout'
 import AuthLayout from '@/layouts/AuthLayout'
+import ProfileLayout from '@/layouts/ProfileLayout'
 import Login from '@/pages/Login'
 import Signup from '@/pages/Signup'
 import ForgotPassword from '@/pages/ForgotPassword'
@@ -44,16 +45,19 @@ const App = () => {
         <Route path="/terms-of-service" element={<TermsOfService />} />
 
         <Route element={<ProtectedRoute />}>
+          <Route element={<ProfileLayout />}>
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/users/:username" element={<User />} />
+          </Route>
+
           <Route element={<AppLayout />}>
             <Route path="/" element={<Session />} />
             <Route path="/change-password" element={<ChangePassword />} />
-            <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/two-factor"
               element={<Navigate to="/settings" replace />}
             />
-            <Route path="/users/:username" element={<User />} />
           </Route>
         </Route>
 

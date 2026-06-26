@@ -1,11 +1,13 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
+import useNotificationStore from '@/stores/useNotificationStore'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import ProtectedRoute from '@/router/ProtectedRoute'
 import AppLayout from '@/layouts/AppLayout'
 import AuthLayout from '@/layouts/AuthLayout'
 import ProfileLayout from '@/layouts/ProfileLayout'
+import ToastViewport from '@/components/ToastViewport'
 import Login from '@/pages/Login'
 import Signup from '@/pages/Signup'
 import ForgotPassword from '@/pages/ForgotPassword'
@@ -19,6 +21,9 @@ import TermsOfService from '@/pages/TermsOfService'
 import SettingsPage from './pages/SettingsPage'
 
 const App = () => {
+  const notifications = useNotificationStore((state) => state.notifications)
+  const dismissNotification = useNotificationStore((state) => state.dismiss)
+
   useEffect(() => {
     useAuthStore.getState().init()
   }, [])
@@ -63,6 +68,10 @@ const App = () => {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ToastViewport
+        notifications={notifications}
+        onDismiss={dismissNotification}
+      />
     </ErrorBoundary>
   )
 }

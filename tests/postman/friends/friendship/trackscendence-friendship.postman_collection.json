@@ -1,0 +1,1334 @@
+{
+  "info": {
+    "_postman_id": "ef4f9d31-7d0b-4527-9c91-2cc58f36e44c",
+    "name": "Trackscendence Friendship Flow",
+    "description": "End-to-end friendship flow checks for the local Trackscendence Docker stack. Run the collection from top to bottom, or at minimum run 'Initialize Friendship Variables' first.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Initialize",
+      "item": [
+        {
+          "name": "Initialize Friendship Variables",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "pm.environment.set('runId', runId);",
+                  "pm.environment.set('friendPassword', 'Start123!');",
+                  "pm.environment.set('friendRequesterEmail', `friend.requester.${runId}@example.com`);",
+                  "pm.environment.set('friendRequesterUsername', `friend_requester_${runId}`);",
+                  "pm.environment.set('friendAddresseeEmail', `friend.addressee.${runId}@example.com`);",
+                  "pm.environment.set('friendAddresseeUsername', `friend_addressee_${runId}`);",
+                  "pm.environment.set('friendMissingUserId', '999999999');",
+                  "pm.environment.unset('friendRequesterUserId');",
+                  "pm.environment.unset('friendRequesterToken');",
+                  "pm.environment.unset('friendAddresseeUserId');",
+                  "pm.environment.unset('friendAddresseeToken');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ping returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('friendship test variables were generated', function () {",
+                  "  pm.expect(pm.environment.get('friendRequesterEmail')).to.include('@example.com');",
+                  "  pm.expect(pm.environment.get('friendAddresseeEmail')).to.include('@example.com');",
+                  "  pm.expect(pm.environment.get('friendRequesterUsername')).to.include('friend_requester_');",
+                  "  pm.expect(pm.environment.get('friendAddresseeUsername')).to.include('friend_addressee_');",
+                  "  pm.expect(pm.environment.get('friendMissingUserId')).to.eql('999999999');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ping",
+            "description": "Generates a fresh pair of users and clears all saved friendship auth variables."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Register And Login Users",
+      "item": [
+        {
+          "name": "Register Requester",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register requester returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('friendRequesterUserId', String(json.user.id));",
+                  "pm.test('register requester returns generated identity', function () {",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('friendRequesterEmail'));",
+                  "  pm.expect(json.user.username).to.eql(pm.environment.get('friendRequesterUsername'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{friendRequesterEmail}}\",\n  \"username\": \"{{friendRequesterUsername}}\",\n  \"password\": \"{{friendPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Requester",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login requester returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('friendRequesterToken', json.token);",
+                  "pm.test('requester token was saved', function () {",
+                  "  pm.expect(pm.environment.get('friendRequesterToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{friendRequesterEmail}}\",\n  \"password\": \"{{friendPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Register Addressee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register addressee returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('friendAddresseeUserId', String(json.user.id));",
+                  "pm.test('register addressee returns generated identity', function () {",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('friendAddresseeEmail'));",
+                  "  pm.expect(json.user.username).to.eql(pm.environment.get('friendAddresseeUsername'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{friendAddresseeEmail}}\",\n  \"username\": \"{{friendAddresseeUsername}}\",\n  \"password\": \"{{friendPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Addressee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login addressee returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('friendAddresseeToken', json.token);",
+                  "pm.test('addressee token was saved', function () {",
+                  "  pm.expect(pm.environment.get('friendAddresseeToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{friendAddresseeEmail}}\",\n  \"password\": \"{{friendPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Accept And Remove Flow",
+      "item": [
+        {
+          "name": "Requester Sends Friend Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('friend request returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('friend request message is returned', function () {",
+                  "  pm.expect(json.message).to.eql('Friend request sent successfully');",
+                  "});",
+                  "pm.test('request points to addressee user', function () {",
+                  "  pm.expect(String(json.request.user.id)).to.eql(pm.environment.get('friendAddresseeUserId'));",
+                  "  pm.expect(json.request.status).to.eql('PENDING');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendAddresseeUserId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Addressee Lists Incoming Requests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list requests returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('incoming includes requester', function () {",
+                  "  const match = json.incoming.find((item) => String(item.user.id) === pm.environment.get('friendRequesterUserId'));",
+                  "  pm.expect(match).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendAddresseeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends/requests"
+          },
+          "response": []
+        },
+        {
+          "name": "Addressee Accepts Friend Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('accept returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('accept returns success message', function () {",
+                  "  pm.expect(json.message).to.eql('Friend request accepted successfully');",
+                  "});",
+                  "pm.test('accepted friendship points to requester', function () {",
+                  "  pm.expect(String(json.friendship.user.id)).to.eql(pm.environment.get('friendRequesterUserId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendAddresseeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendRequesterUserId}},\n  \"action\": \"accept\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/respond"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Lists Friends",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('requester friends returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('requester sees addressee as friend', function () {",
+                  "  const match = json.friends.find((item) => String(item.user.id) === pm.environment.get('friendAddresseeUserId'));",
+                  "  pm.expect(match).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends"
+          },
+          "response": []
+        },
+        {
+          "name": "Addressee Lists Friends",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('addressee friends returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('addressee sees requester as friend', function () {",
+                  "  const match = json.friends.find((item) => String(item.user.id) === pm.environment.get('friendRequesterUserId'));",
+                  "  pm.expect(match).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendAddresseeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Cannot Request Existing Friend",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('requesting an existing friend returns 409', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('existing friend conflict message is returned', function () {",
+                  "  pm.expect(json.error.message).to.eql('You are already friends with this user');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendAddresseeUserId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Removes Friend",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('remove friend returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('remove friend returns success message', function () {",
+                  "  pm.expect(pm.response.json().message).to.eql('Friend removed successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends/{{friendAddresseeUserId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Lists Friends After Removal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('friends list after removal returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('requester no longer sees addressee as friend', function () {",
+                  "  const match = json.friends.find((item) => String(item.user.id) === pm.environment.get('friendAddresseeUserId'));",
+                  "  pm.expect(match).to.not.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 Cancel And Reject Flow",
+      "item": [
+        {
+          "name": "Requester Sends Second Friend Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('second friend request returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendAddresseeUserId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Lists Outgoing Requests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('requester outgoing requests returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('outgoing includes addressee', function () {",
+                  "  const match = json.outgoing.find((item) => String(item.user.id) === pm.environment.get('friendAddresseeUserId'));",
+                  "  pm.expect(match).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends/requests"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Cancels Pending Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('cancel request returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('cancel request returns success message', function () {",
+                  "  pm.expect(pm.response.json().message).to.eql('Friend request cancelled successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends/{{friendAddresseeUserId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Addressee Lists Incoming Requests After Cancel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('incoming requests after cancel returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('incoming no longer includes requester', function () {",
+                  "  const match = json.incoming.find((item) => String(item.user.id) === pm.environment.get('friendRequesterUserId'));",
+                  "  pm.expect(match).to.not.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendAddresseeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends/requests"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Sends Third Friend Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('third friend request returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendAddresseeUserId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Addressee Rejects Friend Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reject request returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('reject request returns success message', function () {",
+                  "  pm.expect(pm.response.json().message).to.eql('Friend request rejected successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendAddresseeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendRequesterUserId}},\n  \"action\": \"reject\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/respond"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Lists Outgoing Requests After Reject",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('outgoing after reject returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('outgoing no longer includes addressee', function () {",
+                  "  const match = json.outgoing.find((item) => String(item.user.id) === pm.environment.get('friendAddresseeUserId'));",
+                  "  pm.expect(match).to.not.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends/requests"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 Pending Request Guards",
+      "item": [
+        {
+          "name": "Requester Sends Guard Friend Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('guard friend request returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendAddresseeUserId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Cannot Send Duplicate Pending Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('duplicate pending request returns 409', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('duplicate pending request message is returned', function () {",
+                  "  pm.expect(json.error.message).to.eql('Friend request already sent');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendAddresseeUserId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Addressee Cannot Send Reverse Pending Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reverse pending request returns 409', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('reverse pending request message is returned', function () {",
+                  "  pm.expect(json.error.message).to.eql('This user has already sent you a friend request');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendAddresseeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendRequesterUserId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Cannot Accept Own Outgoing Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('accepting an outgoing request returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('outgoing request accept guard message is returned', function () {",
+                  "  pm.expect(json.error.message).to.eql('You can only respond to incoming friend requests');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendAddresseeUserId}},\n  \"action\": \"accept\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/respond"
+          },
+          "response": []
+        },
+        {
+          "name": "Addressee Cannot Cancel Incoming Request Via Delete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleting an incoming pending request returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('incoming delete guard message is returned', function () {",
+                  "  pm.expect(json.error.message).to.eql('Incoming friend requests must be handled through the respond endpoint');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendAddresseeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends/{{friendRequesterUserId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Addressee Rejects Guard Friend Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('guard request reject returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('guard request reject returns success message', function () {",
+                  "  pm.expect(pm.response.json().message).to.eql('Friend request rejected successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendAddresseeToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendRequesterUserId}},\n  \"action\": \"reject\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/respond"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 Validation And Auth Guards",
+      "item": [
+        {
+          "name": "Requester Cannot Send Friend Request To Self",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('self-request returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('self-request message is returned', function () {",
+                  "  pm.expect(json.error.message).to.eql('You cannot send a friend request to yourself');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendRequesterUserId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Gets Not Found For Missing User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('missing user request returns 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('missing user message is returned', function () {",
+                  "  pm.expect(json.error.message).to.eql('Target user not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendMissingUserId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Gets Validation Error For Invalid Target User ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('invalid target user id returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('invalid target user id keeps invalid request data message', function () {",
+                  "  pm.expect(json.error.message).to.eql('Invalid request data');",
+                  "});",
+                  "pm.test('invalid target user id includes payload details', function () {",
+                  "  pm.expect(json.error.payload.details).to.include('targetUserId must be a positive integer');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"abc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Gets Validation Error For Too Large Target User ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('too large target user id returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('too large target user id keeps invalid request data message', function () {",
+                  "  pm.expect(json.error.message).to.eql('Invalid request data');",
+                  "});",
+                  "pm.test('too large target user id includes payload details', function () {",
+                  "  pm.expect(json.error.payload.details).to.include('targetUserId must not be greater than 2147483647');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": 2147483648\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/request"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Cannot Delete Relationship With Self",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('self delete returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('self delete message is returned', function () {",
+                  "  pm.expect(json.error.message).to.eql('You cannot delete a relationship with yourself');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/friends/{{friendRequesterUserId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Requester Gets Validation Error For Invalid Respond Action",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('invalid respond action returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('invalid respond action keeps invalid request data message', function () {",
+                  "  pm.expect(json.error.message).to.eql('Invalid request data');",
+                  "});",
+                  "pm.test('invalid respond action includes payload details', function () {",
+                  "  pm.expect(json.error.payload.details).to.include('action must be either accept or reject');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{friendRequesterToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": {{friendAddresseeUserId}},\n  \"action\": \"maybe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/friends/respond"
+          },
+          "response": []
+        },
+        {
+          "name": "Unauthenticated User Cannot List Friends",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('unauthenticated friends list returns 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('unauthenticated friends list returns auth message', function () {",
+                  "  pm.expect(json.error.message).to.eql('Authentication required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/friends"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

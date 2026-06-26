@@ -8,6 +8,7 @@ const useProfileStore = create((set, get) => ({
   friends: [],
   incomingRequests: [],
   outgoingRequests: [],
+  leaderboard: [],
   isLoading: false,
   isSubmitting: false,
   error: '',

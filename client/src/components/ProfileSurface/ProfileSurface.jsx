@@ -8,9 +8,10 @@ import ProfileSidebar from './_components/ProfileSidebar'
 
 const ProfileSurface = ({
   actionError,
-  friends,
+  friends = [],
   isOwnProfile,
   isSubmitting,
+  leaderboard = [],
   onFriendRequest,
   onProfileUpdate,
   profile,
@@ -18,6 +19,7 @@ const ProfileSurface = ({
 }) => {
   const [activeTab, setActiveTab] = useState('overview')
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const visibleFriends = isOwnProfile ? friends : profile.friends || []
 
   const handlePrimaryAction = () => {
     if (isOwnProfile) {
@@ -58,7 +60,7 @@ const ProfileSurface = ({
 
           {activeTab === 'overview' && (
             <ProfileOverview
-              friendsCount={friends.length}
+              friendsCount={visibleFriends.length}
               profile={profile}
               onShowGames={() => setActiveTab('games')}
             />
@@ -73,9 +75,10 @@ const ProfileSurface = ({
 
         {activeTab === 'overview' && (
           <ProfileSidebar
-            friends={friends}
-            isOwnProfile={isOwnProfile}
+            friends={visibleFriends}
+            leaderboard={leaderboard}
             profile={profile}
+            onShowFriends={() => setActiveTab('friends')}
           />
         )}
       </div>

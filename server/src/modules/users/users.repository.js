@@ -150,12 +150,35 @@ const listRecentMatchesForUser = (userId, limit) => {
   })
 }
 
+const listPublicFriendsForUser = (userId, limit = 6) => {
+  return prisma.friendship.findMany({
+    where: {
+      status: 'ACCEPTED',
+      OR: [{ requesterId: userId }, { addresseeId: userId }],
+    },
+    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+    take: limit,
+    select: {
+      requesterId: true,
+      addresseeId: true,
+      updatedAt: true,
+      requester: {
+        select: publicIdentitySelect,
+      },
+      addressee: {
+        select: publicIdentitySelect,
+      },
+    },
+  })
+}
+
 module.exports = {
   findPublicProfileByUsername,
   findRelationshipBetweenUsers,
   findSelfProfileById,
   getRankForUser,
   getStatsForUser,
+  listPublicFriendsForUser,
   listRecentMatchesForUser,
   updateProfileById,
 }

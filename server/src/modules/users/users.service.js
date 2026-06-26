@@ -7,6 +7,7 @@ const usersRepository = require('#modules/users/users.repository')
 const DISPLAY_NAME_MAX_LENGTH = 40
 const BIO_MAX_LENGTH = 280
 const MATCH_HISTORY_LIMIT = 10
+const PROFILE_FRIENDS_LIMIT = 6
 const USERNAME_REGEX = /^[a-z][a-z0-9]*$/
 const USERNAME_MIN_LENGTH = 6
 const USERNAME_MAX_LENGTH = 32
@@ -165,6 +166,22 @@ const toRecentMatch = (match, currentUserId) => {
   }
 }
 
+const toProfileFriend = (friendship, profileUserId) => {
+  const user =
+    friendship.requesterId === profileUserId
+      ? friendship.addressee
+      : friendship.requester
+
+  return {
+    user: {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+    },
+    friendSince: friendship.updatedAt,
+  }
+}
+
 const toRelationshipState = (relationship, viewerId, profileUserId) => {
   if (viewerId === profileUserId) {
     return { status: 'SELF' }
@@ -190,10 +207,11 @@ const toRelationshipState = (relationship, viewerId, profileUserId) => {
 }
 
 const getProfileData = async (user, options = {}) => {
-  const [stats, rank, recentMatches] = await Promise.all([
+  const [stats, rank, recentMatches, friends] = await Promise.all([
     usersRepository.getStatsForUser(user.id),
     usersRepository.getRankForUser(user.id),
     usersRepository.listRecentMatchesForUser(user.id, MATCH_HISTORY_LIMIT),
+    usersRepository.listPublicFriendsForUser(user.id, PROFILE_FRIENDS_LIMIT),
   ])
 
   return {
@@ -205,6 +223,7 @@ const getProfileData = async (user, options = {}) => {
     ...(options.includeEmail ? { email: user.email } : {}),
     stats: toProfileStats(stats, rank),
     recentMatches: recentMatches.map((match) => toRecentMatch(match, user.id)),
+    friends: friends.map((friendship) => toProfileFriend(friendship, user.id)),
   }
 }
 

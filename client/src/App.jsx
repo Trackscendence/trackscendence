@@ -10,7 +10,9 @@ import Signup from '@/pages/Signup'
 import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
 import ChangePassword from '@/pages/ChangePassword'
+import Profile from '@/pages/Profile'
 import Session from '@/pages/Session'
+import User from '@/pages/User'
 import PrivacyPolicy from '@/pages/Privacy'
 import TermsOfService from '@/pages/TermsOfService'
 import SettingsPage from './pages/SettingsPage'
@@ -45,11 +47,13 @@ const App = () => {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Session />} />
             <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/two-factor"
               element={<Navigate to="/settings" replace />}
             />
+            <Route path="/users/:username" element={<User />} />
           </Route>
         </Route>
 

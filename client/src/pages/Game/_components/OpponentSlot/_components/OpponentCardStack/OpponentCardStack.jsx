@@ -57,10 +57,11 @@ const OpponentCardStack = ({ orientation, player }) => {
     <div
       aria-label={`${player.username} has ${player.cardCount} cards`}
       className={`relative shrink-0 ${stackSize}`}
+      role="img"
     >
       {cardIds.map((cardId, cardPosition) => (
         <div className={`absolute ${offsets[cardPosition]}`} key={cardId}>
-          <Card faceDown tabIndex={-1} />
+          <Card faceDown playable={false} tabIndex={-1} />
         </div>
       ))}
     </div>

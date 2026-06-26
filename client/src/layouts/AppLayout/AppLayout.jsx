@@ -3,7 +3,7 @@ import Navbar from './_components/Navbar'
 
 const AppLayout = () => {
   const location = useLocation()
-  const isGameRoute = location.pathname === '/game'
+  const isGameRoute = location.pathname.startsWith('/game')
   const mainClassName = isGameRoute
     ? 'w-full flex-1'
     : 'mx-auto w-full max-w-5xl flex-1 px-5 py-8'

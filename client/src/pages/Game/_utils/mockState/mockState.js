@@ -89,8 +89,8 @@ const MOCK_GAME_STATES = {
   4: createState(['top', 'left', 'right']),
 }
 
-export const getMockGameState = (playerCount = 4) => {
+const getMockGameState = (playerCount = 4) => {
   return MOCK_GAME_STATES[playerCount] ?? MOCK_GAME_STATES[4]
 }
 
-export default MOCK_GAME_STATES
+export default getMockGameState

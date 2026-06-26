@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
 import GameTable from './_components/GameTable'
-import { getMockGameState } from './_utils/mockState'
+import getMockGameState from './_utils/mockState'
 
 const SUPPORTED_PLAYER_COUNTS = new Set(['2', '3', '4'])
 

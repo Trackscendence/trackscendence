@@ -9,7 +9,6 @@ const ProfileHeader = ({
   activeTab,
   isOwnProfile,
   isSubmitting,
-  onBack,
   onPrimaryAction,
   onTabChange,
   profile,
@@ -24,15 +23,7 @@ const ProfileHeader = ({
 
   return (
     <header>
-      <button
-        className="border-2 border-black bg-white px-5 py-1 text-sm font-semibold text-black transition hover:bg-black hover:text-white focus:ring-2 focus:ring-black/25 focus:outline-none"
-        type="button"
-        onClick={onBack}
-      >
-        <span aria-hidden="true">‹</span> Back
-      </button>
-
-      <div className="mt-8 bg-[#ffd099] px-4 py-6 text-[#3d1200] sm:px-6 lg:px-8">
+      <div className="bg-[#ffd099] px-4 py-6 text-[#3d1200] sm:px-6 lg:px-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center lg:gap-10">
             <ProfileAvatar profile={profile} />

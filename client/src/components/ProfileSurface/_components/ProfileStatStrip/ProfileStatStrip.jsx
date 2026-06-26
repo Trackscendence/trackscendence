@@ -2,9 +2,9 @@ import profileFormatters from '../../_utils/profileFormatters'
 
 const ProfileStatStrip = ({ stats = {} }) => {
   const summaryStats = [
+    { label: 'Followers', value: stats.followers || 0 },
+    { label: 'Following', value: stats.following || 0 },
     { label: 'Games', value: stats.gamesPlayed || 0 },
-    { label: 'Wins', value: stats.wins || 0 },
-    { label: 'Rank', value: profileFormatters.formatRank(stats.rank) },
     { label: 'Win Rate', value: `${profileFormatters.getWinRate(stats)}%` },
   ]
 

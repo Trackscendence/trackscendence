@@ -6,7 +6,7 @@ services:
     build: !reset null
     image: node:22-alpine
     working_dir: /app
-    command: sh -c "npm install && npx prisma generate && npx prisma migrate deploy && exec node --watch index.js"
+    command: sh -c "npm install && npx prisma generate --generator client && npx prisma migrate deploy && exec node --watch index.js"
     environment:
       NODE_ENV: development
       SMTP_HOST: mailpit

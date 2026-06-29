@@ -23,7 +23,7 @@ const registerHandlers = (io, socket) => {
   socket.join('channel:#general')
   socket.join(`user:${socket.user.id}`)
 
-  logger.info('user connected:', socket.user)
+  logger.info('user connected')
 
   socket.on('join_lobby', async () => {
     logger.info(`User ${socket.user.username} joined the lobby`)
@@ -78,7 +78,7 @@ const registerHandlers = (io, socket) => {
   })
 
   socket.on('disconnect', () => {
-    logger.info('user disconnected', socket.user)
+    logger.info('user disconnected')
     lobbyStore.removePlayer(socket)
     io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
   })
@@ -94,23 +94,42 @@ const registerHandlers = (io, socket) => {
     }
 
     const payload = { ...data, user: socket.user }
-    logger.info(payload)
     io.to(room).emit('message', payload)
   })
 
-  socket.on('game:play_card', ({ gameId, cardIndex, declaredColor }) => {
+  const checkGameEnd = async (gameId, engine) => {
+    if (engine.winner) {
+      const state = await gameStore.getGame(gameId)
+      if (state) {
+        state.status = 'COMPLETED'
+        state.winner = engine.winner
+        state.endedAt = new Date()
+        await gameStore.saveGame(gameId, state)
+      }
+      gameStore.deleteEngine(gameId)
+    }
+  }
+
+  socket.on('game:play_card', async (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return
+    const { gameId, cardIndex, declaredColor } = data
+
     const engine = gameStore.getEngine(gameId)
     if (!engine) return socket.emit('game_error', { message: 'Game not found' })
 
     try {
       engine.playCard(socket.user.id, cardIndex, declaredColor)
       broadcastGameState(io, gameId, engine)
+      await checkGameEnd(gameId, engine)
     } catch (err) {
       socket.emit('game_error', { message: err.message })
     }
   })
 
-  socket.on('game:draw_card', ({ gameId }) => {
+  socket.on('game:draw_card', async (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return
+    const { gameId } = data
+
     const engine = gameStore.getEngine(gameId)
     if (!engine) return socket.emit('game_error', { message: 'Game not found' })
 
@@ -122,18 +141,23 @@ const registerHandlers = (io, socket) => {
         playable: result.playable,
       })
       broadcastGameState(io, gameId, engine)
+      await checkGameEnd(gameId, engine)
     } catch (err) {
       socket.emit('game_error', { message: err.message })
     }
   })
 
-  socket.on('game:pass_turn', ({ gameId }) => {
+  socket.on('game:pass_turn', async (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return
+    const { gameId } = data
+
     const engine = gameStore.getEngine(gameId)
     if (!engine) return socket.emit('game_error', { message: 'Game not found' })
 
     try {
       engine.pass(socket.user.id)
       broadcastGameState(io, gameId, engine)
+      await checkGameEnd(gameId, engine)
     } catch (err) {
       socket.emit('game_error', { message: err.message })
     }

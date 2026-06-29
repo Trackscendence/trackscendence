@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { requestPasswordReset } from '@/services/auth'
 import Button from '@/components/Button'
-import Card from '@/components/Card'
+import Panel from '@/components/Panel'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
 
@@ -36,7 +36,7 @@ const ForgotPassword = () => {
   }
 
   return (
-    <Card>
+    <Panel>
       <div className="mb-7">
         <p className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase">
           Trackscendence
@@ -94,7 +94,7 @@ const ForgotPassword = () => {
           Log in
         </Link>
       </p>
-    </Card>
+    </Panel>
   )
 }
 

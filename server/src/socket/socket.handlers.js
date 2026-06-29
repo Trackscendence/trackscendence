@@ -36,7 +36,7 @@ const registerHandlers = (io, socket) => {
         await gameStore.saveGame(gameId, gameState)
       } catch (error) {
         logger.error('Failed to create game', error)
-        matchPlayers.forEach((p) => lobbyStore.addPlayer(p))
+        lobbyStore.addPlayersToFront(matchPlayers)
         io.to('lobby').emit('lobby_update', {
           count: lobbyStore.getLobbyCount(),
         })

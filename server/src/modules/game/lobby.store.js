@@ -4,6 +4,13 @@ const addPlayer = (socket) => {
   lobbyQueue.add(socket)
 }
 
+const addPlayersToFront = (sockets) => {
+  const current = Array.from(lobbyQueue)
+  lobbyQueue.clear()
+  sockets.forEach((s) => lobbyQueue.add(s))
+  current.forEach((s) => lobbyQueue.add(s))
+}
+
 const removePlayer = (socket) => {
   lobbyQueue.delete(socket)
 }
@@ -20,6 +27,7 @@ const extractMatchPlayers = (count) => {
 
 module.exports = {
   addPlayer,
+  addPlayersToFront,
   removePlayer,
   getLobbyCount,
   extractMatchPlayers,

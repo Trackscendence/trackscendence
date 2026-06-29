@@ -8,13 +8,13 @@ const REQUIRED_PLAYERS = 2
 
 const broadcastGameState = (io, gameId, engine) => {
   const publicState = engine.getState()
-  
+
   engine.playerOrder.forEach((playerId) => {
     const playerHand = engine.players[playerId] || []
     io.to(`user:${playerId}`).emit('game_state_update', {
       ...publicState,
       myHand: playerHand,
-      gameId
+      gameId,
     })
   })
 }
@@ -116,7 +116,11 @@ const registerHandlers = (io, socket) => {
 
     try {
       const result = engine.drawCard(socket.user.id)
-      socket.emit('game_drawn_card', { gameId, card: result.card, playable: result.playable })
+      socket.emit('game_drawn_card', {
+        gameId,
+        card: result.card,
+        playable: result.playable,
+      })
       broadcastGameState(io, gameId, engine)
     } catch (err) {
       socket.emit('game_error', { message: err.message })

@@ -12,6 +12,12 @@ const login = async (req, res) => {
   res.json(result)
 }
 
+const completeTwoFactorLogin = async (req, res) => {
+  const result = await authService.completeTwoFactorLogin(req.body)
+
+  res.json(result)
+}
+
 const me = (req, res) => {
   res.json({ user: req.user })
 }
@@ -38,12 +44,41 @@ const resetPassword = async (req, res) => {
   res.json(result)
 }
 
+const setupTwoFactor = async (req, res) => {
+  const result = await authService.setupTwoFactor(req.user)
+
+  res.json(result)
+}
+
+const confirmTwoFactorSetup = async (req, res) => {
+  const result = await authService.confirmTwoFactorSetup(req.user, req.body)
+
+  res.json(result)
+}
+
+const disableTwoFactor = async (req, res) => {
+  const result = await authService.disableTwoFactor(req.user)
+
+  res.json(result)
+}
+
+const regenerateTwoFactor = async (req, res) => {
+  const result = await authService.regenerateTwoFactor(req.user)
+
+  res.json(result)
+}
+
 module.exports = {
+  completeTwoFactorLogin,
+  confirmTwoFactorSetup,
   register,
+  disableTwoFactor,
   login,
   me,
   logout,
   changePassword,
   requestPasswordReset,
+  regenerateTwoFactor,
   resetPassword,
+  setupTwoFactor,
 }

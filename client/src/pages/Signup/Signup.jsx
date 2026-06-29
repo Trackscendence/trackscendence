@@ -2,21 +2,22 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import Button from '@/components/Button'
-import Card from '@/components/Card'
+import Panel from '@/components/Panel'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
+import { validateSignupInput } from '@/services/auth.validations'
 
 const Signup = () => {
   const navigate = useNavigate()
   const { register } = useAuthStore()
   const [form, setForm] = useState({ email: '', username: '', password: '' })
   const [error, setError] = useState('')
-  const [validationDetails, setValidationDetails] = useState([])
+  const [validationDetails, setValidationDetails] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (event) => {
     setError('')
-    setValidationDetails([])
+    setValidationDetails({})
     setForm((current) => ({
       ...current,
       [event.target.name]: event.target.value,
@@ -26,11 +27,19 @@ const Signup = () => {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
-    setValidationDetails([])
+    setValidationDetails({})
+
+    const validations = validateSignupInput(form)
+
+    if (!validations.isValid) {
+      setValidationDetails(validations.errors)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      await register(form)
+      await register(validations.normalizedData)
       navigate('/login', {
         replace: true,
         state: { message: 'Account created. Sign in to continue.' },
@@ -48,7 +57,7 @@ const Signup = () => {
   }
 
   return (
-    <Card>
+    <Panel>
       <div className="mb-7">
         <p className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase">
           Trackscendence
@@ -66,11 +75,17 @@ const Signup = () => {
             onChange={handleChange}
             required
           />
+
+          {validationDetails.email ? (
+            <p className="mt-1 text-sm text-[#8a321f]">
+              {validationDetails.email}
+            </p>
+          ) : null}
         </FormField>
 
         <FormField
           label="Username"
-          hint="Use letters, numbers, underscores, or hyphens only."
+          hint="Use 6-32 lowercase letters and numbers, starting with a letter."
         >
           <Input
             name="username"
@@ -80,6 +95,12 @@ const Signup = () => {
             onChange={handleChange}
             required
           />
+
+          {validationDetails.username ? (
+            <p className="mt-1 text-sm text-[#8a321f]">
+              {validationDetails.username}
+            </p>
+          ) : null}
         </FormField>
 
         <FormField
@@ -95,6 +116,12 @@ const Signup = () => {
             onChange={handleChange}
             required
           />
+
+          {validationDetails.password ? (
+            <p className="mt-1 text-sm text-[#8a321f]">
+              {validationDetails.password}
+            </p>
+          ) : null}
         </FormField>
 
         {validationDetails.length > 0 ? (
@@ -125,7 +152,7 @@ const Signup = () => {
           Log in
         </Link>
       </p>
-    </Card>
+    </Panel>
   )
 }
 

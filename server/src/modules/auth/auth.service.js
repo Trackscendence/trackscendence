@@ -11,12 +11,8 @@ const authToken = require('#modules/auth/auth.token')
 const authTwoFactor = require('#modules/auth/auth.two-factor')
 
 const PASSWORD_MIN_LENGTH = 8
-const USERNAME_MAX_LENGTH = 30
 const PASSWORD_RESET_TOKEN_EXPIRES_MS = 60 * 60 * 1000
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const USERNAME_REGEX = /^[A-Za-z0-9_-]+$/
-const PASSWORD_COMPLEXITY_REGEX =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])(?=.{8,})(?!.*\s).*$/
+const EMAIL_REGEX = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/
 const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email/username or password'
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
@@ -39,15 +35,21 @@ const MAX_LOGIN_ATTEMPTS = 8
 const LOCKED_DURATION_MINUTES = 2
 const GENERIC_ACCOUNT_LOCKED_MESSAGE = 'Account temporarily locked'
 
-const normalizeEmail = (email) => email.trim().toLowerCase()
-const normalizeUsername = (username) => username.trim()
-const normalizeIdentifier = (identifier) => {
-  const trimmedIdentifier = identifier.trim()
+const EMAIL_MAX_LENGTH = 254
+const USERNAME_REGEX = /^[a-z][a-z0-9]*$/
+const USERNAME_MIN_LENGTH = 6
+const USERNAME_MAX_LENGTH = 32
+const PASSWORD_MAX_LENGTH = 254
 
-  return trimmedIdentifier.includes('@')
-    ? trimmedIdentifier.toLowerCase()
-    : trimmedIdentifier
-}
+const PASSWORD_WHITESPACE_REGEX = /\s/
+const PASSWORD_UPPERCASE_REGEX = /[A-Z]/
+const PASSWORD_LOWERCASE_REGEX = /[a-z]/
+const PASSWORD_NUMBER_REGEX = /\d/
+const PASSWORD_SYMBOL_REGEX = /[^a-z0-9]/i
+
+const normalizeEmail = (email) => email.trim().toLowerCase()
+const normalizeUsername = (username) => username.trim().toLowerCase()
+const normalizeIdentifier = (identifier) => identifier.trim().toLowerCase()
 
 const toSafeAuthUser = (user) => ({
   id: user.id,
@@ -78,13 +80,21 @@ const getUsernameValidationMessages = (username) => {
     return details
   }
 
-  if (username.length > USERNAME_MAX_LENGTH) {
-    details.push(`Username must be at most ${USERNAME_MAX_LENGTH} characters`)
-  }
-
   if (!USERNAME_REGEX.test(username)) {
     details.push(
-      'Username can only contain letters, numbers, underscores, and hyphens',
+      'Username must start with a letter and contain only lowercase letters and numbers',
+    )
+  }
+
+  if (username.length < USERNAME_MIN_LENGTH) {
+    details.push(
+      `Username must not be less than ${USERNAME_MIN_LENGTH} characters`,
+    )
+  }
+
+  if (username.length > USERNAME_MAX_LENGTH) {
+    details.push(
+      `Username must not be more than ${USERNAME_MAX_LENGTH} characters`,
     )
   }
 
@@ -103,15 +113,34 @@ const getPasswordValidationMessages = (password) => {
     details.push(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
   }
 
-  if (!PASSWORD_COMPLEXITY_REGEX.test(password)) {
-    details.push(
-      'Password must include uppercase, lowercase, a number, and a special character',
-    )
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    details.push(`Password must be less than ${PASSWORD_MAX_LENGTH} characters`)
+  }
+
+  if (PASSWORD_WHITESPACE_REGEX.test(password)) {
+    details.push('Password must not contain whitespace')
+  }
+
+  if (!PASSWORD_UPPERCASE_REGEX.test(password)) {
+    details.push('Password must contain an uppercase letter')
+  }
+
+  if (!PASSWORD_LOWERCASE_REGEX.test(password)) {
+    details.push('Password must contain a lowercase letter')
+  }
+
+  if (!PASSWORD_NUMBER_REGEX.test(password)) {
+    details.push('Password must contain a number')
+  }
+
+  if (!PASSWORD_SYMBOL_REGEX.test(password)) {
+    details.push('Password must contain a symbol')
   }
 
   return details
 }
 
+// BACKEND VALIDATIONS FOR SIGNUP PAGE
 const validateRegistrationInput = ({ email, username, password } = {}) => {
   const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
   const normalizedUsername =
@@ -120,9 +149,11 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
   const details = []
 
   if (!normalizedEmail) {
-    details.push('Email is required')
+    details.push('Email address is required')
   } else if (!EMAIL_REGEX.test(normalizedEmail)) {
     details.push('Email must be valid')
+  } else if (normalizedEmail.length > EMAIL_MAX_LENGTH) {
+    details.push(`Email must not be more than ${EMAIL_MAX_LENGTH} characters`)
   }
 
   details.push(...getUsernameValidationMessages(normalizedUsername))
@@ -140,6 +171,7 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
   }
 }
 
+// BACKEND VALIDATIONS FOR LOGIN PAGE
 const validateLoginInput = ({ identifier, password } = {}) => {
   const normalizedIdentifier =
     typeof identifier === 'string' ? normalizeIdentifier(identifier) : ''
@@ -435,7 +467,6 @@ const login = async (payload) => {
 
   const isValidPassword = await bcrypt.compare(password, user.passwordHash)
 
-  //WIP
   if (!isValidPassword) {
     const attempts = user.failedLoginCount + 1
 

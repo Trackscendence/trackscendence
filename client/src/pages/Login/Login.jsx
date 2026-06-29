@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import Button from '@/components/Button'
-import Card from '@/components/Card'
+import Panel from '@/components/Panel'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { validateLoginInput } from '@/services/auth.validations'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -20,6 +21,7 @@ const Login = () => {
   const [twoFactorState, setTwoFactorState] = useState(null)
   const [twoFactorMethod, setTwoFactorMethod] = useState('totp')
   const [error, setError] = useState('')
+  const [validationDetails, setValidationDetails] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const from = location.state?.from?.pathname || '/'
@@ -40,6 +42,8 @@ const Login = () => {
   }
 
   const handleChange = (event) => {
+    setError('')
+    setValidationDetails({})
     setForm((current) => ({
       ...current,
       [event.target.name]: event.target.value,
@@ -56,10 +60,19 @@ const Login = () => {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
+    setValidationDetails({})
+
+    const validations = validateLoginInput(form)
+
+    if (!validations.isValid) {
+      setValidationDetails(validations.errors)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      const result = await login(form)
+      const result = await login(validations.normalizedData)
 
       if (result.requiresTwoFactor) {
         setTwoFactorState(result)
@@ -112,7 +125,7 @@ const Login = () => {
   const isTwoFactorStep = Boolean(twoFactorState)
 
   return (
-    <Card>
+    <Panel>
       <div className="mb-7">
         <p className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase">
           Trackscendence
@@ -215,6 +228,12 @@ const Login = () => {
                 onChange={handleChange}
                 required
               />
+
+              {validationDetails.identifier ? (
+                <p className="mt-1 text-sm text-[#8a321f]">
+                  {validationDetails.identifier}
+                </p>
+              ) : null}
             </FormField>
 
             <FormField label="Password">
@@ -226,6 +245,12 @@ const Login = () => {
                 onChange={handleChange}
                 required
               />
+
+              {validationDetails.password ? (
+                <p className="mt-1 text-sm text-[#8a321f]">
+                  {validationDetails.password}
+                </p>
+              ) : null}
             </FormField>
           </>
         )}
@@ -277,7 +302,7 @@ const Login = () => {
           </p>
         </>
       )}
-    </Card>
+    </Panel>
   )
 }
 

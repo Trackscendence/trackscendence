@@ -22,7 +22,7 @@
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:generate": "npx prisma generate --generator client",
     "docs:erd": "mkdir -p ../docs && npx prisma generate --generator erd",
-    "test": "node --test src/modules/game/game.engine.test.js"
+    "test": "node --test src/modules/game/game.engine.test.js src/middleware/auth.middleware.test.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

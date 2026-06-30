@@ -7,6 +7,7 @@
  */
 
 const activeGames = new Map()
+const activeEngines = new Map()
 
 /**
  * Creates or updates a game state.
@@ -42,9 +43,38 @@ const getAllGames = async () => {
   return Array.from(activeGames.values())
 }
 
+/**
+ * Stores an UnoEngine instance for a live game.
+ * @param {string} gameId
+ * @param {Object} engine
+ */
+const setEngine = (gameId, engine) => {
+  activeEngines.set(gameId, engine)
+}
+
+/**
+ * Retrieves the UnoEngine instance for a live game.
+ * @param {string} gameId
+ * @returns {Object|null}
+ */
+const getEngine = (gameId) => {
+  return activeEngines.get(gameId) || null
+}
+
+/**
+ * Deletes the UnoEngine instance when the game is over.
+ * @param {string} gameId
+ */
+const deleteEngine = (gameId) => {
+  activeEngines.delete(gameId)
+}
+
 module.exports = {
   saveGame,
   getGame,
   deleteGame,
   getAllGames,
+  setEngine,
+  getEngine,
+  deleteEngine,
 }

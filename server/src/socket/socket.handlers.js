@@ -1,14 +1,29 @@
 const logger = require('#utils/logger')
 const lobbyStore = require('#modules/game/lobby.store')
 const gameStore = require('#modules/game/game.store')
+const UnoEngine = require('#modules/game/game.engine')
 const crypto = require('node:crypto')
 
 const REQUIRED_PLAYERS = 2
 
+const broadcastGameState = (io, gameId, engine) => {
+  const publicState = engine.getState()
+
+  engine.playerOrder.forEach((playerId) => {
+    const playerHand = engine.players[playerId] || []
+    io.to(`user:${playerId}`).emit('game_state_update', {
+      ...publicState,
+      myHand: playerHand,
+      gameId,
+    })
+  })
+}
+
 const registerHandlers = (io, socket) => {
   socket.join('channel:#general')
+  socket.join(`user:${socket.user.id}`)
 
-  logger.info('user connected:', socket.user)
+  logger.info('user connected')
 
   socket.on('join_lobby', async () => {
     logger.info(`User ${socket.user.username} joined the lobby`)
@@ -52,13 +67,18 @@ const registerHandlers = (io, socket) => {
         p.emit('game_start', { gameId, players: gameState.players })
       })
 
+      const playerIds = matchPlayers.map((p) => p.user.id)
+      const engine = new UnoEngine(playerIds)
+      gameStore.setEngine(gameId, engine)
+      broadcastGameState(io, gameId, engine)
+
       // Update remaining lobby players
       io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
     }
   })
 
   socket.on('disconnect', () => {
-    logger.info('user disconnected', socket.user)
+    logger.info('user disconnected')
     lobbyStore.removePlayer(socket)
     io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
   })
@@ -74,8 +94,73 @@ const registerHandlers = (io, socket) => {
     }
 
     const payload = { ...data, user: socket.user }
-    logger.info(payload)
     io.to(room).emit('message', payload)
+  })
+
+  const checkGameEnd = async (gameId, engine) => {
+    if (engine.winner) {
+      const state = await gameStore.getGame(gameId)
+      if (state) {
+        state.status = 'COMPLETED'
+        state.winner = engine.winner
+        state.endedAt = new Date()
+        await gameStore.saveGame(gameId, state)
+      }
+      gameStore.deleteEngine(gameId)
+    }
+  }
+
+  socket.on('game:play_card', async (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return
+    const { gameId, cardIndex, declaredColor } = data
+
+    const engine = gameStore.getEngine(gameId)
+    if (!engine) return socket.emit('game_error', { message: 'Game not found' })
+
+    try {
+      engine.playCard(socket.user.id, cardIndex, declaredColor)
+      broadcastGameState(io, gameId, engine)
+      await checkGameEnd(gameId, engine)
+    } catch (err) {
+      socket.emit('game_error', { message: err.message })
+    }
+  })
+
+  socket.on('game:draw_card', async (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return
+    const { gameId } = data
+
+    const engine = gameStore.getEngine(gameId)
+    if (!engine) return socket.emit('game_error', { message: 'Game not found' })
+
+    try {
+      const result = engine.drawCard(socket.user.id)
+      socket.emit('game_drawn_card', {
+        gameId,
+        card: result.card,
+        playable: result.playable,
+      })
+      broadcastGameState(io, gameId, engine)
+      await checkGameEnd(gameId, engine)
+    } catch (err) {
+      socket.emit('game_error', { message: err.message })
+    }
+  })
+
+  socket.on('game:pass_turn', async (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return
+    const { gameId } = data
+
+    const engine = gameStore.getEngine(gameId)
+    if (!engine) return socket.emit('game_error', { message: 'Game not found' })
+
+    try {
+      engine.pass(socket.user.id)
+      broadcastGameState(io, gameId, engine)
+      await checkGameEnd(gameId, engine)
+    } catch (err) {
+      socket.emit('game_error', { message: err.message })
+    }
   })
 }
 

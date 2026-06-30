@@ -1,13 +1,18 @@
 const lobbyQueue = new Set()
 
 const addPlayer = (socket) => {
-  lobbyQueue.add(socket)
+  const isAlreadyInLobby = Array.from(lobbyQueue).some(
+    (s) => s.user.id === socket.user.id,
+  )
+  if (!isAlreadyInLobby) {
+    lobbyQueue.add(socket)
+  }
 }
 
 const addPlayersToFront = (sockets) => {
-  const current = Array.from(lobbyQueue)
+  const current = Array.from(lobbyQueue).filter((s) => s.connected)
   lobbyQueue.clear()
-  sockets.forEach((s) => lobbyQueue.add(s))
+  sockets.filter((s) => s.connected).forEach((s) => lobbyQueue.add(s))
   current.forEach((s) => lobbyQueue.add(s))
 }
 

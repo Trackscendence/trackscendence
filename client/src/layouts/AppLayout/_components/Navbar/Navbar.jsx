@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
+import { isAdmin } from '@/utils/authorization'
 
 const Navbar = () => {
   const navigate = useNavigate()
@@ -26,6 +27,14 @@ const Navbar = () => {
           {user && (
             <span className="text-sm text-[#617267]">{user.username}</span>
           )}
+          {isAdmin(user) ? (
+            <Link
+              to="/admin"
+              className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+            >
+              Admin
+            </Link>
+          ) : null}
           <Link
             to="/settings"
             className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"

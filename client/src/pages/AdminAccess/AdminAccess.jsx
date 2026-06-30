@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { fetchAdminAccess } from '@/services/system'
 import useAuthStore from '@/stores/useAuthStore'
 
 const AdminAccess = () => {
+  const navigate = useNavigate()
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
   const [result, setResult] = useState(null)
@@ -25,6 +26,11 @@ const AdminAccess = () => {
         }
       } catch (requestError) {
         if (isActive) {
+          if (requestError.status === 403) {
+            navigate('/', { replace: true })
+            return
+          }
+
           setError(requestError.message)
         }
       } finally {
@@ -39,7 +45,7 @@ const AdminAccess = () => {
     return () => {
       isActive = false
     }
-  }, [token])
+  }, [navigate, token])
 
   return (
     <section className="mx-auto w-full max-w-4xl space-y-6">

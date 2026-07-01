@@ -1,11 +1,17 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import Navbar from './_components/Navbar'
 
 const AppLayout = () => {
+  const location = useLocation()
+  const isGameRoute = location.pathname.startsWith('/game')
+  const mainClassName = isGameRoute
+    ? 'w-full flex-1'
+    : 'mx-auto w-full max-w-5xl flex-1 px-5 py-8'
+
   return (
     <div className="flex min-h-screen flex-col bg-[#f4f7f2] text-[#1f2d28]">
       <Navbar />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8">
+      <main className={mainClassName}>
         <Outlet />
       </main>
       <footer className="border-t border-[#d8dfd4] bg-white py-4">

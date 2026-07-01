@@ -35,7 +35,6 @@ const bottomHand = [
 
 const baseState = {
   id: 'mock-game-120',
-  currentTurnPlayerId: 'player-2',
   currentColor: 'blue',
   direction: 'clockwise',
   deckSize: 51,
@@ -84,19 +83,20 @@ const getCurrentPlayer = (handSize) => ({
       : bottomHand.slice(0, Math.min(handSize, bottomHand.length)),
 })
 
-const createState = (opponentSeats, options = {}) => ({
-  ...baseState,
-  direction: options.direction ?? baseState.direction,
-  pendingDraw: options.pendingDraw ?? baseState.pendingDraw,
-  players: [
-    getCurrentPlayer(options.handSize),
-    ...opponentSeats.map((seat) => opponentBySeat[seat]),
-  ],
-})
+const createState = (opponentSeats, options = {}) => {
+  const opponents = opponentSeats.map((seat) => opponentBySeat[seat])
+  return {
+    ...baseState,
+    currentTurnPlayerId: opponents[0]?.id ?? currentPlayer.id,
+    direction: options.direction ?? baseState.direction,
+    pendingDraw: options.pendingDraw ?? baseState.pendingDraw,
+    players: [getCurrentPlayer(options.handSize), ...opponents],
+  }
+}
 
 const MOCK_PLAYER_SEATS = {
   2: ['top'],
-  3: ['top', 'left'],
+  3: ['left', 'right'],
   4: ['top', 'left', 'right'],
 }
 

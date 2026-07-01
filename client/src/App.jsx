@@ -10,6 +10,7 @@ import Signup from '@/pages/Signup'
 import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
 import ChangePassword from '@/pages/ChangePassword'
+import Game from '@/pages/Game'
 import Session from '@/pages/Session'
 import PrivacyPolicy from '@/pages/Privacy'
 import TermsOfService from '@/pages/TermsOfService'
@@ -45,6 +46,7 @@ const App = () => {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Session />} />
             <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/game" element={<Game />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/two-factor"

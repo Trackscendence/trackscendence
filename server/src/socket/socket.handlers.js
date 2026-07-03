@@ -1,22 +1,37 @@
 const logger = require('#utils/logger')
 const lobbyStore = require('#modules/game/lobby.store')
 const gameStore = require('#modules/game/game.store')
-const UnoEngine = require('#modules/game/game.engine')
-const crypto = require('node:crypto')
+const matchmaking = require('#modules/game/matchmaking.service')
 
-const REQUIRED_PLAYERS = 2
-
+/**
+ * Emits the public game state to every player, injecting each player's own
+ * private hand. Reads only the engine's public interface (getPlayerIds/getHand)
+ * so the engine's information-hiding stays intact.
+ */
 const broadcastGameState = (io, gameId, engine) => {
   const publicState = engine.getState()
 
-  engine.playerOrder.forEach((playerId) => {
-    const playerHand = engine.players[playerId] || []
+  engine.getPlayerIds().forEach((playerId) => {
     io.to(`user:${playerId}`).emit('game_state_update', {
       ...publicState,
-      myHand: playerHand,
+      myHand: engine.getHand(playerId),
       gameId,
     })
   })
+}
+
+/**
+ * Moves a started match's players out of the lobby and into their game room,
+ * then pushes the initial state. Players are addressed by their `user:${id}`
+ * rooms, so no live socket references are needed here.
+ */
+const startMatch = (io, { gameId, players, engine }) => {
+  players.forEach(({ userId }) => {
+    io.in(`user:${userId}`).socketsLeave('lobby')
+    io.in(`user:${userId}`).socketsJoin(`game:${gameId}`)
+    io.to(`user:${userId}`).emit('game_start', { gameId, players })
+  })
+  broadcastGameState(io, gameId, engine)
 }
 
 const registerHandlers = (io, socket) => {
@@ -28,59 +43,45 @@ const registerHandlers = (io, socket) => {
   socket.on('join_lobby', async () => {
     logger.info(`User ${socket.user.username} joined the lobby`)
     socket.join('lobby')
-    lobbyStore.addPlayer(socket)
-
-    // Broadcast the new lobby count
+    lobbyStore.addPlayer(socket.user)
     io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
 
-    if (lobbyStore.getLobbyCount() >= REQUIRED_PLAYERS) {
-      const matchPlayers = lobbyStore.extractMatchPlayers(REQUIRED_PLAYERS)
-      const gameId = crypto.randomUUID()
-
-      const gameState = {
-        id: gameId,
-        status: 'IN_PROGRESS',
-        players: matchPlayers.map((p) => ({
-          userId: p.user.id,
-          username: p.user.username,
-        })),
-        startedAt: new Date(),
+    // Drain the queue: keep starting matches while enough players are waiting.
+    // This also re-checks the threshold after each match, so players are never
+    // left stranded at the threshold waiting for the next join.
+    try {
+      let match = await matchmaking.tryStartMatch()
+      while (match) {
+        startMatch(io, match)
+        match = await matchmaking.tryStartMatch()
       }
-
-      try {
-        await gameStore.saveGame(gameId, gameState)
-      } catch (error) {
-        logger.error('Failed to create game', error)
-        lobbyStore.addPlayersToFront(matchPlayers)
-        io.to('lobby').emit('lobby_update', {
-          count: lobbyStore.getLobbyCount(),
-        })
-        matchPlayers.forEach((p) =>
-          p.emit('lobby_error', { message: 'Unable to start game' }),
-        )
-        return
-      }
-
-      matchPlayers.forEach((p) => {
-        p.leave('lobby')
-        p.join(`game:${gameId}`)
-        p.emit('game_start', { gameId, players: gameState.players })
-      })
-
-      const playerIds = matchPlayers.map((p) => p.user.id)
-      const engine = new UnoEngine(playerIds)
-      gameStore.setEngine(gameId, engine)
-      broadcastGameState(io, gameId, engine)
-
-      // Update remaining lobby players
-      io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
+    } catch (error) {
+      // tryStartMatch rolled the players back into the queue; surface the
+      // failure and let the next join retry.
+      logger.error('Failed to start match', error)
+      io.to('lobby').emit('lobby_error', { message: 'Unable to start game' })
     }
+
+    io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
   })
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     logger.info('user disconnected')
-    lobbyStore.removePlayer(socket)
+    lobbyStore.removePlayer(socket.user.id)
     io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
+
+    // If the player dropped mid-game, abandon the game and free its engine so
+    // it does not leak, and let the remaining players know.
+    const abandonedGame = await matchmaking.handlePlayerDisconnect(
+      socket.user.id,
+    )
+    if (abandonedGame) {
+      io.to(`game:${abandonedGame.id}`).emit('game_over', {
+        gameId: abandonedGame.id,
+        reason: 'player_left',
+        abandonedBy: socket.user.id,
+      })
+    }
   })
 
   socket.on('message', (data) => {

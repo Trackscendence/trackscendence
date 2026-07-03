@@ -1,10 +1,26 @@
 /**
- * GameStore - Asynchronous In-Memory Game State Manager
+ * GameStore - In-memory manager for live games.
  *
- * This module manages the active, live games (waiting, in-progress).
- * All methods are intentionally asynchronous to allow a completely seamless
- * swap to Redis in the future without changing any consumer code.
+ * This module holds two deliberately separate registries:
+ *
+ * 1. Game state (`activeGames`) - plain, serializable snapshots
+ *    ({ id, status, players, winner, startedAt, endedAt }). These are the
+ *    persistent facts about a game. All accessors are async so this half can
+ *    be swapped for Redis later without changing any caller.
+ *
+ * 2. Engine registry (`activeEngines`) - live UnoEngine instances. Engines are
+ *    NOT serializable and are intentionally process-local: they live only in
+ *    this Node process and are lost on restart. This half will NOT move to
+ *    Redis, so its accessors are sync to make that boundary explicit rather
+ *    than implying a persistence guarantee it cannot keep. See
+ *    docs/adr/0001-in-memory-game-state.md.
+ *
+ * The engine is the source of truth for in-progress dynamics (turn, hands,
+ * winner). `activeGames` mirrors only the durable metadata; callers reconcile
+ * the two at game end (winner/status/endedAt) before flushing to PostgreSQL.
  */
+
+// --- Persistent game state (Redis-swappable) --------------------------------
 
 const activeGames = new Map()
 const activeEngines = new Map()
@@ -36,7 +52,7 @@ const deleteGame = async (gameId) => {
 }
 
 /**
- * Retrieves all active games in the lobby.
+ * Retrieves all active games.
  * @returns {Promise<Array<Object>>}
  */
 const getAllGames = async () => {
@@ -44,7 +60,24 @@ const getAllGames = async () => {
 }
 
 /**
- * Stores an UnoEngine instance for a live game.
+ * Finds the active game a user is currently part of, if any.
+ * @param {string} userId
+ * @param {{ status?: string }} [filter] - optional status to match (e.g. 'IN_PROGRESS')
+ * @returns {Promise<Object|null>}
+ */
+const findActiveGameByUser = async (userId, filter = {}) => {
+  for (const game of activeGames.values()) {
+    if (filter.status && game.status !== filter.status) continue
+    if (game.players?.some((player) => player.userId === userId)) return game
+  }
+  return null
+}
+
+// --- Live engine registry (process-local, not serializable) -----------------
+
+/**
+ * Stores an UnoEngine instance for a live game. Sync by design: engines are
+ * process-local and never persisted (see module header).
  * @param {string} gameId
  * @param {Object} engine
  */
@@ -74,6 +107,7 @@ module.exports = {
   getGame,
   deleteGame,
   getAllGames,
+  findActiveGameByUser,
   setEngine,
   getEngine,
   deleteEngine,

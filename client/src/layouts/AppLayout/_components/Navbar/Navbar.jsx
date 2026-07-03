@@ -22,7 +22,7 @@ const Navbar = () => {
         >
           Trackscendence
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
           {user && (
             <Link
               to="/profile"
@@ -31,6 +31,12 @@ const Navbar = () => {
               {user.displayName || user.username}
             </Link>
           )}
+          <Link
+            to="/game"
+            className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+          >
+            Game
+          </Link>
           <Link
             to="/settings"
             className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"

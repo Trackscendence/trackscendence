@@ -57,7 +57,10 @@ const toSafeAuthUser = (user) => ({
   id: user.id,
   email: user.email,
   username: user.username,
+  displayName: user.displayName,
+  bio: user.bio,
   role: user.role,
+  createdAt: user.createdAt,
   twoFactorEnabled: Boolean(user.twoFactorEnabled),
   twoFactorSetupPending: Boolean(user.twoFactorPendingSecretCiphertext),
 })

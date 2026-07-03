@@ -1,32 +1,30 @@
+import CenterZone from '../CenterZone'
 import OpponentSlot from '../OpponentSlot'
 import PlayerHand from '../PlayerHand'
-import CenterPile from './_components/CenterPile'
 
 const getOpponentBySeat = (opponents, seat) => {
   return opponents.find((player) => player.seat === seat)
 }
 
 const GameTable = ({
-  currentColor,
   currentPlayer,
   currentTurnPlayerId,
   deckSize,
   direction,
+  onDrawPileClick,
+  onUnoClick,
   opponents,
+  pendingDraw,
   topCard,
 }) => {
   const topOpponent = getOpponentBySeat(opponents, 'top')
   const leftOpponent = getOpponentBySeat(opponents, 'left')
   const rightOpponent = getOpponentBySeat(opponents, 'right')
-  const allPlayers = [currentPlayer, ...opponents]
-  const currentTurnPlayer =
-    allPlayers.find((player) => player.id === currentTurnPlayerId) ??
-    currentPlayer
 
   return (
-    <section className="min-h-[calc(100vh-8.75rem)] w-full overflow-hidden bg-[#FFE7CB] px-4 py-6 text-black sm:px-6 lg:px-10">
-      <div className="mx-auto grid min-h-[760px] w-full max-w-[1440px] grid-cols-1 grid-rows-[auto_auto_auto_auto_auto] gap-4 [grid-template-areas:'top'_'center'_'left'_'right'_'bottom'] md:grid-cols-[minmax(11rem,1fr)_minmax(26rem,1.5fr)_minmax(11rem,1fr)] md:grid-rows-[auto_minmax(24rem,1fr)_auto] md:gap-6 md:[grid-template-areas:'top_top_top'_'left_center_right'_'bottom_bottom_bottom']">
-        <div className="flex min-h-[13.5rem] items-start justify-center [grid-area:top]">
+    <section className="min-h-[100svh] w-full overflow-x-hidden bg-[#FFE7CB] px-4 pt-4 text-black sm:px-6 lg:px-10">
+      <div className="mx-auto grid min-h-[calc(100svh-1rem)] w-full max-w-[1440px] grid-cols-1 grid-rows-[auto_auto_auto_auto_auto] gap-4 [grid-template-areas:'top'_'center'_'left'_'right'_'bottom'] md:relative md:block md:h-[calc(100svh-1rem)] md:min-h-0">
+        <div className="flex min-h-48 items-start justify-center [grid-area:top] md:absolute md:top-0 md:left-[calc(50%-4rem)] md:min-h-0 md:-translate-x-1/2">
           {topOpponent && (
             <OpponentSlot
               isActive={topOpponent.id === currentTurnPlayerId}
@@ -37,7 +35,7 @@ const GameTable = ({
         </div>
 
         {leftOpponent && (
-          <div className="flex min-h-[22rem] items-center justify-center [grid-area:left] md:justify-start">
+          <div className="flex min-h-[21rem] items-center justify-center [grid-area:left] md:absolute md:top-1/2 md:left-0 md:min-h-0 md:-translate-y-1/2 md:justify-start">
             <OpponentSlot
               isActive={leftOpponent.id === currentTurnPlayerId}
               orientation="left"
@@ -46,18 +44,20 @@ const GameTable = ({
           </div>
         )}
 
-        <div className="flex min-h-[20rem] items-center justify-center [grid-area:center]">
-          <CenterPile
-            currentColor={currentColor}
-            currentTurnPlayerName={currentTurnPlayer.username}
+        <div className="flex min-h-72 items-center justify-center [grid-area:center] md:absolute md:top-[55%] md:left-1/2 md:min-h-0 md:-translate-x-1/2 md:-translate-y-1/2">
+          <CenterZone
             deckSize={deckSize}
             direction={direction}
+            isUnoVisible={currentPlayer.cards.length === 1}
+            onDrawPileClick={onDrawPileClick}
+            onUnoClick={onUnoClick}
+            pendingDraw={pendingDraw}
             topCard={topCard}
           />
         </div>
 
         {rightOpponent && (
-          <div className="flex min-h-[22rem] items-center justify-center [grid-area:right] md:justify-end">
+          <div className="flex min-h-[21rem] items-center justify-center [grid-area:right] md:absolute md:top-1/2 md:right-0 md:min-h-0 md:-translate-y-1/2 md:justify-end">
             <OpponentSlot
               isActive={rightOpponent.id === currentTurnPlayerId}
               orientation="right"
@@ -66,7 +66,7 @@ const GameTable = ({
           </div>
         )}
 
-        <div className="flex items-end justify-center [grid-area:bottom]">
+        <div className="flex items-end justify-center [grid-area:bottom] md:absolute md:right-0 md:bottom-0 md:left-0">
           <PlayerHand cards={currentPlayer.cards} player={currentPlayer} />
         </div>
       </div>

@@ -3,6 +3,7 @@ const prisma = require('#db/prisma')
 const publicUserSelect = {
   id: true,
   username: true,
+  displayName: true,
 }
 
 const friendshipSelect = {

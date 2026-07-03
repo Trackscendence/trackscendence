@@ -3,7 +3,7 @@ const FormField = ({ label, hint, children, ...props }) => {
     <label className="block" {...props}>
       <span className="text-sm font-medium">{label}</span>
       {children}
-      {hint && <p className="mt-2 text-xs text-[#50635a]">{hint}</p>}
+      {hint && <p className="mt-2 text-xs text-[#666363]">{hint}</p>}
     </label>
   )
 }

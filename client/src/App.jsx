@@ -15,6 +15,7 @@ import ResetPassword from '@/pages/ResetPassword'
 import ChangePassword from '@/pages/ChangePassword'
 import Leaderboard from '@/pages/Leaderboard'
 import Profile from '@/pages/Profile'
+import Game from '@/pages/Game'
 import Session from '@/pages/Session'
 import User from '@/pages/User'
 import PrivacyPolicy from '@/pages/Privacy'
@@ -51,6 +52,7 @@ const App = () => {
         <Route path="/terms-of-service" element={<TermsOfService />} />
 
         <Route element={<ProtectedRoute />}>
+          <Route path="/game" element={<Game />} />
           <Route element={<ProfileLayout />}>
             <Route path="/profile" element={<Profile />} />
             <Route path="/users/:username" element={<User />} />
@@ -60,6 +62,7 @@ const App = () => {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Session />} />
             <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/game" element={<Game />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/two-factor"

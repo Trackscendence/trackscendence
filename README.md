@@ -97,7 +97,7 @@ Our database relational schema is defined in Prisma and is automatically kept up
 
 👉 **[Live Database ERD Diagram](docs/ERD.md)**
 
-_Note: The ERD diagram is automatically regenerated inside the `/docs` folder whenever you run `npx prisma generate` or `just db-generate`._
+_Note: Regenerate the ERD diagram inside the `/docs` folder with `npm run docs:erd --prefix server`._
 
 ## 5. Target Modules (17 Points Target)
 

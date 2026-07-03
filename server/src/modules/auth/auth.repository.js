@@ -4,7 +4,10 @@ const safeUserSelect = {
   id: true,
   email: true,
   username: true,
+  displayName: true,
+  bio: true,
   role: true,
+  createdAt: true,
   twoFactorEnabled: true,
 }
 
@@ -165,6 +168,9 @@ const withLockedPasswordResetToken = (tokenId, callback) => {
         "id",
         "email",
         "username",
+        "displayName",
+        "bio",
+        "createdAt",
         "role",
         "passwordHash",
         "passwordResetTokenHash",

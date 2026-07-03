@@ -87,6 +87,7 @@ const validateTargetUserIdParam = (params = {}) => {
 const toFriendUser = (user) => ({
   id: user.id,
   username: user.username,
+  displayName: user.displayName,
 })
 
 const getFriendUserFromRelationship = (relationship, currentUserId) => {

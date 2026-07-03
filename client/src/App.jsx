@@ -13,6 +13,7 @@ import Signup from '@/pages/Signup'
 import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
 import ChangePassword from '@/pages/ChangePassword'
+import SignupSuccess from '@/pages/SignupSuccess'
 import Leaderboard from '@/pages/Leaderboard'
 import Profile from '@/pages/Profile'
 import Game from '@/pages/Game'
@@ -47,6 +48,7 @@ const App = () => {
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/signup/success" element={<SignupSuccess />} />
         </Route>
 
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />

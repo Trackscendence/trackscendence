@@ -15,7 +15,7 @@ const AppLayout = () => {
         <Outlet />
       </main>
       <footer className="border-t border-[#d8dfd4] bg-white py-4">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-center gap-6 px-5 text-xs text-[#50635a]">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-center gap-6 px-5 text-xs text-[#50635a]">
           <Link to="/privacy-policy" className="hover:text-[#1f2d28]">
             Privacy Policy
           </Link>

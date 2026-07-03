@@ -10,7 +10,7 @@ const COLOR_STYLES = {
 }
 
 const CARD_BASE =
-  'relative h-[213px] w-[154px] shrink-0 select-none overflow-hidden rounded-[15.5px] border border-black bg-transparent p-0 transition-transform'
+  'relative h-[213px] w-[154px] shrink-0 select-none overflow-hidden rounded-[15.5px] border border-black bg-white p-0 transition-transform'
 
 const Card = ({
   color = 'wild',
@@ -23,21 +23,21 @@ const Card = ({
   onClick,
   ...props
 }) => {
+  const { 'aria-label': customAriaLabel, ...buttonProps } = props
   const [backgroundClass, textClass] = COLOR_STYLES[color] ?? COLOR_STYLES.wild
-  const stateClass = playable
-    ? 'cursor-pointer'
-    : 'cursor-not-allowed opacity-40'
+  const stateClass = playable ? 'cursor-pointer' : 'cursor-not-allowed'
   const selectedClass = selected ? 'scale-110 ring-4 ring-white' : ''
   const ariaLabel = faceDown
     ? 'face-down card'
     : `${color} ${type}${value != null ? ` ${value}` : ''} card`
+  const buttonAriaLabel = customAriaLabel ?? ariaLabel
 
   if (faceDown) {
     return (
       <button
-        {...props}
+        {...buttonProps}
         type="button"
-        aria-label={ariaLabel}
+        aria-label={buttonAriaLabel}
         className={`${CARD_BASE} ${stateClass} ${selectedClass} ${className}`}
         disabled={!playable}
         onClick={playable ? onClick : undefined}
@@ -53,9 +53,9 @@ const Card = ({
 
   return (
     <button
-      {...props}
+      {...buttonProps}
       type="button"
-      aria-label={ariaLabel}
+      aria-label={buttonAriaLabel}
       className={`${CARD_BASE} ${stateClass} ${selectedClass} ${className}`}
       disabled={!playable}
       onClick={playable ? onClick : undefined}

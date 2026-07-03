@@ -16,6 +16,7 @@ import ChangePassword from '@/pages/ChangePassword'
 import Leaderboard from '@/pages/Leaderboard'
 import Profile from '@/pages/Profile'
 import Game from '@/pages/Game'
+import Lobby from '@/pages/Lobby'
 import Session from '@/pages/Session'
 import User from '@/pages/User'
 import PrivacyPolicy from '@/pages/Privacy'
@@ -52,6 +53,7 @@ const App = () => {
         <Route path="/terms-of-service" element={<TermsOfService />} />
 
         <Route element={<ProtectedRoute />}>
+          <Route path="/lobby" element={<Lobby />} />
           <Route path="/game" element={<Game />} />
           <Route element={<ProfileLayout />}>
             <Route path="/profile" element={<Profile />} />

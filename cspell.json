@@ -72,6 +72,10 @@
     "subfolders",
     "Dockerized",
     "psql",
-    "retags"
+    "retags",
+    "envsubst",
+    "buildx",
+    "resolv",
+    "envsh"
   ]
 }

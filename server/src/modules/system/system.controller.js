@@ -33,7 +33,28 @@ const health = async (req, res) => {
   }
 }
 
+const adminAccess = (req, res) => {
+  res.json({
+    message: 'Admin access granted',
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      username: req.user.username,
+      role: req.user.role,
+    },
+    access: {
+      scope: 'LIGHTWEIGHT_RBAC',
+      capabilities: [
+        'view_admin_routes',
+        'view_operational_diagnostics',
+        'access_future_admin_surfaces',
+      ],
+    },
+  })
+}
+
 module.exports = {
+  adminAccess,
   root,
   ping,
   health,

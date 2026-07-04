@@ -14,12 +14,20 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # Reverse proxy to backend API
+    # Reverse proxy to backend API.
     # BACKEND_HOST / BACKEND_PORT are substituted at container start by the
     # nginx image's envsubst step. Defaults (server:3001) match Docker Compose;
     # on Railway set BACKEND_HOST=server.railway.internal.
+    #
+    # The backend host goes through an nginx variable ($api_backend) so the name
+    # is re-resolved at request time via the resolver, rather than being cached
+    # once at startup. On Railway the server gets a new private IP on every
+    # redeploy, so a startup-cached IP would go stale and hang. NGINX_LOCAL_RESOLVERS
+    # is filled from /etc/resolv.conf by the image's 15-local-resolvers.envsh.
     location /api/ {
-        proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT};
+        resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+        set $api_backend ${BACKEND_HOST};
+        proxy_pass http://$api_backend:${BACKEND_PORT};
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -27,9 +35,11 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-	# Reverse proxy to websocket
+	# Reverse proxy to websocket (same runtime-resolution approach as /api/)
     location /websocket/ {
-        proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT};
+        resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+        set $ws_backend ${BACKEND_HOST};
+        proxy_pass http://$ws_backend:${BACKEND_PORT};
 
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

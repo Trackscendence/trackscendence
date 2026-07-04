@@ -26,3 +26,93 @@
     font: inherit;
   }
 }
+
+/*
+ * Pre-game waiting room (issue #153) animations, registered with Tailwind so
+ * they are usable as `animate-wr-*` utilities. Per-dot/per-bar delays are baked
+ * into named variants (the delay is the second time value in the shorthand), so
+ * no inline `style` is needed. Pair the utilities with `motion-reduce:animate-none`
+ * at the call site to honour reduced-motion preferences.
+ */
+@theme {
+  --animate-wr-dot-1: wr-dot-pulse 1.8s ease-in-out 0s infinite;
+  --animate-wr-dot-2: wr-dot-pulse 1.8s ease-in-out 0.3s infinite;
+  --animate-wr-dot-3: wr-dot-pulse 1.8s ease-in-out 0.6s infinite;
+  --animate-wr-breathe: wr-breathe 2.4s ease-in-out infinite;
+  --animate-wr-pop: wr-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  --animate-wr-overlay: wr-overlay-in 0.5s ease forwards;
+  --animate-wr-scale-in: wr-scale-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-wr-bar-1: wr-bar-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s
+    both;
+  --animate-wr-bar-2: wr-bar-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s
+    both;
+  --animate-wr-bar-3: wr-bar-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s
+    both;
+  --animate-wr-bar-4: wr-bar-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s
+    both;
+
+  @keyframes wr-dot-pulse {
+    0%,
+    55%,
+    100% {
+      transform: scale(0.65);
+      opacity: 0.22;
+    }
+    27% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes wr-breathe {
+    0%,
+    100% {
+      opacity: 0.42;
+    }
+    50% {
+      opacity: 0.88;
+    }
+  }
+
+  @keyframes wr-pop {
+    from {
+      transform: scale(0.4);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes wr-overlay-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes wr-scale-in {
+    from {
+      transform: scale(0.75);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes wr-bar-pop {
+    from {
+      transform: scale(0);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+}

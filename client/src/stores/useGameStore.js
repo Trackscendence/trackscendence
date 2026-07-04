@@ -5,20 +5,34 @@ const useGameStore = create((set) => ({
   matchHistory: [],
   leaderboard: [],
   currentMatch: null,
-  gameState: null,
+
+  // Pre-game waiting room state, driven by the #88 socket contract:
+  // `lobby_update` -> lobbyCount, `game_start` -> match. The match (gameId plus
+  // players with usernames) is kept separate from `gameState` on purpose: the
+  // in-game `game_state_update` payload carries only the engine's public state
+  // (hand sizes, current player) and would otherwise clobber the player names
+  // the waiting room needs to show the opponent.
   lobbyCount: 0,
+  match: null,
+  gameState: null,
   gameError: null,
 
   setMatchHistory: (matchHistory) => set({ matchHistory }),
   setLeaderboard: (leaderboard) => set({ leaderboard }),
   setCurrentMatch: (currentMatch) => set({ currentMatch }),
 
-  setGameState: (gameState) => set({ gameState }),
   setLobbyCount: (lobbyCount) => set({ lobbyCount }),
+  setMatch: (match) => set({ match }),
+  setGameState: (gameState) => set({ gameState }),
   setGameError: (gameError) => set({ gameError }),
-  clearGame: () => set({ gameState: null, gameError: null }),
 
   joinLobby: () => socket.emit('join_lobby'),
+  // No server `leave_lobby` event exists yet; the server drops a player from
+  // the queue when their socket disconnects, so leaving is handled at the
+  // socket layer. This just resets the local waiting-room state.
+  leaveLobby: () => set({ lobbyCount: 0, match: null }),
+  clearGame: () => set({ match: null, gameState: null, gameError: null }),
+
   playCard: (gameId, cardIndex, declaredColor) =>
     socket.emit('game:play_card', { gameId, cardIndex, declaredColor }),
   drawCard: (gameId) => socket.emit('game:draw_card', { gameId }),

@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { socket } from '@/services/socket'
+import { getLeaderboard } from '@/services/game'
+import useAuthStore from '@/stores/useAuthStore'
 
 const useGameStore = create((set) => ({
   matchHistory: [],
@@ -19,6 +21,19 @@ const useGameStore = create((set) => ({
 
   setMatchHistory: (matchHistory) => set({ matchHistory }),
   setLeaderboard: (leaderboard) => set({ leaderboard }),
+
+  // Fetch the ranked-players list for the results screen. The endpoint returns
+  // `{ leaderboard }`; failures leave the previous value in place so the screen
+  // can fall back to its own empty/mock state rather than crashing.
+  loadLeaderboard: async () => {
+    const token = useAuthStore.getState().token
+    try {
+      const response = await getLeaderboard(token)
+      set({ leaderboard: response?.leaderboard ?? [] })
+    } catch {
+      // Container owns the empty-state fallback.
+    }
+  },
   setCurrentMatch: (currentMatch) => set({ currentMatch }),
 
   setLobbyCount: (lobbyCount) => set({ lobbyCount }),

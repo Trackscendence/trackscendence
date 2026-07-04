@@ -17,6 +17,7 @@ import SignupSuccess from '@/pages/SignupSuccess'
 import Leaderboard from '@/pages/Leaderboard'
 import Profile from '@/pages/Profile'
 import Game from '@/pages/Game'
+import Outcome from '@/pages/Outcome'
 import Lobby from '@/pages/Lobby'
 import Session from '@/pages/Session'
 import User from '@/pages/User'
@@ -68,6 +69,7 @@ const App = () => {
           <Route path="/" element={<Lobby />} />
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/game" element={<Game />} />
+          <Route path="/results" element={<Outcome />} />
           <Route element={<ProfileLayout />}>
             <Route path="/profile" element={<Profile />} />
             <Route path="/users/:username" element={<User />} />

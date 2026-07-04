@@ -3,8 +3,13 @@ import { persist } from 'zustand/middleware'
 
 // Dev-only flag store for The Rig (the floating dev-tools panel). This whole
 // module is imported behind DEV_MODE, so it never reaches a production build.
-// Flags persist to localStorage so a page reload keeps you in the same rigged
-// state you were testing.
+//
+// Persistence policy: only harmless preferences (which identity to fake, which
+// outcome to preview) survive a reload. Rig flags — mock opponent, data source —
+// always start live. A flag left on in yesterday's session silently faking
+// today's login is worse than having to flip a switch again, and the persisted
+// value also rehydrates after the injection effects' first pass, leaving the
+// UI showing "on" without the fake actually applied.
 const useDevStore = create(
   persist(
     (set) => ({
@@ -19,6 +24,10 @@ const useDevStore = create(
       // sockets untouched (LAN players can join); 'mocked' is reserved for
       // drawing screens from mock state.
       dataSource: 'live',
+      // Which result the "Skip to outcome" jump lands on. Just a nav preference
+      // for the results screen — not a rigged state, so it stays out of
+      // `selectIsRigged`.
+      outcomeState: 'won',
 
       setFlag: (key, value) => set({ [key]: value }),
       reset: () =>
@@ -27,9 +36,24 @@ const useDevStore = create(
           fillWith: 'uno',
           instantMatch: false,
           dataSource: 'live',
+          outcomeState: 'won',
         }),
     }),
-    { name: 'trackscendence:dev-controls' },
+    {
+      name: 'trackscendence:dev-controls',
+      // v1 drops rig flags from storage (see persistence policy above). The
+      // migrate step also strips them from entries written before this version,
+      // so a stale `mockOpponent: true` can't leak back in on rehydrate.
+      version: 1,
+      partialize: (state) => ({
+        fillWith: state.fillWith,
+        outcomeState: state.outcomeState,
+      }),
+      migrate: (persistedState) => ({
+        fillWith: persistedState?.fillWith ?? 'uno',
+        outcomeState: persistedState?.outcomeState ?? 'won',
+      }),
+    },
   ),
 )
 

@@ -15,7 +15,14 @@ RUN npm run build
 FROM nginx:stable-alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# nginx renders /etc/nginx/templates/*.template with envsubst at container
+# start, writing the result to /etc/nginx/conf.d/. BACKEND_HOST/BACKEND_PORT
+# default to the Compose service name; override BACKEND_HOST on Railway
+# (e.g. server.railway.internal).
+COPY default.conf.template /etc/nginx/templates/default.conf.template
+ENV BACKEND_HOST=server \
+    BACKEND_PORT=3001
 
 ARG CLIENT_PORT=8080
 EXPOSE ${CLIENT_PORT}

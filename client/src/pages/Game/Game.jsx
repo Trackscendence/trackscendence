@@ -49,7 +49,7 @@ const Game = () => {
   const handleUnoClick = () => undefined
 
   return (
-    <main className="relative min-h-[100svh] bg-[#FFE7CB]">
+    <main className="relative min-h-[100svh] bg-surface-warm">
       <ExitGameButton />
       <ChatPanelButton />
       <GameTable

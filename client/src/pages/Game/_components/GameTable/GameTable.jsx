@@ -22,7 +22,7 @@ const GameTable = ({
   const rightOpponent = getOpponentBySeat(opponents, 'right')
 
   return (
-    <section className="min-h-[100svh] w-full overflow-x-hidden bg-[#FFE7CB] px-4 pt-4 text-black sm:px-6 lg:px-10">
+    <section className="min-h-[100svh] w-full overflow-x-hidden bg-surface-warm px-4 pt-4 text-black sm:px-6 lg:px-10">
       <div className="mx-auto grid min-h-[calc(100svh-1rem)] w-full max-w-[1440px] grid-cols-1 grid-rows-[auto_auto_auto_auto_auto] gap-4 [grid-template-areas:'top'_'center'_'left'_'right'_'bottom'] md:relative md:block md:h-[calc(100svh-1rem)] md:min-h-0">
         <div className="flex min-h-48 items-start justify-center [grid-area:top] md:absolute md:top-0 md:left-[calc(50%-4rem)] md:min-h-0 md:-translate-x-1/2">
           {topOpponent && (

@@ -105,12 +105,12 @@ jobs:
         run: npm i -g @railway/cli
 
       - name: Redeploy server (staging)
-        run: railway redeploy --service server --yes
+        run: railway redeploy --service server --from-source --yes
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
 
       - name: Redeploy client (staging)
-        run: railway redeploy --service client --yes
+        run: railway redeploy --service client --from-source --yes
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
 
@@ -124,11 +124,11 @@ jobs:
         run: npm i -g @railway/cli
 
       - name: Redeploy server (production)
-        run: railway redeploy --service server --yes
+        run: railway redeploy --service server --from-source --yes
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
 
       - name: Redeploy client (production)
-        run: railway redeploy --service client --yes
+        run: railway redeploy --service client --from-source --yes
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}

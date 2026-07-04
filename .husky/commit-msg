@@ -1,1 +1,2 @@
+sh "$(git rev-parse --show-toplevel)/scripts/git-hooks/check-commit-message.sh" "$1"
 npx --no-install commitlint --edit "$1"

@@ -47,7 +47,6 @@ The repository is structured as a monorepo, separating frontend and backend logi
 
 ```text
 trackscendence/
-├── .agents/               # Agent-specific instructions (ignored locally)
 ├── assets/                # Design assets (e.g., PERN stack diagrams, logos)
 ├── client/                # Frontend application (React + Vite + Tailwind CSS v4)
 │   ├── src/

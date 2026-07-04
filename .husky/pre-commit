@@ -1,1 +1,2 @@
+sh "$(git rev-parse --show-toplevel)/scripts/git-hooks/check-staged-content.sh"
 npx --no-install lint-staged

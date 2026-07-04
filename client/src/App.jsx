@@ -17,6 +17,7 @@ import SignupSuccess from '@/pages/SignupSuccess'
 import Leaderboard from '@/pages/Leaderboard'
 import Profile from '@/pages/Profile'
 import Game from '@/pages/Game'
+import Lobby from '@/pages/Lobby'
 import Session from '@/pages/Session'
 import User from '@/pages/User'
 import PrivacyPolicy from '@/pages/Privacy'
@@ -57,6 +58,8 @@ const App = () => {
         <Route path="/terms-of-service" element={<TermsOfService />} />
 
         <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Lobby />} />
+          <Route path="/lobby" element={<Lobby />} />
           <Route path="/game" element={<Game />} />
           <Route element={<ProfileLayout />}>
             <Route path="/profile" element={<Profile />} />
@@ -65,7 +68,7 @@ const App = () => {
           </Route>
 
           <Route element={<AppLayout />}>
-            <Route path="/" element={<Session />} />
+            <Route path="/session" element={<Session />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/game" element={<Game />} />
             <Route path="/settings" element={<SettingsPage />} />

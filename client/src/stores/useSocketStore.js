@@ -7,7 +7,7 @@ const handleDisconnect = () => useSocketStore.getState().setConnected(false)
 
 const handleLobbyUpdate = (data) =>
   useGameStore.getState().setLobbyCount(data.count)
-const handleGameStart = (data) => useGameStore.getState().setGameState(data)
+const handleGameStart = (data) => useGameStore.getState().setMatch(data)
 const handleGameStateUpdate = (data) =>
   useGameStore.getState().setGameState(data)
 const handleGameDrawnCard = (data) => {
@@ -22,7 +22,11 @@ const useSocketStore = create((set) => ({
 
   setConnected: (isConnected) => set({ isConnected }),
 
-  connect: () => {
+  connect: (token) => {
+    // The server authenticates the socket handshake from `socket.auth.token`,
+    // so set it before connecting.
+    socket.auth = token ? { token } : {}
+
     socket.on('connect', handleConnect)
     socket.on('disconnect', handleDisconnect)
 
@@ -46,6 +50,7 @@ const useSocketStore = create((set) => ({
     socket.off('game_error', handleGameError)
 
     socket.disconnect()
+    socket.auth = {}
     set({ isConnected: false })
   },
 }))

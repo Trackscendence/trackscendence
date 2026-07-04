@@ -171,6 +171,8 @@ npm run compose:up
 
 For details on database migrations, project directory structures, lints/spelling tools, and git contribution workflows, please check out our dedicated **[Developer & Contribution Guide](docs/DEVELOPER_GUIDE.md)**.
 
+For how the app is deployed and how the CD pipeline ships to Railway, see the **[Deployment Runbook](docs/deployment-railway.md)**.
+
 ---
 
 ## 8. Team Information

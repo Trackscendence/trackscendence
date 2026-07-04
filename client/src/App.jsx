@@ -21,6 +21,9 @@ import Session from '@/pages/Session'
 import User from '@/pages/User'
 import PrivacyPolicy from '@/pages/Privacy'
 import TermsOfService from '@/pages/TermsOfService'
+import RoleRoute from '@/router/RoleRoute'
+import { USER_ROLES } from '@/utils/authorization'
+import AdminAccess from '@/pages/AdminAccess'
 import SettingsPage from './pages/SettingsPage'
 
 const App = () => {
@@ -66,6 +69,9 @@ const App = () => {
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/game" element={<Game />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]} />}>
+              <Route path="/admin" element={<AdminAccess />} />
+            </Route>
             <Route
               path="/two-factor"
               element={<Navigate to="/settings" replace />}

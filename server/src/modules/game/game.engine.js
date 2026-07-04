@@ -395,6 +395,26 @@ class UnoEngine {
   }
 
   /**
+   * Returns the turn order of player IDs. Exposed so callers can iterate
+   * players without reaching into the engine's internal `playerOrder`.
+   * @returns {string[]}
+   */
+  getPlayerIds() {
+    return [...this.playerOrder]
+  }
+
+  /**
+   * Returns a copy of a single player's private hand. This is the sanctioned
+   * way to read a hand; `getState()` deliberately exposes only hand sizes, so
+   * callers must not read `engine.players` directly.
+   * @param {string} playerId
+   * @returns {Array<Object>}
+   */
+  getHand(playerId) {
+    return [...(this.players[playerId] || [])]
+  }
+
+  /**
    * Gets the public/visible game state. Sanitizes player hands so that
    * only hand sizes (and not individual card details) are returned.
    *

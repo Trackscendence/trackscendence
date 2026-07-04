@@ -55,6 +55,7 @@ const App = () => {
         <Route path="/terms-of-service" element={<TermsOfService />} />
 
         <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Lobby />} />
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/game" element={<Game />} />
           <Route element={<ProfileLayout />}>
@@ -64,7 +65,7 @@ const App = () => {
           </Route>
 
           <Route element={<AppLayout />}>
-            <Route path="/" element={<Session />} />
+            <Route path="/session" element={<Session />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/game" element={<Game />} />
             <Route path="/settings" element={<SettingsPage />} />

@@ -73,6 +73,7 @@
     "Dockerized",
     "psql",
     "retags",
-    "envsubst"
+    "envsubst",
+    "buildx"
   ]
 }

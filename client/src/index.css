@@ -35,6 +35,17 @@
  * at the call site to honour reduced-motion preferences.
  */
 @theme {
+  /*
+   * Warm surface palette for the game flow. `surface-warm` is the shared
+   * background for auth, the game table, and the game-start overlay; the
+   * waiting room uses `surface-waiting`, a deliberate tonal shift. Keep these
+   * two as the single source of truth — reach for the tokens
+   * (`bg-surface-warm`, `ring-offset-surface-warm`) rather than re-typing the
+   * hex, so the values never drift apart.
+   */
+  --color-surface-warm: #ffe7cb;
+  --color-surface-waiting: #f5d9b8;
+
   --animate-wr-dot-1: wr-dot-pulse 1.8s ease-in-out 0s infinite;
   --animate-wr-dot-2: wr-dot-pulse 1.8s ease-in-out 0.3s infinite;
   --animate-wr-dot-3: wr-dot-pulse 1.8s ease-in-out 0.6s infinite;

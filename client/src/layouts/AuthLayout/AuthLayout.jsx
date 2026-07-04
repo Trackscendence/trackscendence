@@ -13,7 +13,7 @@ const AuthLayout = () => {
   const nav = CONTEXTUAL_NAV[pathname] ?? { label: 'LOGIN', to: '/login' }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#081934]">
+    <div className="flex min-h-screen flex-col bg-surface-warm text-[#081934]">
       <header className="flex items-center justify-between px-6 py-4">
         <button
           onClick={() => navigate(-1)}

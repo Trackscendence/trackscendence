@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useNotificationStore from '@/stores/useNotificationStore'
@@ -26,6 +26,13 @@ import RoleRoute from '@/router/RoleRoute'
 import { USER_ROLES } from '@/utils/authorization'
 import AdminAccess from '@/pages/AdminAccess'
 import SettingsPage from './pages/SettingsPage'
+// Guarded with `import.meta.env.DEV` DIRECTLY (not the aliased DEV_MODE): Vite
+// replaces this literal inline before it scans for dynamic imports, so in a
+// production build the false branch and its import() are eliminated — no dev
+// chunk is emitted and the entire dev-tools tree is absent from prod bundles.
+const DevControls = import.meta.env.DEV
+  ? lazy(() => import('@/dev/DevControls'))
+  : null
 
 const App = () => {
   const notifications = useNotificationStore((state) => state.notifications)
@@ -88,6 +95,11 @@ const App = () => {
         notifications={notifications}
         onDismiss={dismissNotification}
       />
+      {DevControls ? (
+        <Suspense fallback={null}>
+          <DevControls />
+        </Suspense>
+      ) : null}
     </ErrorBoundary>
   )
 }

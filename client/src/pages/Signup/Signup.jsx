@@ -7,6 +7,7 @@ import FormField from '@/components/FormField'
 import Input from '@/components/Input'
 import { validateSignupInput } from '@/services/auth.validations'
 import { normalizeSignupInput } from '@/services/auth.normalizations'
+import Modal from '@/components/Modal'
 
 const Signup = () => {
   const navigate = useNavigate()
@@ -15,6 +16,14 @@ const Signup = () => {
   const [error, setError] = useState('')
   const [validationDetails, setValidationDetails] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [showTerms, setShowTerms] = useState(false)
+  const [termsViewed, setTermsViewed] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+
+  const [showPrivacy, setShowPrivacy] = useState(false)
+  const [privacyViewed, setPrivacyViewed] = useState(false)
+  const [privacyAccepted, setPrivacyAccepted] = useState(false)
 
   const handleChange = (event) => {
     setError('')
@@ -125,6 +134,46 @@ const Signup = () => {
           ) : null}
         </FormField>
 
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="text-sm font-medium text-[#2f6f86] underline"
+            onClick={() => setShowTerms(true)}
+          >
+            Terms of Service
+          </button>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              disabled={!termsViewed}
+              onChange={(event) => setTermsAccepted(event.target.checked)}
+            />
+            <span> I agree to the Terms of Service</span>
+          </label>
+        </div>
+
+        <div className="space-y-2">
+          <button
+            type="button"
+            className="text-sm font-medium text-[#2f6f86] underline"
+            onClick={() => setShowPrivacy(true)}
+          >
+            Privacy Policy
+          </button>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={privacyAccepted}
+              disabled={!privacyViewed}
+              onChange={(event) => setPrivacyAccepted(event.target.checked)}
+            />
+            <span> I agree to the Privacy Policy</span>
+          </label>
+        </div>
+
         {validationDetails.length > 0 ? (
           <div className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
             {validationDetails.map((detail) => (
@@ -139,7 +188,10 @@ const Signup = () => {
           </p>
         ) : null}
 
-        <Button type="submit" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          disabled={isSubmitting || !termsAccepted || !privacyAccepted}
+        >
           {isSubmitting ? 'Creating account...' : 'Sign up'}
         </Button>
       </form>
@@ -153,6 +205,56 @@ const Signup = () => {
           Log in
         </Link>
       </p>
+
+      <Modal
+        isOpen={showTerms}
+        onClose={() => {
+          setTermsViewed(true)
+          setShowTerms(false)
+        }}
+        title="Terms of Service"
+      >
+        <div className="space-y-4 text-sm leading-6">
+          <p>Terms of Service go here!!</p>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <Button
+            type="button"
+            onClick={() => {
+              setTermsViewed(true)
+              setShowTerms(false)
+            }}
+          >
+            Close
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showPrivacy}
+        onClose={() => {
+          setPrivacyViewed(true)
+          setShowPrivacy(false)
+        }}
+        title="Privacy Policy"
+      >
+        <div className="space-y-4 text-sm leading-6">
+          <p>Privacy Policy go here!!</p>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <Button
+            type="button"
+            onClick={() => {
+              setPrivacyViewed(true)
+              setShowPrivacy(false)
+            }}
+          >
+            Close
+          </Button>
+        </div>
+      </Modal>
     </Panel>
   )
 }

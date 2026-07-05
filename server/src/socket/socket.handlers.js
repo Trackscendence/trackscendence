@@ -65,6 +65,16 @@ const registerHandlers = (io, socket) => {
     io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
   })
 
+  // Leaves the matchmaking queue without dropping the connection. The socket
+  // now lives for the whole session (it is no longer owned by the lobby page),
+  // so navigating away from the lobby sends this instead of disconnecting.
+  socket.on('leave_lobby', () => {
+    logger.info(`User ${socket.user.username} left the lobby`)
+    socket.leave('lobby')
+    lobbyStore.removePlayer(socket.user.id)
+    io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
+  })
+
   socket.on('disconnect', async () => {
     logger.info('user disconnected')
     lobbyStore.removePlayer(socket.user.id)

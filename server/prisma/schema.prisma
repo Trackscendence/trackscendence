@@ -43,6 +43,26 @@ model User {
   friendshipsBlockedByUser Friendship[] @relation("FriendshipBlocker")
   failedLoginCount        Int      @default(0)
   lockedOutUntil          DateTime?
+  apiKeys                 ApiKey[]
+}
+
+model ApiKey {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  name       String
+  keyHash    String    @unique
+  keyPrefix  String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Only the SHA-256 hash of the key is stored; the plaintext key is shown to
+  // the owner once at creation time. Revocation is a soft delete (revokedAt)
+  // so issued keys stay auditable.
+  @@index([userId])
 }
 
 model UserTwoFactorRecoveryCode {

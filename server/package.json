@@ -23,7 +23,7 @@
     "prisma:generate": "npx prisma generate --generator client",
     "prisma:seed": "npx prisma db seed",
     "docs:erd": "mkdir -p ../docs && npx prisma generate --generator erd",
-    "test": "node --test src/modules/game/game.engine.test.js src/middleware/auth.middleware.test.js"
+    "test": "node --test src/modules/game/game.engine.test.js src/middleware/auth.middleware.test.js src/modules/api-keys/api-keys.service.test.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

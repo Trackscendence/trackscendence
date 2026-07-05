@@ -1,8 +1,5 @@
 import { Link } from 'react-router-dom'
-
-const formatNumber = (value) => {
-  return new Intl.NumberFormat('en').format(value || 0)
-}
+import LeaderboardTable from '@/components/LeaderboardTable'
 
 const getRows = ({ leaderboard = [], profile }) => {
   const rows = leaderboard.slice(0, 5)
@@ -42,34 +39,7 @@ const ProfileLeaderboard = ({ leaderboard = [], profile }) => {
         </Link>
       </div>
 
-      {rows.length === 0 ? (
-        <p className="text-sm text-[#7a3810]">No ranked players yet.</p>
-      ) : (
-        <div className="space-y-1">
-          {rows.map((entry) => {
-            const isCurrentProfile = entry.username === profile.username
-
-            return (
-              <div
-                key={`${entry.rank}-${entry.username}`}
-                className={`flex items-center gap-2.5 px-2 py-1.5 text-sm ${
-                  isCurrentProfile ? 'bg-[#ffd099]' : ''
-                }`}
-              >
-                <span className="w-5 shrink-0 text-center text-xs font-semibold text-[#7a3810]">
-                  {entry.rank}
-                </span>
-                <span className="min-w-0 flex-1 truncate font-semibold text-[#3d1200]">
-                  {entry.displayName || entry.username}
-                </span>
-                <span className="shrink-0 font-semibold text-[#7a3810]">
-                  {formatNumber(entry.totalWins)}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      )}
+      <LeaderboardTable rows={rows} currentUserId={profile.id} />
     </section>
   )
 }

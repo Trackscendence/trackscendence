@@ -155,6 +155,24 @@ router.post('/login/2fa', authController.completeTwoFactorLogin)
 
 /**
  * @swagger
+ * /auth/providers:
+ *   get:
+ *     summary: List which OAuth providers this server is configured for
+ *     tags:
+ *       - Authentication
+ *     responses:
+ *       200:
+ *         description: Provider availability map
+ *         content:
+ *           application/json:
+ *             example:
+ *               providers:
+ *                 fortyTwo: false
+ */
+router.get('/providers', authController.authProviders)
+
+/**
+ * @swagger
  * /auth/42:
  *   get:
  *     summary: Start the 42 OAuth login flow

@@ -4,9 +4,15 @@ const assert = require('node:assert')
 process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test'
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
+// Pin the 42 client vars empty so the not-configured tests hold even when
+// the local .env carries real credentials.
+process.env.FORTYTWO_CLIENT_ID = ''
+process.env.FORTYTWO_CLIENT_SECRET = ''
+process.env.FORTYTWO_REDIRECT_URI = ''
 
 const {
   buildFortyTwoProfile,
+  getAuthProviders,
   getFortyTwoAuthorizeUrl,
   resolveAvailableUsername,
   sanitizeFortyTwoLogin,
@@ -124,6 +130,12 @@ describe('validateFortyTwoCallbackInput', () => {
     assert.throws(() => validateFortyTwoCallbackInput({ code: 'abc' }), {
       statusCode: 400,
     })
+  })
+})
+
+describe('getAuthProviders', () => {
+  it('reports 42 as unavailable while its env vars are unset', () => {
+    assert.deepStrictEqual(getAuthProviders(), { fortyTwo: false })
   })
 })
 

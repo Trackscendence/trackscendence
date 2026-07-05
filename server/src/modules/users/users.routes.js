@@ -1,13 +1,25 @@
 const { Router } = require('express')
-const { requireAuth } = require('#middleware/auth.middleware')
+const {
+  attachUserIfPresent,
+  requireAuth,
+} = require('#middleware/auth.middleware')
 const usersController = require('#modules/users/users.controller')
 
 const router = Router()
 
-router.use(requireAuth)
-
-router.get('/me', usersController.getCurrentProfile)
-router.patch('/me', usersController.updateCurrentUserProfile)
+router.get('/me', requireAuth, usersController.getCurrentProfile)
+router.patch('/me', requireAuth, usersController.updateCurrentUserProfile)
+router.post(
+  '/me/avatar',
+  requireAuth,
+  usersController.uploadCurrentUserAvatarFile,
+  usersController.uploadCurrentUserAvatar,
+)
+router.delete(
+  '/me/avatar',
+  requireAuth,
+  usersController.deleteCurrentUserAvatar,
+)
 
 /**
  * @swagger
@@ -59,7 +71,7 @@ router.patch('/me', usersController.updateCurrentUserProfile)
  *         description: Missing or invalid token
  */
 // Must be registered before /:username so "search" is not read as a username.
-router.get('/search', usersController.searchUsers)
-router.get('/:username', usersController.getProfile)
+router.get('/search', requireAuth, usersController.searchUsers)
+router.get('/:username', attachUserIfPresent, usersController.getProfile)
 
 module.exports = router

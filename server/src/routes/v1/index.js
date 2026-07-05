@@ -12,9 +12,9 @@ const v1Router = Router()
 v1Router.use('/', system)
 v1Router.use('/api-keys', apiKeys)
 v1Router.use('/auth', auth)
+v1Router.use('/users', users)
 v1Router.use('/friends', friends)
 v1Router.use('/game', game)
 v1Router.use('/public', publicApi)
-v1Router.use('/users', users)
 
 module.exports = v1Router

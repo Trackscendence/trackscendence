@@ -1,3 +1,4 @@
+const { uploadCurrentUserAvatarFile } = require('#modules/users/users.avatar')
 const usersService = require('#modules/users/users.service')
 
 const getCurrentProfile = async (req, res) => {
@@ -27,9 +28,24 @@ const updateCurrentUserProfile = async (req, res) => {
   res.json(result)
 }
 
+const uploadCurrentUserAvatar = async (req, res) => {
+  const result = await usersService.uploadCurrentUserAvatar(req.user, req.file)
+
+  res.json(result)
+}
+
+const deleteCurrentUserAvatar = async (req, res) => {
+  const result = await usersService.deleteCurrentUserAvatar(req.user)
+
+  res.json(result)
+}
+
 module.exports = {
+  deleteCurrentUserAvatar,
   getCurrentProfile,
   getProfile,
   searchUsers,
   updateCurrentUserProfile,
+  uploadCurrentUserAvatar,
+  uploadCurrentUserAvatarFile,
 }

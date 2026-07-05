@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { socket } from '@/services/socket'
 import useChatStore from '@/stores/useChatStore'
+import useAuthStore from '@/stores/useAuthStore'
 
 const Room = () => {
   const messageRef = useRef()
   const activeRoom = useChatStore((state) => state.activeRoom)
   const messages = useChatStore((state) => state.messages[activeRoom])
   const addMessage = useChatStore((state) => state.addMessage)
+  const user = useAuthStore((state) => state.user.username)
 
   const handler = (data) => {
     // console.log('Data received:', data)
@@ -15,7 +17,7 @@ const Room = () => {
       message: data.message,
       user: data.user,
     }
-    addMessage(activeRoom, message)
+    addMessage(useChatStore.getState().activeRoom, message)
   }
 
   useEffect(() => {
@@ -37,7 +39,11 @@ const Room = () => {
       <ul className="flex-column border-b border-[#e1e6de] bg-[#fbfcfa] p-4">
         {messages.map((m) => (
           <li
-            className="mt-2 w-full place-self-end rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm inline-2/3"
+            className={
+              user === m.user.username
+                ? 'mt-2 w-full place-self-end rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm inline-2/3'
+                : 'mt-2 w-full place-self-start rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm inline-2/3'
+            }
             key={m.id}
           >
             <span className="font-semibold">{m.user.username}:</span>{' '}

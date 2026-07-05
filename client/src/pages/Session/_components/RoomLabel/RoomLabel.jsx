@@ -23,11 +23,11 @@ const RoomLabel = ({ room }) => {
           </div>
         )}
         <div className="place-self-center">{room.split(':')[1]}</div>
-        {room !== activeRoom && (
+        {/* {room !== activeRoom && (
           <div className="place-self-center rounded-md bg-[#2f7d61] p-1 text-white">
             15
           </div>
-        )}
+        )} */}
       </li>
     </>
   )

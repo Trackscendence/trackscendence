@@ -52,9 +52,11 @@ const listRooms = async () => {
 }
 
 /**
- * Seats a user for a game. Idempotent: re-uses the open room they are
- * already in, else joins the first open room with a free seat, else creates a
- * new room with them as owner (subject to MAX_OPEN_ROOMS).
+ * Seats a user for a game. Idempotent: re-uses the open or in-game room they
+ * are already in (so a double-mounted effect or a refresh mid-game never
+ * opens a second room for the same player), else joins the first open room
+ * with a free seat, else creates a new room with them as owner (subject to
+ * MAX_OPEN_ROOMS).
  *
  * @param {{ id: number, username: string }} user
  * @returns {Promise<Object>} the room DTO the user is seated in; the caller
@@ -62,7 +64,7 @@ const listRooms = async () => {
  */
 const seatUser = async (user) => {
   for (let attempt = 0; attempt < SEAT_ATTEMPTS; attempt += 1) {
-    const currentRoom = await roomRepository.findOpenRoomByUserId(user.id)
+    const currentRoom = await roomRepository.findActiveRoomByUserId(user.id)
     if (currentRoom) {
       return toRoomDto(currentRoom)
     }

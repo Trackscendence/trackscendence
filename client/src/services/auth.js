@@ -6,6 +6,10 @@ export const AUTH_TOKEN_KEY = 'trackscendence.auth.token'
 // the 42 intra authorization page.
 export const getFortyTwoLoginUrl = () => `${apiBaseUrl}/auth/42`
 
+export const fetchAuthProviders = () => {
+  return request('/auth/providers')
+}
+
 export const completeFortyTwoLogin = (payload) => {
   return request('/auth/42/callback', {
     method: 'POST',

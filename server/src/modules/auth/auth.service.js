@@ -547,6 +547,12 @@ const getFortyTwoAuthorizeUrl = () => {
   return authFortyTwo.buildAuthorizeUrl(authToken.signOAuthStateToken())
 }
 
+// The client asks this instead of carrying its own build-time flag, so the
+// server env is the single source of truth for provider availability.
+const getAuthProviders = () => ({
+  fortyTwo: authFortyTwo.isConfigured(),
+})
+
 const provisionFortyTwoUser = async (profile) => {
   const existingByEmail = await authRepository.findByEmail(profile.email)
 
@@ -1034,6 +1040,7 @@ module.exports = {
   confirmTwoFactorSetup,
   disableTwoFactor,
   getAuthenticatedUser,
+  getAuthProviders,
   getFortyTwoAuthorizeUrl,
   getUserFromToken,
   login,

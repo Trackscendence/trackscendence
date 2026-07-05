@@ -11,6 +11,7 @@
 const crypto = require('node:crypto')
 const lobbyStore = require('#modules/game/lobby.store')
 const gameStore = require('#modules/game/game.store')
+const gameService = require('#modules/game/game.service')
 const UnoEngine = require('#modules/game/game.engine')
 const logger = require('#utils/logger')
 
@@ -22,8 +23,8 @@ const REQUIRED_PLAYERS = 2
  * Used by both entry points into a game - the auto-queue (`tryStartMatch`) and
  * a room filling to capacity.
  *
- * @param {Array<{userId: string, username: string}>} players
- * @returns {Promise<{ gameId: string, players: Array<{userId: string, username: string}>, engine: UnoEngine }>}
+ * @param {Array<{userId: number, username: string}>} players
+ * @returns {Promise<{ gameId: string, players: Array<{userId: number, username: string}>, engine: UnoEngine }>}
  * @throws If game persistence fails; the players are untouched, so the caller
  *   decides how to recover (re-queue, keep the room open, ...).
  */
@@ -47,7 +48,7 @@ const createMatch = async (players) => {
 /**
  * Attempts to form and start a single match from the front of the lobby queue.
  *
- * @returns {Promise<{ gameId: string, players: Array<{userId: string, username: string}>, engine: UnoEngine } | null>}
+ * @returns {Promise<{ gameId: string, players: Array<{userId: number, username: string}>, engine: UnoEngine } | null>}
  *   The started match, or null if there are not enough queued players.
  * @throws Re-throws if game persistence fails, after rolling the players back to
  *   the front of the queue so they are never dropped.
@@ -76,14 +77,19 @@ const tryStartMatch = async () => {
  * active game. This is the backend hook the post-game "abandoned" state (#155)
  * will build on.
  *
- * @param {string} userId
+ * @param {number} userId
  * @returns {Promise<Object|null>} the abandoned game, or null
  */
 const handlePlayerDisconnect = async (userId) => {
   const game = await gameStore.findActiveGameByUser(userId, {
     status: 'IN_PROGRESS',
   })
-  if (!game) {
+  // The status filter above ran before this function resumed; a winning move
+  // or another disconnect may have finished the game in the meantime. The
+  // re-check and the flip below have no await between them and the store
+  // hands out a shared object, so exactly one finisher wins — without this,
+  // one game could be saved twice (once COMPLETED, once ABANDONED).
+  if (!game || game.status !== 'IN_PROGRESS') {
     return null
   }
 
@@ -92,6 +98,14 @@ const handlePlayerDisconnect = async (userId) => {
   game.endedAt = new Date()
   await gameStore.saveGame(game.id, game)
   gameStore.deleteEngine(game.id)
+
+  // Losing the stats row is logged and recoverable; failing to return the
+  // game would leave the remaining players without their game_over notice.
+  try {
+    await gameService.persistGameResult(game)
+  } catch (error) {
+    logger.error(`Failed to persist abandoned game ${game.id}`, error)
+  }
 
   logger.info(`Game ${game.id} abandoned by ${userId}`)
   return game

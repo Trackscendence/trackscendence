@@ -91,6 +91,34 @@ const toLeaderboardEntry = (entry, rank) => ({
   winRate: Number(entry.winRate || 0),
 })
 
+/**
+ * Shapes a finished in-memory game state into the repository's save contract.
+ * The repository validates winner counts (COMPLETED: exactly one, ABANDONED:
+ * zero), which this mapping guarantees by flagging only the recorded winner
+ * and only for completed games. Scores are 0 until the engine computes real
+ * ones (#197).
+ */
+const buildGameResultPayload = (state) => ({
+  startedAt: state.startedAt,
+  endedAt: state.endedAt,
+  status: state.status,
+  players: state.players.map((player) => ({
+    userId: player.userId,
+    score: 0,
+    isWinner: state.status === 'COMPLETED' && player.userId === state.winner,
+  })),
+})
+
+/**
+ * Flushes a finished game to PostgreSQL. saveGameResult recomputes the
+ * players' denormalized stats and refreshes every rank in the same
+ * transaction, so the leaderboard includes the game as soon as this
+ * resolves — persist before emitting game_over (#203).
+ */
+const persistGameResult = (state) => {
+  return gameRepository.saveGameResult(buildGameResultPayload(state))
+}
+
 const getLeaderboard = async (query) => {
   const { page, limit, search, minGames, sort, order } =
     parseLeaderboardQuery(query)
@@ -117,6 +145,8 @@ const getLeaderboard = async (query) => {
 }
 
 module.exports = {
+  buildGameResultPayload,
   getLeaderboard,
   parseLeaderboardQuery,
+  persistGameResult,
 }

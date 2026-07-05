@@ -157,13 +157,19 @@ const addPlayerToRoom = async (roomId, userId) => {
   } catch (error) {
     // The only unique constraint this transaction can violate is
     // (roomId, userId), so a P2002 means a concurrent request already seated
-    // this exact user: fetch the room and report the seat as success.
+    // this exact user: re-read the room and report the seat as success. If
+    // the seat is already gone again (seated then left before this read),
+    // report CONFLICT so the caller's retry loop re-reads the world instead
+    // of being told about a seat that no longer exists.
     if (error.code !== UNIQUE_VIOLATION_CODE) throw error
     const seatedRoom = await prisma.room.findUnique({
       where: { id: roomId },
       include: roomInclude,
     })
-    if (!seatedRoom) throw error
+    const isStillSeated = seatedRoom?.players.some(
+      (player) => player.userId === userId,
+    )
+    if (!isStillSeated) return { error: ROOM_ERRORS.CONFLICT }
     return { room: seatedRoom }
   }
 }

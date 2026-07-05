@@ -1,8 +1,8 @@
 import useChatStore from '@/stores/useChatStore'
 
-const RoomLabel = ({ room, key }) => {
+const RoomLabel = ({ room }) => {
   const activeRoom = useChatStore((state) => state.activeRoom)
-  // const setActiveRoom = useChatStore((state) => state.setActiveRoom)
+  const setActiveRoom = useChatStore((state) => state.setActiveRoom)
 
   return (
     <>
@@ -12,7 +12,8 @@ const RoomLabel = ({ room, key }) => {
             ? 'mt-2 flex w-full gap-1 rounded-md bg-[#58947C] px-4 py-2.5 text-sm font-semibold text-white'
             : 'mt-2 flex w-full gap-1 rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm font-semibold transition hover:bg-[#B4CFC3]'
         }
-        key={key}
+        onClick={room === activeRoom ? undefined : () => setActiveRoom(room)}
+        key={room}
       >
         {room.startsWith('user:') && (
           <div className="place-self-center">

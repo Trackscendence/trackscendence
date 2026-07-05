@@ -1,7 +1,7 @@
 import WaitingHeadline from './_components/WaitingHeadline'
 import StatusLine from './_components/StatusLine'
 import PlayerList from './_components/PlayerList'
-import LeaveQueueButton from './_components/LeaveQueueButton'
+import LeaveRoomButton from './_components/LeaveRoomButton'
 import GameStartOverlay from './_components/GameStartOverlay'
 
 const WaitingRoomView = ({
@@ -9,7 +9,7 @@ const WaitingRoomView = ({
   opponent,
   isMatched,
   isOverlayVisible,
-  onLeaveQueue,
+  onLeaveRoom,
 }) => {
   return (
     <div className="bg-surface-waiting flex h-screen flex-col overflow-hidden">
@@ -19,7 +19,7 @@ const WaitingRoomView = ({
           <StatusLine isMatched={isMatched} />
         </div>
         <PlayerList you={you} opponent={opponent} />
-        <LeaveQueueButton onClick={onLeaveQueue} />
+        <LeaveRoomButton onClick={onLeaveRoom} />
       </main>
       {isOverlayVisible ? <GameStartOverlay /> : null}
     </div>

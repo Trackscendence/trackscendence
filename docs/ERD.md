@@ -21,6 +21,14 @@ ACCEPTED ACCEPTED
 BLOCKED BLOCKED
         }
 
+
+
+        RoomStatus {
+            OPEN OPEN
+IN_GAME IN_GAME
+CLOSED CLOSED
+        }
+
   "User" {
     Int id "🗝️"
     String email
@@ -88,6 +96,23 @@ BLOCKED BLOCKED
     }
 
 
+  "Room" {
+    Int id "🗝️"
+    String name
+    Int capacity
+    RoomStatus status
+    String gameId "❓"
+    DateTime createdAt
+    DateTime updatedAt
+    }
+
+
+  "RoomPlayer" {
+    Int id "🗝️"
+    DateTime createdAt
+    }
+
+
   "Friendship" {
     Int id "🗝️"
     FriendshipStatus status
@@ -101,6 +126,10 @@ BLOCKED BLOCKED
     "Game" |o--|| "GameStatus" : "enum:status"
     "GamePlayer" }o--|| "Game" : "game"
     "GamePlayer" }o--|| "User" : "user"
+    "Room" |o--|| "RoomStatus" : "enum:status"
+    "Room" }o--|| "User" : "owner"
+    "RoomPlayer" }o--|| "Room" : "room"
+    "RoomPlayer" }o--|| "User" : "user"
     "Friendship" |o--|| "FriendshipStatus" : "enum:status"
     "Friendship" }o--|| "User" : "requester"
     "Friendship" }o--|| "User" : "addressee"

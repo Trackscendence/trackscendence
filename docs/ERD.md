@@ -25,6 +25,8 @@ BLOCKED BLOCKED
     Int id "🗝️"
     String email
     String username
+    String displayName "❓"
+    String bio "❓"
     String passwordHash
     String passwordResetTokenId "❓"
     String passwordResetTokenHash "❓"
@@ -39,6 +41,18 @@ BLOCKED BLOCKED
     DateTime updatedAt
     Int failedLoginCount
     DateTime lockedOutUntil "❓"
+    }
+
+
+  "ApiKey" {
+    Int id "🗝️"
+    String name
+    String keyHash
+    String keyPrefix
+    DateTime lastUsedAt "❓"
+    DateTime revokedAt "❓"
+    DateTime createdAt
+    DateTime updatedAt
     }
 
 
@@ -77,6 +91,7 @@ BLOCKED BLOCKED
     }
 
     "User" |o--|| "Role" : "enum:role"
+    "ApiKey" }o--|| "User" : "user"
     "UserTwoFactorRecoveryCode" }o--|| "User" : "user"
     "Game" |o--|| "GameStatus" : "enum:status"
     "GamePlayer" }o--|| "Game" : "game"

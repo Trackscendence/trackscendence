@@ -23,6 +23,11 @@ const swaggerSpec = swaggerJsdoc({
           scheme: 'bearer',
           bearerFormat: 'JWT',
         },
+        apiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'X-API-Key',
+        },
       },
     },
   },

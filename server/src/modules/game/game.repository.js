@@ -47,9 +47,10 @@ const saveGameResult = async ({ startedAt, endedAt, status, players }) => {
  * Fetches leaderboard stats, aggregating wins for each user.
  *
  * @param {number} limit - Number of leaderboard entries to return
+ * @param {number} offset - Number of leading entries to skip (for pagination)
  * @returns {Promise<Array<{ userId: number, username: string, displayName: string | null, totalWins: number, totalScore: number }>>}
  */
-const getLeaderboard = async (limit = 10) => {
+const getLeaderboard = async (limit = 10, offset = 0) => {
   // Use Prisma's native $queryRaw for high-performance database-level aggregation and sorting.
   // This pushes the heavy lifting of counting, summing, and sorting entirely to Postgres.
   const leaderboard = await prisma.$queryRaw`
@@ -64,12 +65,29 @@ const getLeaderboard = async (limit = 10) => {
     GROUP BY u.id, u.username, u."displayName"
     ORDER BY "totalWins" DESC, "totalScore" DESC
     LIMIT ${limit}
+    OFFSET ${offset}
   `
 
   return leaderboard
 }
 
+/**
+ * Counts how many users appear on the leaderboard (players with at least one
+ * recorded game), so paginated consumers can compute the number of pages.
+ *
+ * @returns {Promise<number>}
+ */
+const countLeaderboardPlayers = async () => {
+  const rows = await prisma.$queryRaw`
+    SELECT CAST(COUNT(DISTINCT gp."userId") AS INTEGER) AS "totalCount"
+    FROM "GamePlayer" gp
+  `
+
+  return rows[0]?.totalCount || 0
+}
+
 module.exports = {
   saveGameResult,
   getLeaderboard,
+  countLeaderboardPlayers,
 }

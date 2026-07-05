@@ -3,33 +3,12 @@ const NotFoundException = require('#exceptions/not-found.exception')
 const gameRepository = require('#modules/game/game.repository')
 const usersRepository = require('#modules/users/users.repository')
 const usersService = require('#modules/users/users.service')
-
-const DEFAULT_PAGE_SIZE = 10
-const MAX_PAGE_SIZE = 50
-// Caps the OFFSET a caller can force on the leaderboard query; pages past the
-// data simply return an empty list.
-const MAX_PAGE = 1000
-
-const parsePositiveInteger = ({
-  details,
-  fieldName,
-  max,
-  rawValue,
-  fallback,
-}) => {
-  if (rawValue == null || rawValue === '') {
-    return fallback
-  }
-
-  const value = Number(rawValue)
-
-  if (!Number.isInteger(value) || value < 1) {
-    details.push(`${fieldName} must be a positive integer`)
-    return fallback
-  }
-
-  return max ? Math.min(value, max) : value
-}
+const {
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE,
+  MAX_PAGE_SIZE,
+  parsePositiveInteger,
+} = require('#utils/query-parsing')
 
 const parsePagination = (query = {}) => {
   const details = []
@@ -109,7 +88,7 @@ const getLeaderboard = async (query) => {
   const offset = (page - 1) * limit
 
   const [entries, totalCount] = await Promise.all([
-    gameRepository.getLeaderboard(limit, offset),
+    gameRepository.getLeaderboard({ limit, offset }),
     gameRepository.countLeaderboardPlayers(),
   ])
 

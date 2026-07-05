@@ -25,11 +25,18 @@ BLOCKED BLOCKED
     Int id "🗝️"
     String email
     String username
+    String displayName "❓"
+    String bio "❓"
+    String avatarUrl "❓"
     String passwordHash
     String passwordResetTokenId "❓"
     String passwordResetTokenHash "❓"
     DateTime passwordResetTokenExpiry "❓"
     Int tokenVersion
+    Int gamesPlayed
+    Int wins
+    Int losses
+    Int rank "❓"
     Int twoFactorChallengeVersion
     Boolean twoFactorEnabled
     String twoFactorSecretCiphertext "❓"

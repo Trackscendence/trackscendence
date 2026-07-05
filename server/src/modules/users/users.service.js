@@ -2,7 +2,12 @@ const { Prisma } = require('@prisma/client')
 const BadRequestException = require('#exceptions/bad-request.exception')
 const NotFoundException = require('#exceptions/not-found.exception')
 const UnauthorizedException = require('#exceptions/unauthorized.exception')
+const {
+  deleteAvatarFileByUrl,
+  storeAvatarFile,
+} = require('#modules/users/users.avatar')
 const usersRepository = require('#modules/users/users.repository')
+const logger = require('#utils/logger')
 
 const DISPLAY_NAME_MAX_LENGTH = 40
 const BIO_MAX_LENGTH = 280
@@ -143,6 +148,7 @@ const toRecentMatch = (match, currentUserId) => {
       id: player.user.id,
       username: player.user.username,
       displayName: player.user.displayName,
+      avatarUrl: player.user.avatarUrl,
       score: player.score,
       isWinner: player.isWinner,
     }))
@@ -175,6 +181,7 @@ const toProfileFriend = (friendship, profileUserId) => {
       id: user.id,
       username: user.username,
       displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
     },
     friendSince: friendship.updatedAt,
   }
@@ -215,6 +222,7 @@ const getProfileData = async (user, options = {}) => {
     username: user.username,
     displayName: user.displayName,
     bio: user.bio,
+    avatarUrl: user.avatarUrl,
     createdAt: user.createdAt,
     ...(options.includeEmail ? { email: user.email } : {}),
     stats: toProfileStats(user),
@@ -265,6 +273,23 @@ const getProfileByUsername = async (viewer, username) => {
   }
 }
 
+const toAuthUser = (user) => ({
+  id: user.id,
+  email: user.email,
+  username: user.username,
+  displayName: user.displayName,
+  bio: user.bio,
+  avatarUrl: user.avatarUrl,
+  gamesPlayed: user.gamesPlayed,
+  wins: user.wins,
+  losses: user.losses,
+  rank: user.rank,
+  role: user.role,
+  createdAt: user.createdAt,
+  twoFactorEnabled: Boolean(user.twoFactorEnabled),
+  twoFactorSetupPending: Boolean(user.twoFactorPendingSecretCiphertext),
+})
+
 const updateCurrentUserProfile = async (viewer, payload) => {
   const updateData = validateUpdateProfileInput(payload)
 
@@ -274,21 +299,79 @@ const updateCurrentUserProfile = async (viewer, payload) => {
     return {
       message: 'Profile updated successfully',
       user: await getProfileData(user, { includeEmail: true }),
-      authUser: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        displayName: user.displayName,
-        bio: user.bio,
-        gamesPlayed: user.gamesPlayed,
-        wins: user.wins,
-        losses: user.losses,
-        rank: user.rank,
-        role: user.role,
-        createdAt: user.createdAt,
-        twoFactorEnabled: Boolean(user.twoFactorEnabled),
-        twoFactorSetupPending: Boolean(user.twoFactorPendingSecretCiphertext),
-      },
+      authUser: toAuthUser(user),
+    }
+  } catch (error) {
+    if (isRecordNotFoundError(error)) {
+      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+    }
+
+    throw error
+  }
+}
+
+// Best-effort removal of an avatar file that is no longer referenced. The
+// database update has already succeeded by the time this runs, so a failed
+// file delete only leaks a file on disk — log it, never fail the request.
+const cleanupAvatarFile = async (avatarUrl, userId, action) => {
+  if (!avatarUrl) {
+    return
+  }
+
+  try {
+    await deleteAvatarFileByUrl({ avatarUrl })
+  } catch (error) {
+    logger.warn('Failed to clean up avatar file', {
+      action,
+      error: error.message,
+      userId,
+    })
+  }
+}
+
+const uploadCurrentUserAvatar = async (viewer, file) => {
+  let createdAvatarUrl = null
+  const previousAvatarUrl = viewer.avatarUrl
+
+  try {
+    const storedAvatar = await storeAvatarFile({ file, userId: viewer.id })
+    createdAvatarUrl = storedAvatar.avatarUrl
+
+    const user = await usersRepository.updateAvatarById(
+      viewer.id,
+      storedAvatar.avatarUrl,
+    )
+
+    await cleanupAvatarFile(previousAvatarUrl, viewer.id, 'replace')
+
+    return {
+      message: 'Avatar uploaded successfully',
+      user: await getProfileData(user, { includeEmail: true }),
+      authUser: toAuthUser(user),
+    }
+  } catch (error) {
+    await cleanupAvatarFile(createdAvatarUrl, viewer.id, 'rollback')
+
+    if (isRecordNotFoundError(error)) {
+      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+    }
+
+    throw error
+  }
+}
+
+const deleteCurrentUserAvatar = async (viewer) => {
+  const previousAvatarUrl = viewer.avatarUrl
+
+  try {
+    const user = await usersRepository.updateAvatarById(viewer.id, null)
+
+    await cleanupAvatarFile(previousAvatarUrl, viewer.id, 'delete')
+
+    return {
+      message: 'Avatar removed successfully',
+      user: await getProfileData(user, { includeEmail: true }),
+      authUser: toAuthUser(user),
     }
   } catch (error) {
     if (isRecordNotFoundError(error)) {
@@ -300,7 +383,9 @@ const updateCurrentUserProfile = async (viewer, payload) => {
 }
 
 module.exports = {
+  deleteCurrentUserAvatar,
   getCurrentProfile,
   getProfileByUsername,
   updateCurrentUserProfile,
+  uploadCurrentUserAvatar,
 }

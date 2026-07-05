@@ -1,0 +1,738 @@
+{
+  "info": {
+    "_postman_id": "4402b769-faa0-47c3-a95d-e8550995abcb",
+    "name": "Trackscendence Avatar Upload",
+    "description": "Backend-only avatar upload contract checks for the local Trackscendence stack. Run from top to bottom, or at minimum run 'Initialize Avatar Variables' first. This collection assumes the profile foundation already exists and verifies upload, replace, delete, and validation guard behavior for `POST /users/me/avatar` and `DELETE /users/me/avatar`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.request.body || pm.request.body.mode !== 'formdata') {",
+          "  return;",
+          "}",
+          "",
+          "const body = pm.request.body.toJSON();",
+          "let updated = false;",
+          "",
+          "body.formdata = body.formdata.map((entry) => {",
+          "  if (entry.type !== 'file' || typeof entry.src !== 'string') {",
+          "    return entry;",
+          "  }",
+          "",
+          "  const resolvedSrc = pm.variables.replaceIn(entry.src);",
+          "",
+          "  if (resolvedSrc === entry.src) {",
+          "    return entry;",
+          "  }",
+          "",
+          "  updated = true;",
+          "  return {",
+          "    ...entry,",
+          "    src: resolvedSrc,",
+          "  };",
+          "});",
+          "",
+          "if (updated) {",
+          "  pm.request.body.update(body);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Initialize",
+      "item": [
+        {
+          "name": "Initialize Avatar Variables",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "const usernameSuffix = runId.slice(-8);",
+                  "pm.environment.set('runId', runId);",
+                  "pm.environment.set('avatarEmail', `${pm.environment.get('avatarEmailPrefix')}.${runId}@example.com`);",
+                  "pm.environment.set('avatarUsername', `${pm.environment.get('avatarUsernamePrefix')}_${usernameSuffix}`);",
+                  "pm.environment.unset('avatarUserId');",
+                  "pm.environment.unset('avatarToken');",
+                  "pm.environment.unset('avatarUploadedUrl');",
+                  "pm.environment.unset('avatarReplacedUrl');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ping returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('avatar variables were generated', function () {",
+                  "  pm.expect(pm.environment.get('avatarEmail')).to.include('@example.com');",
+                  "  pm.expect(pm.environment.get('avatarUsername')).to.include('avatar_player_');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ping",
+            "description": "Generates a fresh avatar-test identity and clears saved auth/avatar state."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Register And Login",
+      "item": [
+        {
+          "name": "Register Avatar Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register owner returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('avatarUserId', String(json.user.id));",
+                  "pm.test('register owner returns generated identity', function () {",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('avatarEmail'));",
+                  "  pm.expect(json.user.username).to.eql(pm.environment.get('avatarUsername'));",
+                  "});",
+                  "pm.test('new owner starts without an avatar', function () {",
+                  "  pm.expect(json.user.avatarUrl).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{avatarEmail}}\",\n  \"username\": \"{{avatarUsername}}\",\n  \"password\": \"{{avatarPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Avatar Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login owner returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('avatarToken', json.token);",
+                  "pm.test('login owner stores a bearer token', function () {",
+                  "  pm.expect(pm.environment.get('avatarToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{avatarEmail}}\",\n  \"password\": \"{{avatarPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User Baseline",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('me returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('baseline me response has no avatar yet', function () {",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('avatarEmail'));",
+                  "  pm.expect(json.user.avatarUrl).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Upload And Replace",
+      "item": [
+        {
+          "name": "Upload PNG Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('upload PNG returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('avatarUploadedUrl', json.user.avatarUrl);",
+                  "pm.test('upload PNG returns success message and avatar URL', function () {",
+                  "  pm.expect(json.message).to.eql('Avatar uploaded successfully');",
+                  "  pm.expect(json.user.avatarUrl).to.be.a('string').and.include('/uploads/avatars/');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "{{avatarPngPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/me/avatar"
+          },
+          "response": []
+        },
+        {
+          "name": "Auth Me Reflects Uploaded Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('me returns 200 after upload', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('me response returns stored avatar URL', function () {",
+                  "  pm.expect(json.user.avatarUrl).to.eql(pm.environment.get('avatarUploadedUrl'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Public Profile Reflects Uploaded Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('public profile returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('public profile exposes the uploaded avatar URL and still hides email', function () {",
+                  "  pm.expect(json.user.username).to.eql(pm.environment.get('avatarUsername'));",
+                  "  pm.expect(json.user.avatarUrl).to.eql(pm.environment.get('avatarUploadedUrl'));",
+                  "  pm.expect(json.user.email).to.eql(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{avatarUsername}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Replace Avatar With JPEG",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('replace avatar returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('avatarReplacedUrl', json.user.avatarUrl);",
+                  "pm.test('replace avatar stores a fresh URL', function () {",
+                  "  pm.expect(json.user.avatarUrl).to.be.a('string').and.include('/uploads/avatars/');",
+                  "  pm.expect(json.user.avatarUrl).to.not.eql(pm.environment.get('avatarUploadedUrl'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "{{avatarJpgPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/me/avatar"
+          },
+          "response": []
+        },
+        {
+          "name": "Auth Me Reflects Replaced Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('me returns 200 after replace', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('me response returns replaced avatar URL', function () {",
+                  "  pm.expect(json.user.avatarUrl).to.eql(pm.environment.get('avatarReplacedUrl'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 Validation Guards",
+      "item": [
+        {
+          "name": "Reject Missing Avatar File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('missing file returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('missing file error message is clear', function () {",
+                  "  pm.expect(json.error.message).to.eql('Avatar file is required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": "{{baseUrl}}/users/me/avatar"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Unsupported Text File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('unsupported file type returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('unsupported file type error is clear', function () {",
+                  "  pm.expect(json.error.message).to.eql('Avatar must be a JPEG or PNG image');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "{{avatarUnsupportedPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/me/avatar"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Invalid PNG Contents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('invalid PNG contents return 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('invalid PNG contents error is clear', function () {",
+                  "  pm.expect(json.error.message).to.eql('Avatar file contents must be a valid JPEG or PNG image');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "{{avatarInvalidPngPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/me/avatar"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Oversized Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('oversized file returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('oversized file error is clear', function () {",
+                  "  pm.expect(json.error.message).to.eql('Avatar must not exceed 2 MB');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "{{avatarOversizePngPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/me/avatar"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Unexpected File Field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('unexpected file field returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('unexpected file field error is clear', function () {",
+                  "  pm.expect(json.error.message).to.eql('Avatar upload must use the avatar field');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "notAvatar",
+                  "type": "file",
+                  "src": "{{avatarPngPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/me/avatar"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Avatar Upload Without Auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('upload without auth returns 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('upload without auth uses standard auth error', function () {",
+                  "  pm.expect(json.error.message).to.eql('Authentication required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "{{avatarPngPath}}"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/me/avatar"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 Delete Avatar",
+      "item": [
+        {
+          "name": "Delete Current Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('delete avatar returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('delete avatar clears avatarUrl', function () {",
+                  "  pm.expect(json.message).to.eql('Avatar removed successfully');",
+                  "  pm.expect(json.user.avatarUrl).to.eql(null);",
+                  "});",
+                  "pm.environment.unset('avatarUploadedUrl');",
+                  "pm.environment.unset('avatarReplacedUrl');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users/me/avatar"
+          },
+          "response": []
+        },
+        {
+          "name": "Auth Me After Delete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('me returns 200 after delete', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('me response clears avatarUrl', function () {",
+                  "  pm.expect(json.user.avatarUrl).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{avatarToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Public Profile After Delete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('public profile returns 200 after delete', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('public profile clears avatarUrl after delete', function () {",
+                  "  pm.expect(json.user.username).to.eql(pm.environment.get('avatarUsername'));",
+                  "  pm.expect(json.user.avatarUrl).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{avatarUsername}}"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

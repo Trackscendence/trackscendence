@@ -6,6 +6,7 @@ const safeUserSelect = {
   username: true,
   displayName: true,
   bio: true,
+  avatarUrl: true,
   gamesPlayed: true,
   wins: true,
   losses: true,

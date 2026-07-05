@@ -6,10 +6,13 @@ export const normalizeUsername = (username = '') =>
 export const normalizeIdentifier = (identifier = '') =>
   identifier.trim().toLowerCase()
 
-export const normalizeSignupInput = (form) => ({
+const normalizePassword = (password = '') =>
+  typeof password === 'string' ? password : ''
+
+export const normalizeSignupInput = (form = {}) => ({
   email: normalizeEmail(form.email),
   username: normalizeUsername(form.username),
-  password: form.password,
+  password: normalizePassword(form.password),
 })
 
 export const normalizeLoginInput = (form) => ({

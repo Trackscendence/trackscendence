@@ -4,17 +4,16 @@ import {
   USERNAME_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   EMAIL_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_WHITESPACE_REGEX,
+  PASSWORD_UPPERCASE_REGEX,
+  PASSWORD_LOWERCASE_REGEX,
+  PASSWORD_NUMBER_REGEX,
+  PASSWORD_SYMBOL_REGEX,
+  PASSWORD_MIN_LENGTH,
 } from './auth.constants'
 
 import { normalizeIdentifier } from '@/services/auth.normalizations'
-
-export const PASSWORD_WHITESPACE_REGEX = /\s/
-export const PASSWORD_UPPERCASE_REGEX = /[A-Z]/
-export const PASSWORD_LOWERCASE_REGEX = /[a-z]/
-export const PASSWORD_NUMBER_REGEX = /\d/
-export const PASSWORD_SYMBOL_REGEX = /[^a-z0-9]/i
-export const PASSWORD_MIN_LENGTH = 8
-export const PASSWORD_MAX_LENGTH = 254
 
 //FRONTEND VALIDATIONS FOR SIGNUP PAGE
 export const validateSignupInput = ({ email, username, password }) => {

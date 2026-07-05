@@ -9,49 +9,38 @@ const authMailer = require('#modules/auth/auth.mailer')
 const authRepository = require('#modules/auth/auth.repository')
 const authToken = require('#modules/auth/auth.token')
 const authTwoFactor = require('#modules/auth/auth.two-factor')
-
-const PASSWORD_MIN_LENGTH = 8
-const PASSWORD_RESET_TOKEN_EXPIRES_MS = 60 * 60 * 1000
-const EMAIL_REGEX = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/
-
-const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
-const INVALID_CREDENTIALS_MESSAGE = 'Invalid email/username or password'
-const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
-const INVALID_TWO_FACTOR_CODE_MESSAGE = 'Invalid two-factor authentication code'
-const PASSWORD_RESET_REQUEST_MESSAGE =
-  'If that email is registered, password reset instructions have been sent'
-const TWO_FACTOR_REQUIRED_MESSAGE = 'Two-factor authentication code required'
-const TWO_FACTOR_ALREADY_ENABLED_MESSAGE =
-  'Two-factor authentication is already enabled'
-const TWO_FACTOR_NOT_ENABLED_MESSAGE =
-  'Two-factor authentication is not enabled'
-const TWO_FACTOR_SETUP_NOT_STARTED_MESSAGE =
-  'Start two-factor authentication setup first'
-const TWO_FACTOR_SETUP_INVALID_MESSAGE =
-  'Stored two-factor setup is invalid. Restart setup and try again'
-const NEW_PASSWORD_MUST_DIFFER_MESSAGE =
-  'New password must differ from current password'
-
-const MAX_LOGIN_ATTEMPTS = 8
-const LOCKED_DURATION_MINUTES = 2
-const GENERIC_ACCOUNT_LOCKED_MESSAGE = 'Account temporarily locked'
-
-const EMAIL_MAX_LENGTH = 254
-const USERNAME_REGEX = /^[a-z][a-z0-9]*$/
-const USERNAME_MIN_LENGTH = 6
-const USERNAME_MAX_LENGTH = 32
-const PASSWORD_MAX_LENGTH = 254
-
-const PASSWORD_WHITESPACE_REGEX = /\s/
-const PASSWORD_UPPERCASE_REGEX = /[A-Z]/
-const PASSWORD_LOWERCASE_REGEX = /[a-z]/
-const PASSWORD_NUMBER_REGEX = /\d/
-const PASSWORD_SYMBOL_REGEX = /[^a-z0-9]/i
-
-const normalizeEmail = (email) => email.trim().toLowerCase()
-const normalizeIdentifier = (identifier) => {
-  return identifier.trim().toLowerCase()
-}
+const {
+  normalizeRegistrationInput,
+} = require('#modules/auth/auth.normalizations')
+const {
+  EMAIL_MAX_LENGTH,
+  USERNAME_REGEX,
+  USERNAME_MIN_LENGTH,
+  USERNAME_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_WHITESPACE_REGEX,
+  PASSWORD_UPPERCASE_REGEX,
+  PASSWORD_LOWERCASE_REGEX,
+  PASSWORD_NUMBER_REGEX,
+  PASSWORD_SYMBOL_REGEX,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_RESET_TOKEN_EXPIRES_MS,
+  EMAIL_REGEX,
+  AUTHENTICATION_REQUIRED_MESSAGE,
+  INVALID_CREDENTIALS_MESSAGE,
+  INVALID_TOKEN_MESSAGE,
+  INVALID_TWO_FACTOR_CODE_MESSAGE,
+  PASSWORD_RESET_REQUEST_MESSAGE,
+  TWO_FACTOR_REQUIRED_MESSAGE,
+  TWO_FACTOR_ALREADY_ENABLED_MESSAGE,
+  TWO_FACTOR_NOT_ENABLED_MESSAGE,
+  TWO_FACTOR_SETUP_NOT_STARTED_MESSAGE,
+  TWO_FACTOR_SETUP_INVALID_MESSAGE,
+  NEW_PASSWORD_MUST_DIFFER_MESSAGE,
+  MAX_LOGIN_ATTEMPTS,
+  LOCKED_DURATION_MINUTES,
+  GENERIC_ACCOUNT_LOCKED_MESSAGE,
+} = require('#modules/auth/auth.constants')
 
 const toSafeAuthUser = (user) => ({
   id: user.id,
@@ -110,46 +99,36 @@ const getPasswordValidationMessages = (password) => {
 
 // BACKEND VALIDATIONS FOR SIGNUP PAGE
 const validateRegistrationInput = ({ email, username, password } = {}) => {
-  const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
-  const normalizedUsername =
-    typeof username === 'string' ? username.trim().toLowerCase() : ''
-  const normalizedPassword = typeof password === 'string' ? password : ''
   const details = []
 
-  if (!normalizedEmail) {
+  if (!email) {
     details.push('Email address is required')
-  } else if (!EMAIL_REGEX.test(normalizedEmail)) {
+  } else if (!EMAIL_REGEX.test(email)) {
     details.push('Email must be valid')
-  } else if (normalizedEmail.length > EMAIL_MAX_LENGTH) {
+  } else if (email.length > EMAIL_MAX_LENGTH) {
     details.push(`Email must not be more than ${EMAIL_MAX_LENGTH} characters`)
   }
 
-  if (!normalizedUsername) {
+  if (!username) {
     details.push('Username is required')
-  } else if (!USERNAME_REGEX.test(normalizedUsername)) {
+  } else if (!USERNAME_REGEX.test(username)) {
     details.push(
       'Username must start with a letter and contain only lowercase letters and numbers',
     )
-  } else if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
+  } else if (username.length < USERNAME_MIN_LENGTH) {
     details.push(
       `Username must not be less than ${USERNAME_MIN_LENGTH} characters`,
     )
-  } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
+  } else if (username.length > USERNAME_MAX_LENGTH) {
     details.push(
       `Username must not be more than ${USERNAME_MAX_LENGTH} characters`,
     )
   }
 
-  details.push(...getPasswordValidationMessages(normalizedPassword))
+  details.push(...getPasswordValidationMessages(password))
 
   if (details.length > 0) {
     throw new BadRequestException('Invalid request data', { details })
-  }
-
-  return {
-    email: normalizedEmail,
-    username: normalizedUsername,
-    password: normalizedPassword,
   }
 }
 
@@ -163,7 +142,6 @@ const validateLoginInput = ({ identifier, password } = {}) => {
   if (!normalizedIdentifier) {
     details.push('Identifier is required')
   }
-
   if (!normalizedPassword) {
     details.push('Password is required')
   }
@@ -406,7 +384,11 @@ const getTwoFactorChallengePayload = (challengeToken) => {
 }
 
 const register = async (payload) => {
-  const { email, username, password } = validateRegistrationInput(payload)
+  const normalizedPayload = normalizeRegistrationInput(payload)
+
+  validateRegistrationInput(normalizedPayload)
+
+  const { email, username, password } = normalizedPayload
 
   const existingEmail = await authRepository.findByEmail(email)
   if (existingEmail) {

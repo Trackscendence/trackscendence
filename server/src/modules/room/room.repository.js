@@ -95,6 +95,22 @@ const findOpenRoomByUserId = (userId) => {
 }
 
 /**
+ * The open or in-game room a user is seated in, if any. Seating checks this
+ * so a repeated seat request (double-mounted effect, page refresh) returns
+ * the existing seat instead of opening a second room for the same player.
+ * @param {number} userId
+ */
+const findActiveRoomByUserId = (userId) => {
+  return prisma.room.findFirst({
+    where: {
+      status: { in: ['OPEN', 'IN_GAME'] },
+      players: { some: { userId } },
+    },
+    include: roomInclude,
+  })
+}
+
+/**
  * Seats a player in a room, re-checking status and capacity inside a
  * serializable transaction so two simultaneous joins cannot overshoot the
  * last seat.
@@ -195,6 +211,7 @@ const closeRoomsByGameId = async (gameId) => {
 module.exports = {
   ROOM_ERRORS,
   createRoomIfUnderLimit,
+  findActiveRoomByUserId,
   findVisibleRooms,
   findOpenRoomByUserId,
   addPlayerToRoom,

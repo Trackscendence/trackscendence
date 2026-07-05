@@ -5,14 +5,14 @@ erDiagram
             USER USER
 ADMIN ADMIN
         }
-
+    
 
 
         GameStatus {
             COMPLETED COMPLETED
 ABANDONED ABANDONED
         }
-
+    
 
 
         FriendshipStatus {
@@ -20,76 +20,81 @@ ABANDONED ABANDONED
 ACCEPTED ACCEPTED
 BLOCKED BLOCKED
         }
-
+    
   "User" {
     Int id "🗝️"
-    String email
-    String username
+    String email 
+    String username 
     String displayName "❓"
     String bio "❓"
-    String passwordHash
+    String avatarUrl "❓"
+    String passwordHash 
     String passwordResetTokenId "❓"
     String passwordResetTokenHash "❓"
     DateTime passwordResetTokenExpiry "❓"
-    Int tokenVersion
-    Int twoFactorChallengeVersion
-    Boolean twoFactorEnabled
+    Int tokenVersion 
+    Int gamesPlayed 
+    Int wins 
+    Int losses 
+    Int rank "❓"
+    Int twoFactorChallengeVersion 
+    Boolean twoFactorEnabled 
     String twoFactorSecretCiphertext "❓"
     String twoFactorPendingSecretCiphertext "❓"
-    Role role
-    DateTime createdAt
-    DateTime updatedAt
-    Int failedLoginCount
+    Role role 
+    DateTime createdAt 
+    DateTime updatedAt 
+    Int failedLoginCount 
     DateTime lockedOutUntil "❓"
     }
-
+  
 
   "ApiKey" {
     Int id "🗝️"
-    String name
-    String keyHash
-    String keyPrefix
+    String name 
+    String keyHash 
+    String keyPrefix 
     DateTime lastUsedAt "❓"
     DateTime revokedAt "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "UserTwoFactorRecoveryCode" {
     Int id "🗝️"
-    String codeHash
-    Boolean isPending
-    DateTime createdAt
+    String codeHash 
+    Boolean isPending 
+    DateTime createdAt 
     }
-
+  
 
   "Game" {
     Int id "🗝️"
-    GameStatus status
-    DateTime startedAt
+    GameStatus status 
+    DateTime startedAt 
     DateTime endedAt "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "GamePlayer" {
     Int id "🗝️"
-    Int score
-    Boolean isWinner
-    DateTime createdAt
-    DateTime updatedAt
+    Int score 
+    Boolean isWinner 
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "Friendship" {
     Int id "🗝️"
-    FriendshipStatus status
-    DateTime createdAt
-    DateTime updatedAt
+    FriendshipStatus status 
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
     "User" |o--|| "Role" : "enum:role"
     "ApiKey" }o--|| "User" : "user"
     "UserTwoFactorRecoveryCode" }o--|| "User" : "user"

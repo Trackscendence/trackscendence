@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
-import useSocketStore from '@/stores/useSocketStore'
 import WaitingRoomView from './_components/WaitingRoomView'
 import getInitials from './_utils/getInitials'
 
@@ -21,17 +20,17 @@ const Lobby = () => {
   const match = useGameStore((state) => state.match)
   const [isOverlayVisible, setIsOverlayVisible] = useState(false)
 
-  // Connect the socket, register game listeners, and join the queue. The server
-  // auto-queues on `join_lobby` and starts the game once two players are in.
+  // Join the matchmaking queue while this page is mounted. The socket itself
+  // is connected at the app level (App.jsx) and stays up across navigation —
+  // Socket.IO buffers the emit if the connection is still being established.
+  // Leaving the queue on unmount is safe after a match starts: the server has
+  // already moved both players out of the lobby by then.
   useEffect(() => {
     if (!token) return undefined
-    const { connect, disconnect } = useSocketStore.getState()
     const { joinLobby, leaveLobby } = useGameStore.getState()
-    connect(token)
     joinLobby()
     return () => {
       leaveLobby()
-      disconnect()
     }
   }, [token])
 
@@ -53,10 +52,10 @@ const Lobby = () => {
   }, [match, navigate])
 
   // Leaving the queue logs out: the waiting room is the first screen after
-  // login, so there is nowhere else to go back to in the MVP flow. Disconnecting
-  // the socket drops the player from the server queue.
+  // login, so there is nowhere else to go back to in the MVP flow. Logout
+  // clears the token, which makes the app-level socket effect disconnect and
+  // drop us from the server queue.
   const handleLeaveQueue = async () => {
-    useSocketStore.getState().disconnect()
     await useAuthStore.getState().logout()
     navigate('/login')
   }

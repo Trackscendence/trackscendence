@@ -127,21 +127,19 @@ const getLeaderboard = async (query) => {
 }
 
 const getUserProfile = async (rawUsername) => {
-  const user = await findUserByUsernameOrThrow(rawUsername)
-
-  const [stats, rank] = await Promise.all([
-    usersRepository.getStatsForUser(user.id),
-    usersRepository.getRankForUser(user.id),
-  ])
+  // Lifetime stats live directly on the User row (denormalized by the game
+  // save transaction), so the profile select already carries them.
+  const { gamesPlayed, wins, losses, rank, ...user } =
+    await findUserByUsernameOrThrow(rawUsername)
 
   return {
     user: {
       ...user,
       stats: {
-        gamesPlayed: Number(stats.gamesPlayed || 0),
-        wins: Number(stats.wins || 0),
-        losses: Number(stats.losses || 0),
-        rank,
+        gamesPlayed: Number(gamesPlayed || 0),
+        wins: Number(wins || 0),
+        losses: Number(losses || 0),
+        rank: rank ?? null,
       },
     },
   }

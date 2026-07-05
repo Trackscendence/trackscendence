@@ -13,7 +13,6 @@ const authTwoFactor = require('#modules/auth/auth.two-factor')
 const PASSWORD_MIN_LENGTH = 8
 const PASSWORD_RESET_TOKEN_EXPIRES_MS = 60 * 60 * 1000
 const EMAIL_REGEX = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/
-
 const AUTHENTICATION_REQUIRED_MESSAGE = 'Authentication required'
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email/username or password'
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
@@ -49,9 +48,8 @@ const PASSWORD_NUMBER_REGEX = /\d/
 const PASSWORD_SYMBOL_REGEX = /[^a-z0-9]/i
 
 const normalizeEmail = (email) => email.trim().toLowerCase()
-const normalizeIdentifier = (identifier) => {
-  return identifier.trim().toLowerCase()
-}
+const normalizeUsername = (username) => username.trim().toLowerCase()
+const normalizeIdentifier = (identifier) => identifier.trim().toLowerCase()
 
 const toSafeAuthUser = (user) => ({
   id: user.id,
@@ -59,6 +57,11 @@ const toSafeAuthUser = (user) => ({
   username: user.username,
   displayName: user.displayName,
   bio: user.bio,
+  avatarUrl: user.avatarUrl,
+  gamesPlayed: user.gamesPlayed,
+  wins: user.wins,
+  losses: user.losses,
+  rank: user.rank,
   role: user.role,
   createdAt: user.createdAt,
   twoFactorEnabled: Boolean(user.twoFactorEnabled),
@@ -71,7 +74,35 @@ const getTokenVersionFromPayload = (payload) => {
   return Number.isInteger(tokenVersion) ? tokenVersion : null
 }
 
-//BACKEND PASSWORD VALIDATIONS FOR SIGNUP PAGE
+const getUsernameValidationMessages = (username) => {
+  const details = []
+
+  if (!username) {
+    details.push('Username is required')
+    return details
+  }
+
+  if (!USERNAME_REGEX.test(username)) {
+    details.push(
+      'Username must start with a letter and contain only lowercase letters and numbers',
+    )
+  }
+
+  if (username.length < USERNAME_MIN_LENGTH) {
+    details.push(
+      `Username must not be less than ${USERNAME_MIN_LENGTH} characters`,
+    )
+  }
+
+  if (username.length > USERNAME_MAX_LENGTH) {
+    details.push(
+      `Username must not be more than ${USERNAME_MAX_LENGTH} characters`,
+    )
+  }
+
+  return details
+}
+
 const getPasswordValidationMessages = (password) => {
   const details = []
 
@@ -115,7 +146,7 @@ const getPasswordValidationMessages = (password) => {
 const validateRegistrationInput = ({ email, username, password } = {}) => {
   const normalizedEmail = typeof email === 'string' ? normalizeEmail(email) : ''
   const normalizedUsername =
-    typeof username === 'string' ? username.trim().toLowerCase() : ''
+    typeof username === 'string' ? normalizeUsername(username) : ''
   const normalizedPassword = typeof password === 'string' ? password : ''
   const details = []
 
@@ -127,21 +158,7 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
     details.push(`Email must not be more than ${EMAIL_MAX_LENGTH} characters`)
   }
 
-  if (!normalizedUsername) {
-    details.push('Username is required')
-  } else if (!USERNAME_REGEX.test(normalizedUsername)) {
-    details.push(
-      'Username must start with a letter and contain only lowercase letters and numbers',
-    )
-  } else if (normalizedUsername.length < USERNAME_MIN_LENGTH) {
-    details.push(
-      `Username must not be less than ${USERNAME_MIN_LENGTH} characters`,
-    )
-  } else if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
-    details.push(
-      `Username must not be more than ${USERNAME_MAX_LENGTH} characters`,
-    )
-  }
+  details.push(...getUsernameValidationMessages(normalizedUsername))
 
   details.push(...getPasswordValidationMessages(normalizedPassword))
 
@@ -826,6 +843,8 @@ const resetPassword = async (payload) => {
 
 module.exports = {
   INVALID_CREDENTIALS_MESSAGE,
+  getUsernameValidationMessages,
+  normalizeUsername,
   changePassword,
   completeTwoFactorLogin,
   confirmTwoFactorSetup,

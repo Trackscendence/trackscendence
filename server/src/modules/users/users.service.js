@@ -2,18 +2,22 @@ const { Prisma } = require('@prisma/client')
 const BadRequestException = require('#exceptions/bad-request.exception')
 const NotFoundException = require('#exceptions/not-found.exception')
 const UnauthorizedException = require('#exceptions/unauthorized.exception')
-const {
-  getUsernameValidationMessages,
-  normalizeUsername,
-  toSafeAuthUser,
-} = require('#modules/auth/auth.service')
 const usersRepository = require('#modules/users/users.repository')
 
 const DISPLAY_NAME_MAX_LENGTH = 40
 const BIO_MAX_LENGTH = 280
 const MATCH_HISTORY_LIMIT = 10
+const PROFILE_FRIENDS_LIMIT = 6
+const USERNAME_REGEX = /^[a-z][a-z0-9]*$/
+const USERNAME_MIN_LENGTH = 6
+const USERNAME_MAX_LENGTH = 32
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
 
+const FRIENDSHIP_STATUS = {
+  ACCEPTED: 'ACCEPTED',
+  BLOCKED: 'BLOCKED',
+  PENDING: 'PENDING',
+}
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key)
 
 const isRecordNotFoundError = (error) => {
@@ -23,6 +27,29 @@ const isRecordNotFoundError = (error) => {
   )
 }
 
+const normalizeUsername = (username) => username.trim().toLowerCase()
+
+const getUsernameValidationMessages = (username) => {
+  const details = []
+
+  if (!username) {
+    details.push('Username is required')
+  } else if (!USERNAME_REGEX.test(username)) {
+    details.push(
+      'Username must start with a letter and contain only lowercase letters and numbers',
+    )
+  } else if (username.length < USERNAME_MIN_LENGTH) {
+    details.push(
+      `Username must not be less than ${USERNAME_MIN_LENGTH} characters`,
+    )
+  } else if (username.length > USERNAME_MAX_LENGTH) {
+    details.push(
+      `Username must not be more than ${USERNAME_MAX_LENGTH} characters`,
+    )
+  }
+
+  return details
+}
 const normalizeUpdatableTextField = ({
   details,
   fieldName,
@@ -137,25 +164,85 @@ const toRecentMatch = (match, currentUserId) => {
   }
 }
 
-const toPublicProfile = (user, recentMatches) => ({
-  id: user.id,
-  username: user.username,
-  displayName: user.displayName,
-  bio: user.bio,
-  createdAt: user.createdAt,
-  stats: toProfileStats(user),
-  recentMatches,
-})
+const toProfileFriend = (friendship, profileUserId) => {
+  const user =
+    friendship.requesterId === profileUserId
+      ? friendship.addressee
+      : friendship.requester
 
-const getProfileByUsername = async (username) => {
+  return {
+    user: {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+    },
+    friendSince: friendship.updatedAt,
+  }
+}
+
+const toRelationshipState = (relationship, viewerId, profileUserId) => {
+  if (viewerId === profileUserId) {
+    return { status: 'SELF' }
+  }
+
+  if (!relationship) {
+    return { status: 'NONE' }
+  }
+
+  if (relationship.status === FRIENDSHIP_STATUS.ACCEPTED) {
+    return { status: 'FRIENDS', updatedAt: relationship.updatedAt }
+  }
+
+  if (relationship.status === FRIENDSHIP_STATUS.BLOCKED) {
+    return { status: 'BLOCKED' }
+  }
+
+  if (relationship.requesterId === viewerId) {
+    return { status: 'PENDING_OUTGOING', requestedAt: relationship.createdAt }
+  }
+
+  return { status: 'PENDING_INCOMING', requestedAt: relationship.createdAt }
+}
+
+const getProfileData = async (user, options = {}) => {
+  const [recentMatches, friends] = await Promise.all([
+    usersRepository.listRecentMatchesForUser(user.id, MATCH_HISTORY_LIMIT),
+    usersRepository.listPublicFriendsForUser(user.id, PROFILE_FRIENDS_LIMIT),
+  ])
+
+  return {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    bio: user.bio,
+    createdAt: user.createdAt,
+    ...(options.includeEmail ? { email: user.email } : {}),
+    stats: toProfileStats(user),
+    recentMatches: recentMatches.map((match) => toRecentMatch(match, user.id)),
+    friends: friends.map((friendship) => toProfileFriend(friendship, user.id)),
+  }
+}
+
+const getCurrentProfile = async (viewer) => {
+  const user = await usersRepository.findSelfProfileById(viewer.id)
+
+  if (!user) {
+    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+  }
+
+  return {
+    user: await getProfileData(user, { includeEmail: true }),
+    relationship: { status: 'SELF' },
+  }
+}
+
+const getProfileByUsername = async (viewer, username) => {
   const normalizedUsername =
     typeof username === 'string' ? normalizeUsername(username) : ''
   const details = getUsernameValidationMessages(normalizedUsername)
 
   if (details.length > 0) {
-    throw new BadRequestException('Invalid request data', {
-      details,
-    })
+    throw new BadRequestException('Invalid request data', { details })
   }
 
   const user =
@@ -165,31 +252,43 @@ const getProfileByUsername = async (username) => {
     throw new NotFoundException('User not found')
   }
 
-  const recentMatches = await usersRepository.listRecentMatchesForUser(
-    user.id,
-    MATCH_HISTORY_LIMIT,
-  )
+  const relationship =
+    viewer?.id && viewer.id !== user.id
+      ? await usersRepository.findRelationshipBetweenUsers(viewer.id, user.id)
+      : null
 
   return {
-    user: toPublicProfile(
-      user,
-      recentMatches.map((match) => toRecentMatch(match, user.id)),
-    ),
+    user: await getProfileData(user),
+    relationship: viewer?.id
+      ? toRelationshipState(relationship, viewer.id, user.id)
+      : null,
   }
 }
 
-const updateCurrentUserProfile = async (user, payload) => {
+const updateCurrentUserProfile = async (viewer, payload) => {
   const updateData = validateUpdateProfileInput(payload)
 
   try {
-    const updatedUser = await usersRepository.updateProfileById(
-      user.id,
-      updateData,
-    )
+    const user = await usersRepository.updateProfileById(viewer.id, updateData)
 
     return {
       message: 'Profile updated successfully',
-      user: toSafeAuthUser(updatedUser),
+      user: await getProfileData(user, { includeEmail: true }),
+      authUser: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        displayName: user.displayName,
+        bio: user.bio,
+        gamesPlayed: user.gamesPlayed,
+        wins: user.wins,
+        losses: user.losses,
+        rank: user.rank,
+        role: user.role,
+        createdAt: user.createdAt,
+        twoFactorEnabled: Boolean(user.twoFactorEnabled),
+        twoFactorSetupPending: Boolean(user.twoFactorPendingSecretCiphertext),
+      },
     }
   } catch (error) {
     if (isRecordNotFoundError(error)) {
@@ -201,6 +300,7 @@ const updateCurrentUserProfile = async (user, payload) => {
 }
 
 module.exports = {
+  getCurrentProfile,
   getProfileByUsername,
   updateCurrentUserProfile,
 }

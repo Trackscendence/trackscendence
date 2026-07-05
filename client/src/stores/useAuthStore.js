@@ -76,6 +76,13 @@ const useAuthStore = create((set, get) => ({
     set({ token: null, user: null, isAuthenticated: false })
   },
 
+  updateUser: (user) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...user } : user,
+      isAuthenticated: Boolean(user || state.token),
+    }))
+  },
+
   refreshUser: async () => {
     const activeToken = get().token || localStorage.getItem(AUTH_TOKEN_KEY)
 
@@ -88,13 +95,6 @@ const useAuthStore = create((set, get) => ({
     set({ token: activeToken, user, isAuthenticated: true })
 
     return user
-  },
-
-  updateUser: (nextUser) => {
-    set((state) => ({
-      user: nextUser,
-      isAuthenticated: Boolean(state.token && nextUser),
-    }))
   },
 }))
 

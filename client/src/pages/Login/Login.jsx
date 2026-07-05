@@ -42,14 +42,9 @@ const Login = () => {
           <div className="h-px flex-1 bg-black" />
         </div>
 
-        <div className="grid grid-cols-2 gap-[10px]">
-          <Button variant="social" type="button">
-            Google
-          </Button>
-          <Button variant="social" type="button">
-            42
-          </Button>
-        </div>
+        <Button variant="social" type="button">
+          42
+        </Button>
 
         <p className="mt-5 text-center text-sm text-[#081934]">
           New player?{' '}

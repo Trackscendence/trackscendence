@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import Button from '@/components/Button'
+import FortyTwoButton from '@/components/FortyTwoButton'
 import SignupForm from './_components/SignupForm'
 
 const Signup = () => {
@@ -22,9 +22,7 @@ const Signup = () => {
           <div className="h-px flex-1 bg-black" />
         </div>
 
-        <Button variant="social" type="button">
-          42
-        </Button>
+        <FortyTwoButton />
 
         <p className="mt-5 text-center text-sm text-[#081934]">
           Already have an account?{' '}

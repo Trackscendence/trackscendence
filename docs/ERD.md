@@ -35,11 +35,16 @@ CLOSED CLOSED
     String username
     String displayName "❓"
     String bio "❓"
+    String avatarUrl "❓"
     String passwordHash
     String passwordResetTokenId "❓"
     String passwordResetTokenHash "❓"
     DateTime passwordResetTokenExpiry "❓"
     Int tokenVersion
+    Int gamesPlayed
+    Int wins
+    Int losses
+    Int rank "❓"
     Int twoFactorChallengeVersion
     Boolean twoFactorEnabled
     String twoFactorSecretCiphertext "❓"
@@ -49,6 +54,18 @@ CLOSED CLOSED
     DateTime updatedAt
     Int failedLoginCount
     DateTime lockedOutUntil "❓"
+    }
+
+
+  "ApiKey" {
+    Int id "🗝️"
+    String name
+    String keyHash
+    String keyPrefix
+    DateTime lastUsedAt "❓"
+    DateTime revokedAt "❓"
+    DateTime createdAt
+    DateTime updatedAt
     }
 
 
@@ -104,6 +121,7 @@ CLOSED CLOSED
     }
 
     "User" |o--|| "Role" : "enum:role"
+    "ApiKey" }o--|| "User" : "user"
     "UserTwoFactorRecoveryCode" }o--|| "User" : "user"
     "Game" |o--|| "GameStatus" : "enum:status"
     "GamePlayer" }o--|| "Game" : "game"

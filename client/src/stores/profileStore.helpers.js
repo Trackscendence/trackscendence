@@ -39,7 +39,7 @@ export const loadFriendContext = async (token) => {
 
 export const loadLeaderboardContext = async (token) => {
   try {
-    const result = await getLeaderboard(token)
+    const result = await getLeaderboard({}, token)
 
     return {
       leaderboard: result.leaderboard || [],

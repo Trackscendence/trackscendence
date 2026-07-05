@@ -123,13 +123,24 @@ const registerHandlers = (io, socket) => {
     }
   })
 
+  // Leaves the matchmaking queue without dropping the connection. The socket
+  // now lives for the whole session (it is no longer owned by the lobby page),
+  // so navigating away from the lobby sends this instead of disconnecting.
+  socket.on('leave_lobby', () => {
+    logger.info(`User ${socket.user.username} left the lobby`)
+    socket.leave('lobby')
+    lobbyStore.removePlayer(socket.user.id)
+    io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
+  })
+
   socket.on('disconnect', async () => {
     logger.info('user disconnected')
     lobbyStore.removePlayer(socket.user.id)
     io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
 
-    // Leaving the waiting room (or closing the tab) disconnects the socket,
-    // which unseats the player so their room never shows a ghost occupant.
+    // The waiting room sends room:leave on unmount, but a closed tab or
+    // dropped connection never gets to — unseat here too so the room never
+    // shows a ghost occupant.
     try {
       const leftRoom = await roomService.leaveOpenRoom(socket.user.id)
       if (leftRoom) {

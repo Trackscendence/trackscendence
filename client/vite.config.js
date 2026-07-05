@@ -17,6 +17,10 @@ export default defineConfig({
         target: process.env.VITE_API_PROXY_TARGET || 'http://server:3001',
         changeOrigin: true,
       },
+      '/uploads': {
+        target: process.env.VITE_API_PROXY_TARGET || 'http://server:3001',
+        changeOrigin: true,
+      },
     },
   },
 })

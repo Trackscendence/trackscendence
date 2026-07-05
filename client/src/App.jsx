@@ -10,6 +10,7 @@ import AuthLayout from '@/layouts/AuthLayout'
 import ProfileLayout from '@/layouts/ProfileLayout'
 import ToastViewport from '@/components/ToastViewport'
 import Login from '@/pages/Login'
+import OAuth42Callback from '@/pages/OAuth42Callback'
 import Signup from '@/pages/Signup'
 import ForgotPassword from '@/pages/ForgotPassword'
 import ResetPassword from '@/pages/ResetPassword'
@@ -73,6 +74,7 @@ const App = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/signup/success" element={<SignupSuccess />} />
+          <Route path="/oauth/42/callback" element={<OAuth42Callback />} />
         </Route>
 
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />

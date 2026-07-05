@@ -25,7 +25,10 @@ model User {
   displayName                      String?
   bio                              String?
   avatarUrl                        String?
-  passwordHash                     String
+  // Null for accounts provisioned through 42 OAuth that never set a password;
+  // password login and change-password are rejected until a reset sets one.
+  passwordHash                     String?
+  fortyTwoId                       Int?     @unique
   passwordResetTokenId             String?  @unique
   passwordResetTokenHash           String?
   passwordResetTokenExpiry         DateTime?

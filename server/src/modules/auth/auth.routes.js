@@ -152,6 +152,54 @@ router.post('/login', authController.login)
 router.post('/forgot-password', authController.requestPasswordReset)
 
 router.post('/login/2fa', authController.completeTwoFactorLogin)
+
+/**
+ * @swagger
+ * /auth/42:
+ *   get:
+ *     summary: Start the 42 OAuth login flow
+ *     tags:
+ *       - Authentication
+ *     responses:
+ *       302:
+ *         description: Redirects to the 42 intra authorization page
+ *       404:
+ *         description: 42 login is not configured on this server
+ */
+router.get('/42', authController.startFortyTwoLogin)
+
+/**
+ * @swagger
+ * /auth/42/callback:
+ *   post:
+ *     summary: Complete the 42 OAuth login with the authorization code
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *               - state
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 description: Authorization code returned by the 42 intra
+ *               state:
+ *                 type: string
+ *                 description: State value issued by /auth/42
+ *     responses:
+ *       200:
+ *         description: Login successful, or a two-factor challenge is returned
+ *       401:
+ *         description: Invalid state, code exchange failure, or profile fetch failure
+ *       404:
+ *         description: 42 login is not configured on this server
+ */
+router.post('/42/callback', authController.completeFortyTwoLogin)
 /**
  * @swagger
  * /auth/reset-password:

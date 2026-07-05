@@ -1,6 +1,17 @@
-import request from '@/utils/request'
+import request, { apiBaseUrl } from '@/utils/request'
 
 export const AUTH_TOKEN_KEY = 'trackscendence.auth.token'
+
+// Full-page navigation target, not an XHR: the server answers with a 302 to
+// the 42 intra authorization page.
+export const getFortyTwoLoginUrl = () => `${apiBaseUrl}/auth/42`
+
+export const completeFortyTwoLogin = (payload) => {
+  return request('/auth/42/callback', {
+    method: 'POST',
+    body: payload,
+  })
+}
 
 export const register = (payload) => {
   return request('/auth/register', {

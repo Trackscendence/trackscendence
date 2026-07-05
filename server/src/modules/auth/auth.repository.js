@@ -75,6 +75,40 @@ const createUser = ({ email, username, passwordHash }) => {
   })
 }
 
+const findByFortyTwoId = (fortyTwoId) => {
+  return prisma.user.findUnique({
+    where: { fortyTwoId },
+    select: authUserSelect,
+  })
+}
+
+const linkFortyTwoId = (id, fortyTwoId) => {
+  return prisma.user.update({
+    where: { id },
+    data: { fortyTwoId },
+    select: authUserSelect,
+  })
+}
+
+const createFortyTwoUser = ({
+  email,
+  username,
+  fortyTwoId,
+  displayName,
+  avatarUrl,
+}) => {
+  return prisma.user.create({
+    data: {
+      email,
+      username,
+      fortyTwoId,
+      displayName,
+      avatarUrl,
+    },
+    select: authUserSelect,
+  })
+}
+
 const findByEmail = (email) => {
   return prisma.user.findUnique({
     where: { email },
@@ -374,15 +408,18 @@ module.exports = {
   consumeRecoveryCode,
   consumeRecoveryCodeAndChallenge,
   consumeTwoFactorChallenge,
+  createFortyTwoUser,
   createUser,
   findAuthById,
   findByEmail,
+  findByFortyTwoId,
   findByIdentifier,
   findByPasswordResetTokenId,
   findByUsername,
   findSafeById,
   findTokenUserById,
   issueTwoFactorChallenge,
+  linkFortyTwoId,
   replacePendingTwoFactorSetup,
   updatePasswordById,
   updatePasswordByIdInTransaction,

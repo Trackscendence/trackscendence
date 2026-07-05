@@ -5,11 +5,11 @@ import useGameStore from '@/stores/useGameStore'
 import useDevStore, { selectIsRigged } from './useDevStore'
 import ToggleSwitch from './controls/ToggleSwitch'
 import RadioGroup from './controls/RadioGroup'
+import useGameSimulation from './sim/useGameSimulation'
+import { DEV_GAME_ID } from './constants'
 
 // The waiting room lives at these paths; the mock opponent only applies there.
 const WAITING_ROOM_PATHS = new Set(['/', '/lobby'])
-// A recognizable gameId so we only ever clear a match we injected ourselves.
-const MOCK_GAME_ID = 'dev-mock'
 
 const FILL_OPTIONS = [
   { value: 'uno', label: 'uno' },
@@ -20,6 +20,18 @@ const FILL_OPTIONS = [
 const SOURCE_OPTIONS = [
   { value: 'live', label: 'Live backend' },
   { value: 'mocked', label: 'Mocked' },
+]
+
+const SIM_PLAYER_OPTIONS = [
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '4', label: '4' },
+]
+
+const SIM_SPEED_OPTIONS = [
+  { value: 'slow', label: 'slow' },
+  { value: 'normal', label: 'normal' },
+  { value: 'fast', label: 'fast' },
 ]
 
 // The result the "Skip to outcome" jump lands on. 'won' fires confetti, 'lost'
@@ -45,10 +57,10 @@ const useMockOpponent = () => {
 
     const { match, setMatch } = useGameStore.getState()
     // Don't clobber a real match that may have arrived over the socket.
-    if (match && match.gameId !== MOCK_GAME_ID) return undefined
+    if (match && match.gameId !== DEV_GAME_ID) return undefined
 
     setMatch({
-      gameId: MOCK_GAME_ID,
+      gameId: DEV_GAME_ID,
       players: [
         { userId: user.id, username: user.username },
         { userId: 'dev-bot', username: fillWith },
@@ -58,7 +70,7 @@ const useMockOpponent = () => {
     return () => {
       // Withdraw only our own fake, so a genuine match is left alone.
       const current = useGameStore.getState().match
-      if (current?.gameId === MOCK_GAME_ID)
+      if (current?.gameId === DEV_GAME_ID)
         useGameStore.getState().setMatch(null)
     }
   }, [mockOpponent, fillWith, user, pathname])
@@ -84,10 +96,25 @@ const DevControls = () => {
   const fillWith = useDevStore((state) => state.fillWith)
   const dataSource = useDevStore((state) => state.dataSource)
   const outcomeState = useDevStore((state) => state.outcomeState)
+  const simulateGame = useDevStore((state) => state.simulateGame)
+  const simSpeed = useDevStore((state) => state.simSpeed)
+  const simPlayers = useDevStore((state) => state.simPlayers)
   const setFlag = useDevStore((state) => state.setFlag)
+  const restartSim = useDevStore((state) => state.restartSim)
   const reset = useDevStore((state) => state.reset)
 
+  // The simulated game's winner, for the status line under the sim controls.
+  const simWinnerId = useGameStore((state) =>
+    state.gameState?.gameId === DEV_GAME_ID ? state.gameState.winner : null,
+  )
+  const simWinnerName = useGameStore(
+    (state) =>
+      state.gamePlayers.find((player) => player.userId === simWinnerId)
+        ?.username,
+  )
+
   useMockOpponent()
+  useGameSimulation()
 
   // The results screen reads its mode from the URL, not the dev store. When
   // the radio changes while already on /results, swap the query param in place
@@ -114,6 +141,17 @@ const DevControls = () => {
     }
     const query = params.toString()
     navigate(query ? `/game?${query}` : '/game', { replace: true })
+  }
+
+  // The sim lives on the game table, on the live-data render path; jump
+  // there when it switches on, shedding any ?source=mock left in the URL
+  // (the static mock would win over the store otherwise).
+  const handleSimulateChange = (next) => {
+    setFlag('simulateGame', next)
+    if (!next) return
+    const params = new URLSearchParams(search)
+    if (pathname !== '/game' || params.get('source') === 'mock')
+      navigate('/game')
   }
 
   // Ctrl+` fully hides / re-summons the panel when it's in your way.
@@ -208,6 +246,52 @@ const DevControls = () => {
             variant="dotted"
             onChange={handleDataSourceChange}
           />
+        </section>
+
+        <div className="border-t border-[#FDE8CF]/10" />
+
+        <section className="flex flex-col gap-3">
+          <h3 className="font-mono text-[11px] tracking-wider text-[#B39B7C] uppercase">
+            Simulation
+          </h3>
+          <ToggleSwitch
+            label="Simulate game"
+            hint="Bots play a full game on the table — no players needed"
+            checked={simulateGame}
+            onChange={handleSimulateChange}
+          />
+          {simulateGame ? (
+            <>
+              <RadioGroup
+                label="Players"
+                name="dev-sim-players"
+                value={simPlayers}
+                options={SIM_PLAYER_OPTIONS}
+                onChange={(next) => setFlag('simPlayers', next)}
+              />
+              <RadioGroup
+                label="Speed"
+                name="dev-sim-speed"
+                value={simSpeed}
+                options={SIM_SPEED_OPTIONS}
+                onChange={(next) => setFlag('simSpeed', next)}
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={restartSim}
+                  className="self-start rounded-md bg-[#FFB04F] px-3 py-1.5 font-mono text-[12px] font-bold text-[#1C120A] transition-colors hover:bg-[#ffc275] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFB04F]"
+                >
+                  Restart ↻
+                </button>
+                <span className="font-mono text-[11px] text-[#B39B7C]">
+                  {simWinnerName
+                    ? `${simWinnerName} wins`
+                    : 'bots at the table…'}
+                </span>
+              </div>
+            </>
+          ) : null}
         </section>
 
         <div className="border-t border-[#FDE8CF]/10" />

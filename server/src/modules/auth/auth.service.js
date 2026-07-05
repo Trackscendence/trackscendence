@@ -10,6 +10,7 @@ const authRepository = require('#modules/auth/auth.repository')
 const authToken = require('#modules/auth/auth.token')
 const authTwoFactor = require('#modules/auth/auth.two-factor')
 const {
+  normalizeIdentifier,
   normalizeRegistrationInput,
 } = require('#modules/auth/auth.normalizations')
 const {

@@ -140,7 +140,7 @@ const Signup = () => {
         ) : null}
 
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating account' : 'Sign up'}
+          {isSubmitting ? 'Creating account...' : 'Sign up'}
         </Button>
       </form>
 

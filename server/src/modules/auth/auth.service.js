@@ -62,6 +62,7 @@ const toSafeAuthUser = (user) => ({
   losses: user.losses,
   rank: user.rank,
   role: user.role,
+  createdAt: user.createdAt,
   twoFactorEnabled: Boolean(user.twoFactorEnabled),
   twoFactorSetupPending: Boolean(user.twoFactorPendingSecretCiphertext),
 })

@@ -1,9 +1,13 @@
 const prisma = require('#db/prisma')
 
-const publicProfileSelect = {
+const publicIdentitySelect = {
   id: true,
   username: true,
   displayName: true,
+}
+
+const publicProfileSelect = {
+  ...publicIdentitySelect,
   bio: true,
   createdAt: true,
   gamesPlayed: true,
@@ -11,13 +15,6 @@ const publicProfileSelect = {
   losses: true,
   rank: true,
 }
-
-const publicIdentitySelect = {
-  id: true,
-  username: true,
-  displayName: true,
-}
-
 const selfProfileSelect = {
   ...publicProfileSelect,
   email: true,
@@ -50,6 +47,20 @@ const matchHistorySelect = {
   },
 }
 
+const relationshipSelect = {
+  requesterId: true,
+  addresseeId: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+}
+
+const findSelfProfileById = (id) => {
+  return prisma.user.findUnique({
+    where: { id },
+    select: selfProfileSelect,
+  })
+}
 const findPublicProfileByUsername = (username) => {
   return prisma.user.findUnique({
     where: { username },
@@ -65,6 +76,24 @@ const updateProfileById = (id, data) => {
   })
 }
 
+const findRelationshipBetweenUsers = (firstUserId, secondUserId) => {
+  return prisma.friendship.findFirst({
+    where: {
+      OR: [
+        {
+          requesterId: firstUserId,
+          addresseeId: secondUserId,
+        },
+        {
+          requesterId: secondUserId,
+          addresseeId: firstUserId,
+        },
+      ],
+    },
+    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+    select: relationshipSelect,
+  })
+}
 const listRecentMatchesForUser = (userId, limit) => {
   return prisma.gamePlayer.findMany({
     where: { userId },
@@ -78,8 +107,33 @@ const listRecentMatchesForUser = (userId, limit) => {
   })
 }
 
+const listPublicFriendsForUser = (userId, limit = 6) => {
+  return prisma.friendship.findMany({
+    where: {
+      status: 'ACCEPTED',
+      OR: [{ requesterId: userId }, { addresseeId: userId }],
+    },
+    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+    take: limit,
+    select: {
+      requesterId: true,
+      addresseeId: true,
+      updatedAt: true,
+      requester: {
+        select: publicIdentitySelect,
+      },
+      addressee: {
+        select: publicIdentitySelect,
+      },
+    },
+  })
+}
+
 module.exports = {
   findPublicProfileByUsername,
+  findRelationshipBetweenUsers,
+  findSelfProfileById,
+  listPublicFriendsForUser,
   listRecentMatchesForUser,
   updateProfileById,
 }

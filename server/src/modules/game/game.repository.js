@@ -172,7 +172,7 @@ const saveGameResult = async ({ startedAt, endedAt, status, players }) => {
  * Fetches leaderboard stats, aggregating wins for each user.
  *
  * @param {number} limit - Number of leaderboard entries to return
- * @returns {Promise<Array<{ userId: number, username: string, totalWins: number, totalScore: number }>>}
+ * @returns {Promise<Array<{ userId: number, username: string, displayName: string | null, totalWins: number, totalScore: number }>>}
  */
 const getLeaderboard = async (limit = 10) => {
   // Use Prisma's native $queryRaw for high-performance database-level aggregation and sorting.
@@ -181,11 +181,12 @@ const getLeaderboard = async (limit = 10) => {
     SELECT
       u.id AS "userId",
       u.username,
+      u."displayName",
       CAST(COUNT(CASE WHEN gp."isWinner" = true THEN 1 END) AS INTEGER) AS "totalWins",
       CAST(COALESCE(SUM(gp.score), 0) AS INTEGER) AS "totalScore"
     FROM "User" u
     JOIN "GamePlayer" gp ON u.id = gp."userId"
-    GROUP BY u.id, u.username
+    GROUP BY u.id, u.username, u."displayName"
     ORDER BY "totalWins" DESC, "totalScore" DESC
     LIMIT ${limit}
   `

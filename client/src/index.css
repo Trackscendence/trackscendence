@@ -26,3 +26,158 @@
     font: inherit;
   }
 }
+
+/*
+ * Pre-game waiting room (issue #153) animations, registered with Tailwind so
+ * they are usable as `animate-wr-*` utilities. Per-dot/per-bar delays are baked
+ * into named variants (the delay is the second time value in the shorthand), so
+ * no inline `style` is needed. Pair the utilities with `motion-reduce:animate-none`
+ * at the call site to honour reduced-motion preferences.
+ */
+@theme {
+  /*
+   * Warm surface palette for the game flow. `surface-warm` is the shared
+   * background for auth, the game table, and the game-start overlay; the
+   * waiting room uses `surface-waiting`, a deliberate tonal shift. Keep these
+   * two as the single source of truth — reach for the tokens
+   * (`bg-surface-warm`, `ring-offset-surface-warm`) rather than re-typing the
+   * hex, so the values never drift apart.
+   */
+  --color-surface-warm: #ffe7cb;
+  --color-surface-waiting: #f5d9b8;
+  /*
+   * Post-game results screen (issue #155). A paler, cooler cream than
+   * `surface-warm` — the results screen is a deliberate distinct beat in the
+   * flow (game -> result), not the game table continuing. One background serves
+   * all three outcome states (won / lost / abandoned); the state is carried by
+   * the headline, not the surface.
+   */
+  --color-surface-outcome: #fde8cf;
+
+  --animate-wr-dot-1: wr-dot-pulse 1.8s ease-in-out 0s infinite;
+  --animate-wr-dot-2: wr-dot-pulse 1.8s ease-in-out 0.3s infinite;
+  --animate-wr-dot-3: wr-dot-pulse 1.8s ease-in-out 0.6s infinite;
+  --animate-wr-breathe: wr-breathe 2.4s ease-in-out infinite;
+  --animate-wr-pop: wr-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  --animate-wr-overlay: wr-overlay-in 0.5s ease forwards;
+  --animate-wr-scale-in: wr-scale-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-wr-bar-1: wr-bar-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s
+    both;
+  --animate-wr-bar-2: wr-bar-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s
+    both;
+  --animate-wr-bar-3: wr-bar-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s
+    both;
+  --animate-wr-bar-4: wr-bar-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s
+    both;
+
+  /*
+   * Post-game results (issue #155) reveal. The headline lands like a played
+   * card, then the subtitle, leaderboard band, and actions rise in sequence.
+   * Pair each with `motion-reduce:animate-none` at the call site.
+   */
+  --animate-oc-headline: oc-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-oc-rise-1: oc-rise 0.55s ease 0.15s both;
+  --animate-oc-rise-2: oc-rise 0.55s ease 0.3s both;
+  --animate-oc-rise-3: oc-rise 0.55s ease 0.45s both;
+
+  @keyframes oc-pop {
+    from {
+      transform: scale(0.7);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes oc-rise {
+    from {
+      transform: translateY(14px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Dev-tools panel (The Rig) deal-in — dev-only, gated behind DEV_MODE. */
+  --animate-dev-deal: dev-deal 0.18s ease-out;
+
+  @keyframes dev-deal {
+    from {
+      transform: translateY(8px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes wr-dot-pulse {
+    0%,
+    55%,
+    100% {
+      transform: scale(0.65);
+      opacity: 0.22;
+    }
+    27% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes wr-breathe {
+    0%,
+    100% {
+      opacity: 0.42;
+    }
+    50% {
+      opacity: 0.88;
+    }
+  }
+
+  @keyframes wr-pop {
+    from {
+      transform: scale(0.4);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes wr-overlay-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes wr-scale-in {
+    from {
+      transform: scale(0.75);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes wr-bar-pop {
+    from {
+      transform: scale(0);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+}

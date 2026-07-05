@@ -7,7 +7,11 @@ const handleDisconnect = () => useSocketStore.getState().setConnected(false)
 
 const handleLobbyUpdate = (data) =>
   useGameStore.getState().setLobbyCount(data.count)
-const handleGameStart = (data) => useGameStore.getState().setMatch(data)
+const handleGameStart = (data) => {
+  const { setMatch, setGamePlayers } = useGameStore.getState()
+  setMatch(data)
+  setGamePlayers(data.players)
+}
 const handleGameStateUpdate = (data) =>
   useGameStore.getState().setGameState(data)
 const handleGameDrawnCard = (data) => {

@@ -76,7 +76,7 @@ const StatusLed = ({ rigged }) => (
 
 const DevControls = () => {
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   // 'collapsed' = launcher tab, 'expanded' = full panel, 'hidden' = gone.
   const [view, setView] = useState('collapsed')
   const rigged = useDevStore(selectIsRigged)
@@ -97,6 +97,23 @@ const DevControls = () => {
     if (pathname === '/results') {
       navigate(`/results?outcome=${next}`, { replace: true })
     }
+  }
+
+  // Same URL-driven pattern for the game table: it renders its designable
+  // mock only when dev builds see ?source=mock, so flipping the data source
+  // while on /game swaps that param in place (other params are preserved —
+  // they shape the mock).
+  const handleDataSourceChange = (next) => {
+    setFlag('dataSource', next)
+    if (pathname !== '/game') return
+    const params = new URLSearchParams(search)
+    if (next === 'mocked') {
+      params.set('source', 'mock')
+    } else {
+      params.delete('source')
+    }
+    const query = params.toString()
+    navigate(query ? `/game?${query}` : '/game', { replace: true })
   }
 
   // Ctrl+` fully hides / re-summons the panel when it's in your way.
@@ -189,7 +206,7 @@ const DevControls = () => {
             value={dataSource}
             options={SOURCE_OPTIONS}
             variant="dotted"
-            onChange={(next) => setFlag('dataSource', next)}
+            onChange={handleDataSourceChange}
           />
         </section>
 

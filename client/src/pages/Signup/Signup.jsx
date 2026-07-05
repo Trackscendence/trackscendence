@@ -6,6 +6,7 @@ import Panel from '@/components/Panel'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
 import { validateSignupInput } from '@/services/auth.validations'
+import { normalizeSignupInput } from '@/services/auth.normalizations'
 
 const Signup = () => {
   const navigate = useNavigate()
@@ -26,20 +27,23 @@ const Signup = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+
     setError('')
     setValidationDetails({})
 
-    const validations = validateSignupInput(form)
+    const normalizedForm = normalizeSignupInput(form)
+    const { isValid, errors } = validateSignupInput(normalizedForm)
 
-    if (!validations.isValid) {
-      setValidationDetails(validations.errors)
+    if (!isValid) {
+      setValidationDetails(errors)
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      await register(validations.normalizedData)
+      await register(normalizedForm)
+
       navigate('/login', {
         replace: true,
         state: { message: 'Account created. Sign in to continue.' },

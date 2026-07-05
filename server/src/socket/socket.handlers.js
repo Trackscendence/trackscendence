@@ -2,6 +2,7 @@ const logger = require('#utils/logger')
 const lobbyStore = require('#modules/game/lobby.store')
 const gameStore = require('#modules/game/game.store')
 const matchmaking = require('#modules/game/matchmaking.service')
+const gameService = require('#modules/game/game.service')
 const roomService = require('#modules/room/room.service')
 
 /**
@@ -187,25 +188,40 @@ const registerHandlers = (io, socket) => {
   })
 
   const checkGameEnd = async (gameId, engine) => {
-    if (engine.winner) {
-      const state = await gameStore.getGame(gameId)
-      if (state) {
-        state.status = 'COMPLETED'
-        state.winner = engine.winner
-        state.endedAt = new Date()
-        await gameStore.saveGame(gameId, state)
-      }
-      gameStore.deleteEngine(gameId)
+    if (!engine.winner) return
 
-      // The room served its purpose once the game ends; close it so the
-      // lobby offers a fresh room for the next round.
-      try {
-        if (await roomService.closeRoomsForGame(gameId)) {
-          await broadcastRooms(io)
-        }
-      } catch (error) {
-        logger.error('Failed to close room for finished game', error)
+    const state = await gameStore.getGame(gameId)
+    // Status check and flip with no await in between: this is the gate that
+    // makes game-end processing (and the save below) run exactly once when
+    // this races the abandon path. It relies on the store handing out a
+    // shared object, so the first flip is immediately visible to the loser;
+    // a copy-returning store (Redis) must replace it with an atomic
+    // compare-and-set inside the store.
+    if (!state || state.status !== 'IN_PROGRESS') return
+    state.status = 'COMPLETED'
+    state.winner = engine.winner
+    state.endedAt = new Date()
+    await gameStore.saveGame(gameId, state)
+    gameStore.deleteEngine(gameId)
+
+    // Persist before any game_over emit (#203) so the results screen reads a
+    // leaderboard that already includes this game. A failed save loses the
+    // stats row (logged, worth alerting on) but must never block tearing the
+    // game down for the players.
+    try {
+      await gameService.persistGameResult(state)
+    } catch (error) {
+      logger.error(`Failed to persist completed game ${gameId}`, error)
+    }
+
+    // The room served its purpose once the game ends; close it so the
+    // lobby offers a fresh room for the next round.
+    try {
+      if (await roomService.closeRoomsForGame(gameId)) {
+        await broadcastRooms(io)
       }
+    } catch (error) {
+      logger.error('Failed to close room for finished game', error)
     }
   }
 

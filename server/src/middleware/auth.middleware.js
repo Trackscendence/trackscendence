@@ -1,10 +1,29 @@
 const ForbiddenException = require('#exceptions/forbidden.exception')
 const UnauthorizedException = require('#exceptions/unauthorized.exception')
 
+const getAuthService = () => require('#modules/auth/auth.service')
+
 const requireAuth = async (req, res, next) => {
   try {
-    const authService = require('#modules/auth/auth.service')
-    req.user = await authService.getAuthenticatedUser(req.get('authorization'))
+    req.user = await getAuthService().getAuthenticatedUser(
+      req.get('authorization'),
+    )
+    next()
+  } catch (error) {
+    next(error)
+  }
+}
+
+const attachUserIfPresent = async (req, res, next) => {
+  const authorization = req.get('authorization')
+
+  if (!authorization) {
+    next()
+    return
+  }
+
+  try {
+    req.user = await getAuthService().getAuthenticatedUser(authorization)
     next()
   } catch (error) {
     next(error)
@@ -26,6 +45,7 @@ const requireRole = (...roles) => {
 }
 
 module.exports = {
+  attachUserIfPresent,
   requireAuth,
   requireRole,
 }

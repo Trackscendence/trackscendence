@@ -6,6 +6,10 @@ const config = require('#utils/config')
 const requestLogger = require('#middleware/morgan.middleware')
 const rateLimiter = require('#middleware/rate-limit.middleware')
 const { notFound, errorHandler } = require('#middleware/error.middleware')
+const {
+  UPLOADS_PUBLIC_PATH_PREFIX,
+  UPLOADS_ROOT_DIR,
+} = require('#modules/users/users.avatar')
 const v1Router = require('#routes/v1')
 const systemController = require('#modules/system/system.controller')
 
@@ -15,6 +19,13 @@ app.use(helmet())
 app.use(cors({ origin: config.CORS_ORIGIN }))
 app.use(express.json())
 app.use(requestLogger)
+app.use(
+  UPLOADS_PUBLIC_PATH_PREFIX,
+  express.static(UPLOADS_ROOT_DIR, {
+    fallthrough: false,
+    index: false,
+  }),
+)
 
 app.get('/', systemController.root)
 

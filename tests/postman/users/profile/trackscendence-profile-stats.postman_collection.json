@@ -1,0 +1,806 @@
+{
+  "info": {
+    "_postman_id": "2a8bb1e6-5a8a-41d1-8cc5-f255c7d1225d",
+    "name": "Trackscendence Profile And Stats",
+    "description": "Profile lookup and profile-update checks for the local Trackscendence Docker stack. Run the collection from top to bottom, or at minimum run 'Initialize Profile Variables' first. Stats and match-history assertions here focus on the zero-state API contract; see the README for the optional saved-game seeding step.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Initialize",
+      "item": [
+        {
+          "name": "Initialize Profile Variables",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "const usernameSuffix = runId.slice(-8);",
+                  "pm.environment.set('runId', runId);",
+                  "pm.environment.set('profileEmail', `${pm.environment.get('profileEmailPrefix')}.${runId}@example.com`);",
+                  "pm.environment.set('profileUsername', `${pm.environment.get('profileUsernamePrefix')}_${usernameSuffix}`);",
+                  "pm.environment.set('profileOpponentEmail', `${pm.environment.get('profileOpponentEmailPrefix')}.${runId}@example.com`);",
+                  "pm.environment.set('profileOpponentUsername', `${pm.environment.get('profileOpponentUsernamePrefix')}_${usernameSuffix}`);",
+                  "pm.environment.set('profileMissingUsername', `${pm.environment.get('profileMissingUsernamePrefix')}_${usernameSuffix}`);",
+                  "pm.environment.unset('profileOwnerId');",
+                  "pm.environment.unset('profileOpponentId');",
+                  "pm.environment.unset('profileToken');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ping returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('profile variables were generated', function () {",
+                  "  pm.expect(pm.environment.get('profileEmail')).to.include('@example.com');",
+                  "  pm.expect(pm.environment.get('profileUsername')).to.include('profile_player_');",
+                  "  pm.expect(pm.environment.get('profileOpponentUsername')).to.include('profile_opponent_');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ping",
+            "description": "Generates a fresh pair of usernames/emails and clears saved profile auth variables."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Register And Login",
+      "item": [
+        {
+          "name": "Register Profile Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register owner returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('profileOwnerId', String(json.user.id));",
+                  "pm.test('register owner returns the generated identity', function () {",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('profileEmail'));",
+                  "  pm.expect(json.user.username).to.eql(pm.environment.get('profileUsername'));",
+                  "});",
+                  "pm.test('new owner starts with zero stats', function () {",
+                  "  pm.expect(json.user.gamesPlayed).to.eql(0);",
+                  "  pm.expect(json.user.wins).to.eql(0);",
+                  "  pm.expect(json.user.losses).to.eql(0);",
+                  "  pm.expect(json.user.rank).to.eql(null);",
+                  "});",
+                  "pm.test('register owner response does not include secrets', function () {",
+                  "  pm.expect(JSON.stringify(json)).to.not.include('passwordHash');",
+                  "  pm.expect(JSON.stringify(json)).to.not.include('passwordResetTokenHash');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{profileEmail}}\",\n  \"username\": \"{{profileUsername}}\",\n  \"password\": \"{{profilePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Profile Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login owner returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('profileToken', json.token);",
+                  "pm.test('login owner stores a bearer token', function () {",
+                  "  pm.expect(pm.environment.get('profileToken')).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{profileEmail}}\",\n  \"password\": \"{{profilePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User Baseline",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('me returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('me reflects the new zero-state profile', function () {",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('profileEmail'));",
+                  "  pm.expect(json.user.displayName).to.eql(null);",
+                  "  pm.expect(json.user.bio).to.eql(null);",
+                  "  pm.expect(json.user.gamesPlayed).to.eql(0);",
+                  "  pm.expect(json.user.rank).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{profileToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Register Profile Opponent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register opponent returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('profileOpponentId', String(json.user.id));",
+                  "pm.test('register opponent returns the generated identity', function () {",
+                  "  pm.expect(json.user.email).to.eql(pm.environment.get('profileOpponentEmail'));",
+                  "  pm.expect(json.user.username).to.eql(pm.environment.get('profileOpponentUsername'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{profileOpponentEmail}}\",\n  \"username\": \"{{profileOpponentUsername}}\",\n  \"password\": \"{{profilePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Public Profile Lookups",
+      "item": [
+        {
+          "name": "Get Public Profile By Username",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('public profile returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('public profile returns the requested user', function () {",
+                  "  pm.expect(json.user.username).to.eql(pm.environment.get('profileUsername'));",
+                  "  pm.expect(json.user.displayName).to.eql(null);",
+                  "});",
+                  "pm.test('public profile does not expose private fields', function () {",
+                  "  pm.expect(json.user.email).to.eql(undefined);",
+                  "  pm.expect(json.user.role).to.eql(undefined);",
+                  "  pm.expect(JSON.stringify(json)).to.not.include('passwordHash');",
+                  "});",
+                  "pm.test('public profile includes stats and recentMatches shape', function () {",
+                  "  pm.expect(json.user.stats.gamesPlayed).to.eql(0);",
+                  "  pm.expect(json.user.stats.wins).to.eql(0);",
+                  "  pm.expect(json.user.stats.losses).to.eql(0);",
+                  "  pm.expect(json.user.stats.rank).to.eql(null);",
+                  "  pm.expect(json.user.recentMatches).to.be.an('array');",
+                  "  pm.expect(json.user.recentMatches.length).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{profileUsername}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Opponent Public Profile By Username",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('opponent profile returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('opponent profile returns the requested opponent', function () {",
+                  "  pm.expect(json.user.username).to.eql(pm.environment.get('profileOpponentUsername'));",
+                  "});",
+                  "pm.test('opponent profile also hides private fields', function () {",
+                  "  pm.expect(json.user.email).to.eql(undefined);",
+                  "  pm.expect(json.user.role).to.eql(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{profileOpponentUsername}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Unknown Username Returns 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('missing profile returns 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('missing profile message is returned', function () {",
+                  "  pm.expect(pm.response.json().error.message).to.eql('User not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{profileMissingUsername}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Username Returns 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('invalid username returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('invalid username includes validation detail', function () {",
+                  "  pm.expect(pm.response.json().error.payload.details).to.include('Username can only contain letters, numbers, underscores, and hyphens');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{profileInvalidUsername}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 Update My Profile",
+      "item": [
+        {
+          "name": "Update Display Name And Bio",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('profile update returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('profile update returns success message', function () {",
+                  "  pm.expect(json.message).to.eql('Profile updated successfully');",
+                  "});",
+                  "pm.test('profile update returns the new fields', function () {",
+                  "  pm.expect(json.user.displayName).to.eql(pm.environment.get('profileUpdatedDisplayName'));",
+                  "  pm.expect(json.user.bio).to.eql(pm.environment.get('profileUpdatedBio'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{profileToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"{{profileUpdatedDisplayName}}\",\n  \"bio\": \"{{profileUpdatedBio}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Auth Me Reflects Updated Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('me after update returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('me reflects updated displayName and bio', function () {",
+                  "  pm.expect(json.user.displayName).to.eql(pm.environment.get('profileUpdatedDisplayName'));",
+                  "  pm.expect(json.user.bio).to.eql(pm.environment.get('profileUpdatedBio'));",
+                  "});",
+                  "pm.test('me keeps zero-state stats before a saved match exists', function () {",
+                  "  pm.expect(json.user.gamesPlayed).to.eql(0);",
+                  "  pm.expect(json.user.rank).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{profileToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Public Profile Reflects Updated Fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('public profile after update returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('public profile reflects updated fields', function () {",
+                  "  pm.expect(json.user.displayName).to.eql(pm.environment.get('profileUpdatedDisplayName'));",
+                  "  pm.expect(json.user.bio).to.eql(pm.environment.get('profileUpdatedBio'));",
+                  "});",
+                  "pm.test('public profile still keeps private fields hidden', function () {",
+                  "  pm.expect(json.user.email).to.eql(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{profileUsername}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Whitespace Is Trimmed On Update",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('trimmed profile update returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('trimmed profile update stores normalized values', function () {",
+                  "  pm.expect(json.user.displayName).to.eql(pm.environment.get('profileDisplayName'));",
+                  "  pm.expect(json.user.bio).to.eql(pm.environment.get('profileBio'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{profileToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"  {{profileDisplayName}}  \",\n  \"bio\": \"  {{profileBio}}  \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Auth Me Reflects Trimmed Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('me after trim returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('me reflects trimmed displayName and bio', function () {",
+                  "  pm.expect(json.user.displayName).to.eql(pm.environment.get('profileDisplayName'));",
+                  "  pm.expect(json.user.bio).to.eql(pm.environment.get('profileBio'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{profileToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Whitespace Clears Profile Fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('whitespace clear returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('whitespace-only fields clear to null', function () {",
+                  "  pm.expect(json.user.displayName).to.eql(null);",
+                  "  pm.expect(json.user.bio).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{profileToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"   \",\n  \"bio\": \"   \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Public Profile Reflects Cleared Fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('public profile after clear returns 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('public profile reflects cleared fields', function () {",
+                  "  pm.expect(json.user.displayName).to.eql(null);",
+                  "  pm.expect(json.user.bio).to.eql(null);",
+                  "});",
+                  "pm.test('public profile still hides private fields after clear', function () {",
+                  "  pm.expect(json.user.email).to.eql(undefined);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{profileUsername}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 Validation And Guards",
+      "item": [
+        {
+          "name": "Unauthorized Profile Update Rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('unauthorized patch returns 401', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test('unauthorized patch message is returned', function () {",
+                  "  pm.expect(pm.response.json().error.message).to.eql('Authentication required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"{{profileDisplayName}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Empty Patch Rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('empty patch returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('empty patch includes validation detail', function () {",
+                  "  pm.expect(pm.response.json().error.payload.details).to.include('At least one updatable field is required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{profileToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Too Long Display Name Rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('too long displayName returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('too long displayName includes validation detail', function () {",
+                  "  pm.expect(pm.response.json().error.payload.details).to.include('displayName must be at most 40 characters');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{profileToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"{{profileTooLongDisplayName}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Too Long Bio Rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('too long bio returns 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('too long bio includes validation detail', function () {",
+                  "  pm.expect(pm.response.json().error.payload.details).to.include('bio must be at most 280 characters');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{profileToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"{{profileTooLongBio}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users/me"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

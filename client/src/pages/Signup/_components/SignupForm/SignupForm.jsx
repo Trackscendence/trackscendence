@@ -42,7 +42,10 @@ const SignupForm = ({ onSuccess }) => {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <FormField label="Username">
+      <FormField
+        label="Username"
+        hint="Lowercase letters and numbers only, starting with a letter."
+      >
         <Input
           name="username"
           type="text"

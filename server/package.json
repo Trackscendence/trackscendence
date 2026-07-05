@@ -19,11 +19,11 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development node --watch index.js",
+    "test": "node --test src/modules/game/game.engine.test.js src/modules/game/game.service.test.js src/middleware/auth.middleware.test.js src/modules/api-keys/api-keys.service.test.js src/modules/users/users.avatar.test.js src/modules/users/users.service.test.js",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:generate": "npx prisma generate --generator client",
     "prisma:seed": "npx prisma db seed",
-    "docs:erd": "mkdir -p ../docs && npx prisma generate --generator erd",
-    "test": "node --test src/modules/game/game.engine.test.js src/modules/game/game.service.test.js src/middleware/auth.middleware.test.js src/modules/api-keys/api-keys.service.test.js src/modules/users/users.service.test.js"
+    "docs:erd": "mkdir -p ../docs && npx prisma generate --generator erd"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -39,6 +39,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
+    "multer": "^2.2.0",
     "nodemailer": "^8.0.10",
     "otplib": "^13.4.1",
     "prisma": "^6.19.3",

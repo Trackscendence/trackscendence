@@ -61,7 +61,7 @@ const getAllGames = async () => {
 
 /**
  * Finds the active game a user is currently part of, if any.
- * @param {string} userId
+ * @param {number} userId
  * @param {{ status?: string }} [filter] - optional status to match (e.g. 'IN_PROGRESS')
  * @returns {Promise<Object|null>}
  */

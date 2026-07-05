@@ -13,21 +13,26 @@ const PlayerFinder = () => {
   const hasSearched = useUserSearchStore((state) => state.hasSearched)
 
   const [term, setTerm] = useState('')
+  // The term the current results belong to. Paging uses this instead of the
+  // live input, so editing the box does not change what Previous/Next load.
+  const [submittedTerm, setSubmittedTerm] = useState('')
 
-  const runSearch = async (page) => {
-    const q = term.trim()
+  const runSearch = async (rawTerm, page) => {
+    const q = rawTerm.trim()
 
     if (!q) {
+      setSubmittedTerm('')
       useUserSearchStore.getState().clear()
       return
     }
 
+    setSubmittedTerm(q)
     await useUserSearchStore.getState().search({ q, page })
   }
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    runSearch(1)
+    runSearch(term, 1)
   }
 
   return (
@@ -68,7 +73,7 @@ const PlayerFinder = () => {
             <Pagination
               pagination={pagination}
               disabled={isSearching}
-              onPageChange={runSearch}
+              onPageChange={(page) => runSearch(submittedTerm, page)}
             />
           </>
         )

@@ -18,6 +18,16 @@ const completeTwoFactorLogin = async (req, res) => {
   res.json(result)
 }
 
+const startFortyTwoLogin = (req, res) => {
+  res.redirect(authService.getFortyTwoAuthorizeUrl())
+}
+
+const completeFortyTwoLogin = async (req, res) => {
+  const result = await authService.loginWithFortyTwo(req.body)
+
+  res.json(result)
+}
+
 const me = (req, res) => {
   res.json({ user: req.user })
 }
@@ -69,9 +79,11 @@ const regenerateTwoFactor = async (req, res) => {
 }
 
 module.exports = {
+  completeFortyTwoLogin,
   completeTwoFactorLogin,
   confirmTwoFactorSetup,
   register,
+  startFortyTwoLogin,
   disableTwoFactor,
   login,
   me,

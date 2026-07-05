@@ -1,8 +1,10 @@
 import { create } from 'zustand'
 import {
   AUTH_TOKEN_KEY,
+  completeFortyTwoLogin as completeFortyTwoLoginRequest,
   completeTwoFactorLogin as completeTwoFactorLoginRequest,
   fetchCurrentUser,
+  getFortyTwoLoginUrl,
   login as loginRequest,
   logout as logoutRequest,
   register as registerRequest,
@@ -24,6 +26,9 @@ const useAuthStore = create((set, get) => ({
   token: localStorage.getItem(AUTH_TOKEN_KEY),
   isAuthenticated: false,
   isLoading: Boolean(localStorage.getItem(AUTH_TOKEN_KEY)),
+  // Build-time flag: flipped on once the server has its 42 credentials, so
+  // the button stays in its "Soon" state on environments without them.
+  isFortyTwoLoginEnabled: import.meta.env.VITE_FORTYTWO_AUTH === 'true',
 
   init: async () => {
     const storedToken = localStorage.getItem(AUTH_TOKEN_KEY)
@@ -53,6 +58,15 @@ const useAuthStore = create((set, get) => ({
 
   completeTwoFactorLogin: async (payload) => {
     const result = await completeTwoFactorLoginRequest(payload)
+    return applyAuthenticatedResult(set, result)
+  },
+
+  startFortyTwoLogin: () => {
+    window.location.assign(getFortyTwoLoginUrl())
+  },
+
+  completeFortyTwoLogin: async (payload) => {
+    const result = await completeFortyTwoLoginRequest(payload)
     return applyAuthenticatedResult(set, result)
   },
 

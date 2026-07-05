@@ -6,6 +6,9 @@ import useAuthStore from '@/stores/useAuthStore'
 const useGameStore = create((set) => ({
   matchHistory: [],
   leaderboard: [],
+  leaderboardPagination: null,
+  isLeaderboardLoading: false,
+  leaderboardError: null,
   currentMatch: null,
 
   // Pre-game waiting room state, driven by the #88 socket contract:
@@ -22,16 +25,26 @@ const useGameStore = create((set) => ({
   setMatchHistory: (matchHistory) => set({ matchHistory }),
   setLeaderboard: (leaderboard) => set({ leaderboard }),
 
-  // Fetch the ranked-players list for the results screen. The endpoint returns
-  // `{ leaderboard }`; failures leave the previous value in place so the screen
-  // can fall back to its own empty/mock state rather than crashing.
-  loadLeaderboard: async () => {
+  // Fetch the ranked-players list for the results screen and the leaderboard
+  // page. `params` supports search/minGames/sort/order/page/limit; the
+  // endpoint returns `{ leaderboard, pagination }`. Failures leave the
+  // previous entries in place so consumers can fall back to them instead of
+  // crashing.
+  loadLeaderboard: async (params = {}) => {
     const token = useAuthStore.getState().token
+    set({ isLeaderboardLoading: true, leaderboardError: null })
     try {
-      const response = await getLeaderboard(token)
-      set({ leaderboard: response?.leaderboard ?? [] })
-    } catch {
-      // Container owns the empty-state fallback.
+      const response = await getLeaderboard(params, token)
+      set({
+        leaderboard: response?.leaderboard ?? [],
+        leaderboardPagination: response?.pagination ?? null,
+        isLeaderboardLoading: false,
+      })
+    } catch (error) {
+      set({
+        isLeaderboardLoading: false,
+        leaderboardError: error?.message || 'Failed to load the leaderboard',
+      })
     }
   },
   setCurrentMatch: (currentMatch) => set({ currentMatch }),

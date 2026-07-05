@@ -10,8 +10,11 @@ const publicProfileSelect = {
   ...publicIdentitySelect,
   bio: true,
   createdAt: true,
+  gamesPlayed: true,
+  wins: true,
+  losses: true,
+  rank: true,
 }
-
 const selfProfileSelect = {
   ...publicProfileSelect,
   email: true,
@@ -58,7 +61,6 @@ const findSelfProfileById = (id) => {
     select: selfProfileSelect,
   })
 }
-
 const findPublicProfileByUsername = (username) => {
   return prisma.user.findUnique({
     where: { username },
@@ -92,51 +94,6 @@ const findRelationshipBetweenUsers = (firstUserId, secondUserId) => {
     select: relationshipSelect,
   })
 }
-
-const getStatsForUser = async (userId) => {
-  const rows = await prisma.$queryRaw`
-    SELECT
-      CAST(COUNT(gp.id) AS INTEGER) AS "gamesPlayed",
-      CAST(COUNT(CASE WHEN gp."isWinner" = true THEN 1 END) AS INTEGER) AS "wins",
-      CAST(COUNT(CASE WHEN gp."isWinner" = false THEN 1 END) AS INTEGER) AS "losses"
-    FROM "GamePlayer" gp
-    JOIN "Game" g ON g.id = gp."gameId"
-    WHERE gp."userId" = ${userId}
-      AND g.status = 'COMPLETED'
-  `
-
-  return rows[0] || { gamesPlayed: 0, wins: 0, losses: 0 }
-}
-
-const getRankForUser = async (userId) => {
-  const rows = await prisma.$queryRaw`
-    WITH stats AS (
-      SELECT
-        gp."userId",
-        COUNT(gp.id) AS "gamesPlayed",
-        COUNT(CASE WHEN gp."isWinner" = true THEN 1 END) AS "wins",
-        COALESCE(SUM(gp.score), 0) AS "totalScore"
-      FROM "GamePlayer" gp
-      JOIN "Game" g ON g.id = gp."gameId"
-      WHERE g.status = 'COMPLETED'
-      GROUP BY gp."userId"
-    ),
-    ranked AS (
-      SELECT
-        "userId",
-        DENSE_RANK() OVER (
-          ORDER BY "wins" DESC, "totalScore" DESC, "gamesPlayed" ASC, "userId" ASC
-        ) AS "rank"
-      FROM stats
-    )
-    SELECT CAST("rank" AS INTEGER) AS "rank"
-    FROM ranked
-    WHERE "userId" = ${userId}
-  `
-
-  return rows[0]?.rank || null
-}
-
 const listRecentMatchesForUser = (userId, limit) => {
   return prisma.gamePlayer.findMany({
     where: { userId },
@@ -176,8 +133,6 @@ module.exports = {
   findPublicProfileByUsername,
   findRelationshipBetweenUsers,
   findSelfProfileById,
-  getRankForUser,
-  getStatsForUser,
   listPublicFriendsForUser,
   listRecentMatchesForUser,
   updateProfileById,

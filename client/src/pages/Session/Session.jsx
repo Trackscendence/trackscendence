@@ -26,6 +26,12 @@ const Session = () => {
         <h2 className="text-lg font-semibold">Signed in</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
+            <p className="text-sm font-medium text-[#617267]">Display name</p>
+            <p className="mt-1 text-base font-semibold">
+              {user.displayName || user.username}
+            </p>
+          </div>
+          <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
             <p className="text-sm font-medium text-[#617267]">Email</p>
             <p className="mt-1 text-base font-semibold">{user.email}</p>
           </div>

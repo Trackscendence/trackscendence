@@ -1,13 +1,14 @@
 const { Router } = require('express')
-const { requireAuth } = require('#middleware/auth.middleware')
+const {
+  attachUserIfPresent,
+  requireAuth,
+} = require('#middleware/auth.middleware')
 const usersController = require('#modules/users/users.controller')
 
 const router = Router()
 
-router.use(requireAuth)
-
-router.get('/me', usersController.getCurrentProfile)
-router.patch('/me', usersController.updateCurrentUserProfile)
-router.get('/:username', usersController.getProfile)
+router.get('/me', requireAuth, usersController.getCurrentProfile)
+router.patch('/me', requireAuth, usersController.updateCurrentUserProfile)
+router.get('/:username', attachUserIfPresent, usersController.getProfile)
 
 module.exports = router

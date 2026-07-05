@@ -18,7 +18,6 @@ const FRIENDSHIP_STATUS = {
   BLOCKED: 'BLOCKED',
   PENDING: 'PENDING',
 }
-
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key)
 
 const isRecordNotFoundError = (error) => {
@@ -51,7 +50,6 @@ const getUsernameValidationMessages = (username) => {
 
   return details
 }
-
 const normalizeUpdatableTextField = ({
   details,
   fieldName,
@@ -131,11 +129,11 @@ const validateUpdateProfileInput = (payload = {}) => {
   return data
 }
 
-const toProfileStats = (stats, rank) => ({
-  gamesPlayed: Number(stats.gamesPlayed || 0),
-  wins: Number(stats.wins || 0),
-  losses: Number(stats.losses || 0),
-  rank,
+const toProfileStats = (user) => ({
+  gamesPlayed: user.gamesPlayed,
+  wins: user.wins,
+  losses: user.losses,
+  rank: user.rank,
 })
 
 const toRecentMatch = (match, currentUserId) => {
@@ -207,9 +205,7 @@ const toRelationshipState = (relationship, viewerId, profileUserId) => {
 }
 
 const getProfileData = async (user, options = {}) => {
-  const [stats, rank, recentMatches, friends] = await Promise.all([
-    usersRepository.getStatsForUser(user.id),
-    usersRepository.getRankForUser(user.id),
+  const [recentMatches, friends] = await Promise.all([
     usersRepository.listRecentMatchesForUser(user.id, MATCH_HISTORY_LIMIT),
     usersRepository.listPublicFriendsForUser(user.id, PROFILE_FRIENDS_LIMIT),
   ])
@@ -221,7 +217,7 @@ const getProfileData = async (user, options = {}) => {
     bio: user.bio,
     createdAt: user.createdAt,
     ...(options.includeEmail ? { email: user.email } : {}),
-    stats: toProfileStats(stats, rank),
+    stats: toProfileStats(user),
     recentMatches: recentMatches.map((match) => toRecentMatch(match, user.id)),
     friends: friends.map((friendship) => toProfileFriend(friendship, user.id)),
   }
@@ -257,13 +253,15 @@ const getProfileByUsername = async (viewer, username) => {
   }
 
   const relationship =
-    viewer.id === user.id
-      ? null
-      : await usersRepository.findRelationshipBetweenUsers(viewer.id, user.id)
+    viewer?.id && viewer.id !== user.id
+      ? await usersRepository.findRelationshipBetweenUsers(viewer.id, user.id)
+      : null
 
   return {
     user: await getProfileData(user),
-    relationship: toRelationshipState(relationship, viewer.id, user.id),
+    relationship: viewer?.id
+      ? toRelationshipState(relationship, viewer.id, user.id)
+      : null,
   }
 }
 
@@ -282,6 +280,10 @@ const updateCurrentUserProfile = async (viewer, payload) => {
         username: user.username,
         displayName: user.displayName,
         bio: user.bio,
+        gamesPlayed: user.gamesPlayed,
+        wins: user.wins,
+        losses: user.losses,
+        rank: user.rank,
         role: user.role,
         createdAt: user.createdAt,
         twoFactorEnabled: Boolean(user.twoFactorEnabled),

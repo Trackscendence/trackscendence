@@ -12,6 +12,5 @@ v1Router.use('/auth', auth)
 v1Router.use('/users', users)
 v1Router.use('/friends', friends)
 v1Router.use('/game', game)
-v1Router.use('/users', users)
 
 module.exports = v1Router

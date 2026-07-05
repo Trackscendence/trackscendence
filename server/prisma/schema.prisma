@@ -24,6 +24,7 @@ model User {
   username                         String   @unique
   displayName                      String?
   bio                              String?
+  avatarUrl                        String?
   passwordHash                     String
   passwordResetTokenId             String?  @unique
   passwordResetTokenHash           String?

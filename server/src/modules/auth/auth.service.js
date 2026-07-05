@@ -57,6 +57,7 @@ const toSafeAuthUser = (user) => ({
   username: user.username,
   displayName: user.displayName,
   bio: user.bio,
+  avatarUrl: user.avatarUrl,
   gamesPlayed: user.gamesPlayed,
   wins: user.wins,
   losses: user.losses,

@@ -5,7 +5,10 @@ process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test'
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 
-const { parseLeaderboardQuery } = require('#modules/game/game.service')
+const {
+  buildGameResultPayload,
+  parseLeaderboardQuery,
+} = require('#modules/game/game.service')
 
 describe('parseLeaderboardQuery', () => {
   it('returns defaults for an empty query', () => {
@@ -90,5 +93,59 @@ describe('parseLeaderboardQuery', () => {
       assert.strictEqual(error.statusCode, 400)
       assert.strictEqual(error.payload.details.length, 3)
     }
+  })
+})
+
+describe('buildGameResultPayload', () => {
+  const startedAt = new Date('2026-07-05T10:00:00Z')
+  const endedAt = new Date('2026-07-05T10:12:00Z')
+  const players = [
+    { userId: 1, username: 'alice' },
+    { userId: 2, username: 'bob' },
+  ]
+
+  it('flags exactly the recorded winner on a completed game', () => {
+    const payload = buildGameResultPayload({
+      status: 'COMPLETED',
+      winner: 2,
+      players,
+      startedAt,
+      endedAt,
+    })
+
+    assert.deepStrictEqual(payload, {
+      startedAt,
+      endedAt,
+      status: 'COMPLETED',
+      players: [
+        { userId: 1, score: 0, isWinner: false },
+        { userId: 2, score: 0, isWinner: true },
+      ],
+    })
+  })
+
+  it('flags nobody on an abandoned game', () => {
+    const payload = buildGameResultPayload({
+      status: 'ABANDONED',
+      abandonedBy: 1,
+      players,
+      startedAt,
+      endedAt,
+    })
+
+    assert.strictEqual(payload.status, 'ABANDONED')
+    assert.ok(payload.players.every((player) => player.isWinner === false))
+  })
+
+  it('ignores a leftover winner on an abandoned game', () => {
+    const payload = buildGameResultPayload({
+      status: 'ABANDONED',
+      winner: 2,
+      players,
+      startedAt,
+      endedAt,
+    })
+
+    assert.ok(payload.players.every((player) => player.isWinner === false))
   })
 })

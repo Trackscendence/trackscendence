@@ -80,6 +80,7 @@
     "tsconfig",
     "vite",
     "vitest",
+    "xact",
     "xlink"
   ]
 }

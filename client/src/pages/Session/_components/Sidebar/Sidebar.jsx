@@ -6,35 +6,27 @@ import { useEffect } from 'react'
 
 const SideBar = () => {
   const rooms = useChatStore((state) => state.rooms)
-  const setRooms = useChatStore((state) => state.setRooms)
+  const addRoom = useChatStore((state) => state.addRoom)
   const setMessages = useChatStore((state) => state.setMessages)
   const token = useAuthStore((state) => state.token)
 
   // TODO refactor to useProfileStore()
   useEffect(() => {
-    let isMounted = true
-
     const setPrivateRooms = async () => {
       const data = await listFriends(token)
 
-      const privateRooms = data.friends.map((f) => {
+      data.friends.map((f) => {
         const roomId = `user:${f.user.id}`
+        addRoom(roomId, f.user.username)
         setMessages(roomId, [])
         return {
           id: roomId,
           name: f.user.username,
         }
       })
-
-      if (isMounted) {
-        setRooms(rooms.concat(privateRooms))
-        setMessages
-      }
     }
 
     setPrivateRooms()
-
-    return () => (isMounted = false)
   }, [token])
 
   return (
@@ -46,19 +38,19 @@ const SideBar = () => {
       </svg>
       <div className="border-e border-[#e1e6de] p-4">
         <ul>
-          {rooms
-            .filter((room) => room.id.startsWith('channel:'))
-            .map((room) => (
-              <RoomLabel room={room} key={room.id} />
+          {Object.entries(rooms)
+            .filter(([key]) => key.startsWith('channel:'))
+            .map(([key, value]) => (
+              <RoomLabel roomId={key} roomName={value.name} key={key} />
             ))}
         </ul>
         <h2 className="mt-4 font-semibold">FRIENDS</h2>
         <hr className="border-[#e1e6de]" />
         <ul>
-          {rooms
-            .filter((room) => room.id.startsWith('user'))
-            .map((room) => (
-              <RoomLabel room={room} key={room.id} />
+          {Object.entries(rooms)
+            .filter(([key]) => key.startsWith('user:'))
+            .map(([key, value]) => (
+              <RoomLabel roomId={key} roomName={value.name} key={key} />
             ))}
         </ul>
       </div>

@@ -1,28 +1,29 @@
 import useChatStore from '@/stores/useChatStore'
 
-const RoomLabel = ({ room }) => {
+const RoomLabel = ({ roomId, roomName }) => {
   const activeRoom = useChatStore((state) => state.activeRoom)
   const setActiveRoom = useChatStore((state) => state.setActiveRoom)
-
   return (
     <>
       <li
         className={
-          room.id === activeRoom
+          roomId === activeRoom
             ? 'mt-2 flex w-full gap-1 rounded-md bg-[#58947C] px-4 py-2.5 text-sm font-semibold text-white'
             : 'mt-2 flex w-full gap-1 rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm font-semibold transition hover:bg-[#B4CFC3]'
         }
-        onClick={room === activeRoom ? undefined : () => setActiveRoom(room.id)}
-        key={room.id}
+        onClick={
+          roomId === activeRoom ? undefined : () => setActiveRoom(roomId)
+        }
+        key={roomId}
       >
-        {room.id.startsWith('user:') && (
+        {roomId.startsWith('user:') && (
           <div className="place-self-center">
             <svg className="size-4 place-self-center fill-green-500">
               <use href="#circle-fill" />
             </svg>
           </div>
         )}
-        <div className="place-self-center">{room.name}</div>
+        <div className="place-self-center">{roomName}</div>
         {/* {room !== activeRoom && (
           <div className="place-self-center rounded-md bg-[#2f7d61] p-1 text-white">
             15

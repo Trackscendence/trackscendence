@@ -1,17 +1,23 @@
 import { create } from 'zustand'
 
 const useChatStore = create((set) => ({
-  rooms: [
-    {
-      id: 'channel:#general',
+  rooms: {
+    'channel:#general': {
       name: '#General',
     },
-  ],
+  },
   messages: {
     'channel:#general': [],
   },
   activeRoom: 'channel:#general',
 
+  addRoom: (roomId, roomName) =>
+    set((state) => ({
+      rooms: {
+        ...state.rooms,
+        [roomId]: { name: roomName },
+      },
+    })),
   setRooms: (rooms) => set({ rooms }),
   setActiveRoom: (activeRoom) => set({ activeRoom }),
   addMessage: (roomId, message) =>

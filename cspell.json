@@ -36,6 +36,7 @@
     "evenodd",
     "formdata",
     "healthcheck",
+    "ILIKE",
     "Initialisation",
     "initialise",
     "initialised",

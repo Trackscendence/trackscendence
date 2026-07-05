@@ -107,18 +107,18 @@ To exceed the mandatory 14 points required for evaluation, our roadmap implement
 <summary><strong>Click to expand target modules status</strong></summary>
 <br>
 
-| Category     | Module                         | Type         | Status         | Justification                                                                              |
-| ------------ | ------------------------------ | ------------ | -------------- | ------------------------------------------------------------------------------------------ |
-| **Web**      | Framework for Frontend/Backend | Major (2pts) | 🟢 Implemented | Used React for the frontend and Express for the backend.                                   |
-| **Web**      | WebSockets                     | Major (2pts) | 🟢 Implemented | Real-time updates, graceful disconnections, and efficient broadcasting via Socket.IO.      |
-| **Web**      | User Chat                      | Major (2pts) | 🟡 In Progress | Live room messaging active; friendships, profile page view, and group lobbies in progress. |
-| **Web**      | Public API                     | Major (2pts) | 🟢 Implemented | API-key-secured `/api/v1/public` endpoints with per-key rate limiting and Swagger docs.    |
-| **Web**      | Use an ORM                     | Minor (1pt)  | 🟢 Implemented | Used Prisma for type-safe relational mapping and migrations.                               |
-| **Web**      | Search Functionality           | Minor (1pt)  | 🔴 Planned     | Search filters, sorting, and pagination logic.                                             |
-| **Web**      | File Upload                    | Minor (1pt)  | 🔴 Planned     | Profile avatar upload and asset management system.                                         |
-| **User Mgt** | Standard User Management       | Major (2pts) | 🟡 In Progress | User register, login, session security, and 2FA completed; user settings in progress.      |
-| **Gaming**   | Web-based Game                 | Major (2pts) | 🟡 In Progress | Real-time multiplayer UNO engine logic under development.                                  |
-| **Gaming**   | Multiplayer 3+                 | Major (2pts) | 🟡 In Progress | Extending the game room structures to support 3 or more concurrent players.                |
+| Category     | Module                         | Type         | Status         | Justification                                                                               |
+| ------------ | ------------------------------ | ------------ | -------------- | ------------------------------------------------------------------------------------------- |
+| **Web**      | Framework for Frontend/Backend | Major (2pts) | 🟢 Implemented | Used React for the frontend and Express for the backend.                                    |
+| **Web**      | WebSockets                     | Major (2pts) | 🟢 Implemented | Real-time updates, graceful disconnections, and efficient broadcasting via Socket.IO.       |
+| **Web**      | User Chat                      | Major (2pts) | 🟡 In Progress | Live room messaging active; friendships, profile page view, and group lobbies in progress.  |
+| **Web**      | Public API                     | Major (2pts) | 🟢 Implemented | API-key-secured `/api/v1/public` endpoints with per-key rate limiting and Swagger docs.     |
+| **Web**      | Use an ORM                     | Minor (1pt)  | 🟢 Implemented | Used Prisma for type-safe relational mapping and migrations.                                |
+| **Web**      | Search Functionality           | Minor (1pt)  | 🟢 Implemented | Leaderboard search, multi-criteria filters, sorting, pagination, and user directory search. |
+| **Web**      | File Upload                    | Minor (1pt)  | 🔴 Planned     | Profile avatar upload and asset management system.                                          |
+| **User Mgt** | Standard User Management       | Major (2pts) | 🟡 In Progress | User register, login, session security, and 2FA completed; user settings in progress.       |
+| **Gaming**   | Web-based Game                 | Major (2pts) | 🟡 In Progress | Real-time multiplayer UNO engine logic under development.                                   |
+| **Gaming**   | Multiplayer 3+                 | Major (2pts) | 🟡 In Progress | Extending the game room structures to support 3 or more concurrent players.                 |
 
 </details>
 

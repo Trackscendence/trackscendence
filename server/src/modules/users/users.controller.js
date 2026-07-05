@@ -7,6 +7,12 @@ const getCurrentProfile = async (req, res) => {
   res.json(result)
 }
 
+const searchUsers = async (req, res) => {
+  const result = await usersService.searchUsers(req.query)
+
+  res.json(result)
+}
+
 const getProfile = async (req, res) => {
   const result = await usersService.getProfileByUsername(
     req.user,
@@ -38,6 +44,7 @@ module.exports = {
   deleteCurrentUserAvatar,
   getCurrentProfile,
   getProfile,
+  searchUsers,
   updateCurrentUserProfile,
   uploadCurrentUserAvatar,
   uploadCurrentUserAvatarFile,

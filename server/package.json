@@ -19,7 +19,7 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development node --watch index.js",
-    "test": "node --test src/modules/game/game.engine.test.js src/middleware/auth.middleware.test.js src/modules/api-keys/api-keys.service.test.js src/modules/users/users.avatar.test.js",
+    "test": "node --test src/modules/game/game.engine.test.js src/modules/game/game.service.test.js src/middleware/auth.middleware.test.js src/modules/api-keys/api-keys.service.test.js src/modules/users/users.avatar.test.js src/modules/users/users.service.test.js",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:generate": "npx prisma generate --generator client",
     "prisma:seed": "npx prisma db seed",

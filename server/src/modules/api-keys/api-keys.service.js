@@ -47,23 +47,20 @@ const validateCreateApiKeyInput = (payload = {}) => {
 const createApiKey = async (viewer, payload) => {
   const { name } = validateCreateApiKeyInput(payload)
 
-  const activeKeyCount = await apiKeysRepository.countActiveApiKeysForUser(
-    viewer.id,
-  )
-
-  if (activeKeyCount >= MAX_ACTIVE_KEYS_PER_USER) {
-    throw new BadRequestException(
-      `You can have at most ${MAX_ACTIVE_KEYS_PER_USER} active API keys`,
-    )
-  }
-
   const plaintextKey = generateApiKey()
-  const apiKey = await apiKeysRepository.createApiKey({
+  const apiKey = await apiKeysRepository.createApiKeyIfUnderLimit({
     userId: viewer.id,
     name,
     keyHash: hashApiKey(plaintextKey),
     keyPrefix: plaintextKey.slice(0, KEY_PREFIX_DISPLAY_LENGTH),
+    maxActiveKeys: MAX_ACTIVE_KEYS_PER_USER,
   })
+
+  if (!apiKey) {
+    throw new BadRequestException(
+      `You can have at most ${MAX_ACTIVE_KEYS_PER_USER} active API keys`,
+    )
+  }
 
   return {
     message: 'API key created. Store it now: it is only shown once.',

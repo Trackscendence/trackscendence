@@ -6,6 +6,9 @@ const usersService = require('#modules/users/users.service')
 
 const DEFAULT_PAGE_SIZE = 10
 const MAX_PAGE_SIZE = 50
+// Caps the OFFSET a caller can force on the leaderboard query; pages past the
+// data simply return an empty list.
+const MAX_PAGE = 1000
 
 const parsePositiveInteger = ({
   details,
@@ -33,6 +36,7 @@ const parsePagination = (query = {}) => {
   const page = parsePositiveInteger({
     details,
     fieldName: 'page',
+    max: MAX_PAGE,
     rawValue: query.page,
     fallback: 1,
   })

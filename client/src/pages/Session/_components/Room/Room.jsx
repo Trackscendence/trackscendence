@@ -1,15 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { socket } from '@/services/socket'
+import useChatStore from '@/stores/useChatStore'
 
 const Room = () => {
   const messageRef = useRef()
-  const [messages, setMessages] = useState([])
+  const activeRoom = useChatStore((state) => state.activeRoom)
+  const messages = useChatStore((state) => state.messages[activeRoom])
+  const addMessage = useChatStore((state) => state.addMessage)
 
   const handler = (data) => {
-    setMessages((previous) => [
-      ...previous,
-      { id: previous.length, message: data.message, user: data.user },
-    ])
+    // console.log('Data received:', data)
+    const message = {
+      id: Date.now(),
+      message: data.message,
+      user: data.user,
+    }
+    addMessage(activeRoom, message)
   }
 
   useEffect(() => {

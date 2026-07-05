@@ -2,6 +2,7 @@ const logger = require('#utils/logger')
 const lobbyStore = require('#modules/game/lobby.store')
 const gameStore = require('#modules/game/game.store')
 const matchmaking = require('#modules/game/matchmaking.service')
+const roomService = require('#modules/room/room.service')
 
 /**
  * Emits the public game state to every player, injecting each player's own
@@ -32,6 +33,15 @@ const startMatch = (io, { gameId, players, engine }) => {
     io.to(`user:${userId}`).emit('game_start', { gameId, players })
   })
   broadcastGameState(io, gameId, engine)
+}
+
+/**
+ * Pushes the full room list to every connected client. With the MVP's single
+ * room this is cheap; once many rooms exist, this is the seam to scope the
+ * broadcast to lobby watchers instead.
+ */
+const broadcastRooms = async (io) => {
+  io.emit('rooms_update', await roomService.listRooms())
 }
 
 const registerHandlers = (io, socket) => {
@@ -65,10 +75,69 @@ const registerHandlers = (io, socket) => {
     io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
   })
 
+  // Auto-seat: called by the waiting room on mount. Whoever arrives first
+  // creates the room (and owns it), everyone after that fills a seat. When the
+  // last seat fills, the match starts for exactly the room's players.
+  socket.on('room:seat', async () => {
+    try {
+      const room = await roomService.seatUser(socket.user)
+      logger.info(`User ${socket.user.username} seated in room ${room.id}`)
+
+      if (room.status === 'OPEN' && roomService.isRoomFull(room)) {
+        // If createMatch throws, the room stays OPEN and full; a member
+        // leaving frees a seat and the next seat retries the start.
+        const match = await matchmaking.createMatch(room.players)
+        await roomService.markRoomInGame(room.id, match.gameId)
+        startMatch(io, match)
+      }
+
+      await broadcastRooms(io)
+    } catch (error) {
+      logger.error('Failed to seat player', error)
+      socket.emit('room_error', {
+        message: error.message || 'Unable to join a room',
+      })
+    }
+  })
+
+  socket.on('room:leave', async () => {
+    try {
+      const leftRoom = await roomService.leaveOpenRoom(socket.user.id)
+      if (leftRoom) {
+        await broadcastRooms(io)
+      }
+    } catch (error) {
+      logger.error('Failed to leave room', error)
+      socket.emit('room_error', { message: 'Unable to leave the room' })
+    }
+  })
+
+  // Lobby page hydration: send the room list to just this socket; later
+  // changes arrive via the broadcast in `broadcastRooms`.
+  socket.on('room:list', async () => {
+    try {
+      socket.emit('rooms_update', await roomService.listRooms())
+    } catch (error) {
+      logger.error('Failed to list rooms', error)
+      socket.emit('room_error', { message: 'Unable to load rooms' })
+    }
+  })
+
   socket.on('disconnect', async () => {
     logger.info('user disconnected')
     lobbyStore.removePlayer(socket.user.id)
     io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
+
+    // Leaving the waiting room (or closing the tab) disconnects the socket,
+    // which unseats the player so their room never shows a ghost occupant.
+    try {
+      const leftRoom = await roomService.leaveOpenRoom(socket.user.id)
+      if (leftRoom) {
+        await broadcastRooms(io)
+      }
+    } catch (error) {
+      logger.error('Failed to unseat disconnected player', error)
+    }
 
     // If the player dropped mid-game, abandon the game and free its engine so
     // it does not leak, and let the remaining players know.
@@ -81,6 +150,14 @@ const registerHandlers = (io, socket) => {
         reason: 'player_left',
         abandonedBy: socket.user.id,
       })
+
+      try {
+        if (await roomService.closeRoomsForGame(abandonedGame.id)) {
+          await broadcastRooms(io)
+        }
+      } catch (error) {
+        logger.error('Failed to close room for abandoned game', error)
+      }
     }
   })
 
@@ -108,6 +185,16 @@ const registerHandlers = (io, socket) => {
         await gameStore.saveGame(gameId, state)
       }
       gameStore.deleteEngine(gameId)
+
+      // The room served its purpose once the game ends; close it so the
+      // lobby offers a fresh room for the next round.
+      try {
+        if (await roomService.closeRoomsForGame(gameId)) {
+          await broadcastRooms(io)
+        }
+      } catch (error) {
+        logger.error('Failed to close room for finished game', error)
+      }
     }
   }
 

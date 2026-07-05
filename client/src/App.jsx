@@ -18,6 +18,7 @@ import Leaderboard from '@/pages/Leaderboard'
 import Profile from '@/pages/Profile'
 import Game from '@/pages/Game'
 import Lobby from '@/pages/Lobby'
+import WaitingRoom from '@/pages/WaitingRoom'
 import Session from '@/pages/Session'
 import User from '@/pages/User'
 import PrivacyPolicy from '@/pages/Privacy'
@@ -65,11 +66,15 @@ const App = () => {
         <Route path="/terms-of-service" element={<TermsOfService />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Lobby />} />
+          <Route path="/" element={<WaitingRoom />} />
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/game" element={<Game />} />
           <Route element={<ProfileLayout />}>
             <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/users/me"
+              element={<Navigate to="/profile" replace />}
+            />
             <Route path="/users/:username" element={<User />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
           </Route>

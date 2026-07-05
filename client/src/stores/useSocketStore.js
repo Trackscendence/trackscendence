@@ -16,6 +16,9 @@ const handleGameDrawnCard = (data) => {
 }
 const handleGameError = (data) =>
   useGameStore.getState().setGameError(data.message)
+const handleRoomsUpdate = (data) => useGameStore.getState().setRooms(data)
+const handleRoomError = (data) =>
+  useGameStore.getState().setRoomError(data.message)
 
 const useSocketStore = create((set) => ({
   isConnected: false,
@@ -35,6 +38,8 @@ const useSocketStore = create((set) => ({
     socket.on('game_state_update', handleGameStateUpdate)
     socket.on('game_drawn_card', handleGameDrawnCard)
     socket.on('game_error', handleGameError)
+    socket.on('rooms_update', handleRoomsUpdate)
+    socket.on('room_error', handleRoomError)
 
     socket.connect()
   },
@@ -48,6 +53,8 @@ const useSocketStore = create((set) => ({
     socket.off('game_state_update', handleGameStateUpdate)
     socket.off('game_drawn_card', handleGameDrawnCard)
     socket.off('game_error', handleGameError)
+    socket.off('rooms_update', handleRoomsUpdate)
+    socket.off('room_error', handleRoomError)
 
     socket.disconnect()
     socket.auth = {}

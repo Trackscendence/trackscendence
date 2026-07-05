@@ -38,6 +38,8 @@ model User {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   games                   GamePlayer[]
+  ownedRooms              Room[]       @relation("RoomOwner")
+  roomMemberships         RoomPlayer[]
   outgoingFriendships     Friendship[] @relation("FriendshipRequester")
   incomingFriendships     Friendship[] @relation("FriendshipAddressee")
   friendshipsBlockedByUser Friendship[] @relation("FriendshipBlocker")
@@ -91,6 +93,45 @@ model GamePlayer {
   user        User     @relation(fields: [userId], references: [id])
 
   @@unique([gameId, userId])
+  @@index([userId])
+}
+
+enum RoomStatus {
+  OPEN
+  IN_GAME
+  CLOSED
+}
+
+model Room {
+  id        Int        @id @default(autoincrement())
+  name      String
+  capacity  Int
+  status    RoomStatus @default(OPEN)
+  ownerId   Int
+  // Live games are keyed by a runtime UUID and only flushed to the Game table
+  // once they end (see docs/adr/0001-in-memory-game-state.md), so this is the
+  // runtime game id, not a foreign key to Game.
+  gameId    String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  owner     User         @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  players   RoomPlayer[]
+
+  @@index([status])
+  @@index([ownerId, status])
+}
+
+model RoomPlayer {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  userId    Int
+  createdAt DateTime @default(now())
+
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
   @@index([userId])
 }
 

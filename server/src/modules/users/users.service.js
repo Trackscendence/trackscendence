@@ -7,15 +7,19 @@ const {
   storeAvatarFile,
 } = require('#modules/users/users.avatar')
 const usersRepository = require('#modules/users/users.repository')
+const {
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE,
+  MAX_PAGE_SIZE,
+  parsePositiveInteger,
+} = require('#utils/query-parsing')
 const logger = require('#utils/logger')
 
 const DISPLAY_NAME_MAX_LENGTH = 40
 const BIO_MAX_LENGTH = 280
+const SEARCH_QUERY_MAX_LENGTH = 50
 const MATCH_HISTORY_LIMIT = 10
 const PROFILE_FRIENDS_LIMIT = 6
-const USERNAME_REGEX = /^[a-z][a-z0-9]*$/
-const USERNAME_MIN_LENGTH = 6
-const USERNAME_MAX_LENGTH = 32
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
 
 const FRIENDSHIP_STATUS = {
@@ -34,27 +38,6 @@ const isRecordNotFoundError = (error) => {
 
 const normalizeUsername = (username) => username.trim().toLowerCase()
 
-const getUsernameValidationMessages = (username) => {
-  const details = []
-
-  if (!username) {
-    details.push('Username is required')
-  } else if (!USERNAME_REGEX.test(username)) {
-    details.push(
-      'Username must start with a letter and contain only lowercase letters and numbers',
-    )
-  } else if (username.length < USERNAME_MIN_LENGTH) {
-    details.push(
-      `Username must not be less than ${USERNAME_MIN_LENGTH} characters`,
-    )
-  } else if (username.length > USERNAME_MAX_LENGTH) {
-    details.push(
-      `Username must not be more than ${USERNAME_MAX_LENGTH} characters`,
-    )
-  }
-
-  return details
-}
 const normalizeUpdatableTextField = ({
   details,
   fieldName,
@@ -231,6 +214,64 @@ const getProfileData = async (user, options = {}) => {
   }
 }
 
+/**
+ * Validates and normalizes the user search query string. Collects every
+ * violation into one 400 so the caller sees all bad fields at once.
+ */
+const parseUserSearchQuery = (query = {}) => {
+  const details = []
+
+  let q = ''
+  if (typeof query.q !== 'string' && query.q != null) {
+    details.push('q must be a string')
+  } else {
+    q = typeof query.q === 'string' ? query.q.trim() : ''
+
+    if (!q) {
+      details.push('q is required')
+    } else if (q.length > SEARCH_QUERY_MAX_LENGTH) {
+      details.push(`q must be at most ${SEARCH_QUERY_MAX_LENGTH} characters`)
+    }
+  }
+
+  const page = parsePositiveInteger({
+    details,
+    fieldName: 'page',
+    max: MAX_PAGE,
+    rawValue: query.page,
+    fallback: 1,
+  })
+  const limit = parsePositiveInteger({
+    details,
+    fieldName: 'limit',
+    max: MAX_PAGE_SIZE,
+    rawValue: query.limit,
+    fallback: DEFAULT_PAGE_SIZE,
+  })
+
+  if (details.length > 0) {
+    throw new BadRequestException('Invalid request data', { details })
+  }
+
+  return { q, page, limit }
+}
+
+const searchUsers = async (query) => {
+  const { q, page, limit } = parseUserSearchQuery(query)
+  const offset = (page - 1) * limit
+
+  const { users, totalCount } = await usersRepository.searchUsersByName({
+    query: q,
+    limit,
+    offset,
+  })
+
+  return {
+    users,
+    pagination: { page, limit, totalCount },
+  }
+}
+
 const getCurrentProfile = async (viewer) => {
   const user = await usersRepository.findSelfProfileById(viewer.id)
 
@@ -245,12 +286,16 @@ const getCurrentProfile = async (viewer) => {
 }
 
 const getProfileByUsername = async (viewer, username) => {
+  // Lookups only require a non-empty name. Signup-format rules (length,
+  // charset) live in auth.service; enforcing them here made every profile
+  // whose name predates those rules unreachable with a 400.
   const normalizedUsername =
     typeof username === 'string' ? normalizeUsername(username) : ''
-  const details = getUsernameValidationMessages(normalizedUsername)
 
-  if (details.length > 0) {
-    throw new BadRequestException('Invalid request data', { details })
+  if (!normalizedUsername) {
+    throw new BadRequestException('Invalid request data', {
+      details: ['Username is required'],
+    })
   }
 
   const user =
@@ -386,6 +431,8 @@ module.exports = {
   deleteCurrentUserAvatar,
   getCurrentProfile,
   getProfileByUsername,
+  parseUserSearchQuery,
+  searchUsers,
   updateCurrentUserProfile,
   uploadCurrentUserAvatar,
 }

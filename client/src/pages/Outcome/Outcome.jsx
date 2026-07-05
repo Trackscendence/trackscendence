@@ -50,7 +50,9 @@ const Outcome = () => {
     navigate('/')
   }
 
-  const handleHome = () => navigate('/session')
+  // The lobby (#185) is where a finished game hands back to; /session stays
+  // the signed-in dashboard.
+  const handleHome = () => navigate('/lobby')
 
   return (
     <OutcomeView

@@ -4,6 +4,7 @@ const publicIdentitySelect = {
   id: true,
   username: true,
   displayName: true,
+  avatarUrl: true,
 }
 
 const publicProfileSelect = {
@@ -76,6 +77,14 @@ const updateProfileById = (id, data) => {
   })
 }
 
+const updateAvatarById = (id, avatarUrl) => {
+  return prisma.user.update({
+    where: { id },
+    data: { avatarUrl },
+    select: selfProfileSelect,
+  })
+}
+
 const findRelationshipBetweenUsers = (firstUserId, secondUserId) => {
   return prisma.friendship.findFirst({
     where: {
@@ -135,5 +144,6 @@ module.exports = {
   findSelfProfileById,
   listPublicFriendsForUser,
   listRecentMatchesForUser,
+  updateAvatarById,
   updateProfileById,
 }

@@ -11,6 +11,7 @@ Recommended taxonomy for future additions:
 Current structure:
 
 - `tests/postman/auth/security/`
+- `tests/postman/users/avatar/`
 - `tests/postman/users/profile/`
 - `tests/postman/friends/friendship/`
 
@@ -20,8 +21,8 @@ Each collection keeps reusable test variables in a matching environment file, so
 
 Import:
 
-- [tests/postman/auth/security/trackscendence-auth-security.postman_collection.json](/home/ogrativ/Projects/trackscendence/tests/postman/auth/security/trackscendence-auth-security.postman_collection.json:1)
-- [tests/postman/auth/security/trackscendence-auth-local.postman_environment.json](/home/ogrativ/Projects/trackscendence/tests/postman/auth/security/trackscendence-auth-local.postman_environment.json:1)
+- `tests/postman/auth/security/trackscendence-auth-security.postman_collection.json`
+- `tests/postman/auth/security/trackscendence-auth-local.postman_environment.json`
 
 Recommended usage:
 
@@ -51,8 +52,8 @@ Notes:
 
 Import:
 
-- [tests/postman/users/profile/trackscendence-profile-stats.postman_collection.json](/home/ogrativ/Projects/trackscendence/tests/postman/users/profile/trackscendence-profile-stats.postman_collection.json:1)
-- [tests/postman/users/profile/trackscendence-profile-local.postman_environment.json](/home/ogrativ/Projects/trackscendence/tests/postman/users/profile/trackscendence-profile-local.postman_environment.json:1)
+- `tests/postman/users/profile/trackscendence-profile-stats.postman_collection.json`
+- `tests/postman/users/profile/trackscendence-profile-local.postman_environment.json`
 
 Recommended usage:
 
@@ -101,12 +102,96 @@ After that request, you should see:
 - `rank` assigned
 - `recentMatches` containing the saved result
 
+## Avatar Upload
+
+Import:
+
+- `tests/postman/users/avatar/trackscendence-avatar-upload.postman_collection.json`
+- `tests/postman/users/avatar/trackscendence-avatar-local.postman_environment.json`
+
+Recommended usage:
+
+1. Select the imported environment named `Trackscendence Avatar Local`.
+2. Verify the avatar fixture path variables point at real local files.
+3. Run `01 Initialize / Initialize Avatar Variables`.
+4. Run the remaining requests top-to-bottom, or run the full collection in order.
+
+Backend contract added for feature 33:
+
+- `POST /api/v1/users/me/avatar`
+- `DELETE /api/v1/users/me/avatar`
+
+Upload expectations:
+
+- authenticated request
+- `multipart/form-data`
+- file field name: `avatar`
+- allowed types: JPEG and PNG only
+- max size: 2 MB
+- file signature must match the declared image type
+
+Response contract:
+
+- success responses return a `message` and updated `user`
+- `user.avatarUrl` is the public same-origin path the frontend should render
+- uploaded files are served from `/uploads/avatars/...`
+
+Validation failures to expect:
+
+- missing file
+- unsupported MIME type
+- file too large
+- file contents that do not match JPEG/PNG magic bytes
+- unexpected multipart field name
+
+Fixture notes:
+
+- The collection includes local fixtures under `tests/postman/users/avatar/fixtures/`.
+- The default environment values use repo-relative paths for those files.
+- The collection now resolves `{{avatar...Path}}` variables into concrete form-data file paths in a pre-request script before sending upload requests.
+- If Postman still does not attach a file on your machine, re-select the file manually with the Postman file picker or use one of the smoke-check scripts below.
+- If you already imported the collection before this change, re-import it or update your local copy so the new pre-request script is present.
+- In both `compose:dev` and `compose:up`, the app should serve avatar paths through the frontend origin instead of exposing a backend-only asset host.
+
+### Curl Smoke Check
+
+If Postman still refuses to attach a local file, you can validate the backend contract without Postman:
+
+```sh
+bash tests/postman/users/avatar/avatar-upload-smoke.sh
+```
+
+If `curl` is not installed in your environment, use the Node-based version instead:
+
+```sh
+node tests/postman/users/avatar/avatar-upload-smoke.mjs
+```
+
+Optional arguments:
+
+- first argument: custom file path
+- second argument: base app URL (default: `http://localhost:8080`)
+
+Example:
+
+```sh
+bash tests/postman/users/avatar/avatar-upload-smoke.sh \
+  tests/postman/users/avatar/fixtures/avatar-valid.png \
+  http://localhost:8080
+```
+
+```sh
+node tests/postman/users/avatar/avatar-upload-smoke.mjs \
+  tests/postman/users/avatar/fixtures/avatar-valid.png \
+  http://localhost:8080
+```
+
 ## Friendship Flow
 
 Import:
 
-- [tests/postman/friends/friendship/trackscendence-friendship.postman_collection.json](/home/ogrativ/Projects/trackscendence/tests/postman/friends/friendship/trackscendence-friendship.postman_collection.json:1)
-- [tests/postman/friends/friendship/trackscendence-friendship-local.postman_environment.json](/home/ogrativ/Projects/trackscendence/tests/postman/friends/friendship/trackscendence-friendship-local.postman_environment.json:1)
+- `tests/postman/friends/friendship/trackscendence-friendship.postman_collection.json`
+- `tests/postman/friends/friendship/trackscendence-friendship-local.postman_environment.json`
 
 Recommended usage:
 

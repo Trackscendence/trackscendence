@@ -5,10 +5,11 @@ const publicController = require('#modules/public/public.controller')
 
 const router = Router()
 
-// Every public endpoint is rate limited per API key and requires a valid,
-// non-revoked key in the X-API-Key header.
-router.use(publicRateLimiter)
+// Every public endpoint requires a valid, non-revoked key in the X-API-Key
+// header. Authentication runs first so the limiter can bucket on the validated
+// key owner; rotating invalid header values gets a 401, never a fresh quota.
 router.use(requireApiKey)
+router.use(publicRateLimiter)
 
 /**
  * @swagger

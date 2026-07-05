@@ -9,13 +9,6 @@ const apiKeySelect = {
   createdAt: true,
 }
 
-const createApiKey = ({ userId, name, keyHash, keyPrefix }) => {
-  return prisma.apiKey.create({
-    data: { userId, name, keyHash, keyPrefix },
-    select: apiKeySelect,
-  })
-}
-
 const listApiKeysForUser = (userId) => {
   return prisma.apiKey.findMany({
     where: { userId },
@@ -24,9 +17,35 @@ const listApiKeysForUser = (userId) => {
   })
 }
 
-const countActiveApiKeysForUser = (userId) => {
-  return prisma.apiKey.count({
-    where: { userId, revokedAt: null },
+// Namespace for pg_advisory_xact_lock so API key locks cannot collide with
+// advisory locks other features may take on the same user id.
+const API_KEY_LOCK_NAMESPACE = 4201
+
+// The count check and the insert run in one transaction behind a per-user
+// advisory lock, so concurrent creates cannot both pass the limit check.
+// Returns null when the user is already at maxActiveKeys.
+const createApiKeyIfUnderLimit = ({
+  userId,
+  name,
+  keyHash,
+  keyPrefix,
+  maxActiveKeys,
+}) => {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${API_KEY_LOCK_NAMESPACE}::int, ${userId}::int)`
+
+    const activeKeyCount = await tx.apiKey.count({
+      where: { userId, revokedAt: null },
+    })
+
+    if (activeKeyCount >= maxActiveKeys) {
+      return null
+    }
+
+    return tx.apiKey.create({
+      data: { userId, name, keyHash, keyPrefix },
+      select: apiKeySelect,
+    })
   })
 }
 
@@ -63,8 +82,7 @@ const touchApiKeyLastUsed = (apiKeyId) => {
 }
 
 module.exports = {
-  countActiveApiKeysForUser,
-  createApiKey,
+  createApiKeyIfUnderLimit,
   findActiveApiKeyByHash,
   listApiKeysForUser,
   revokeApiKeyForUser,

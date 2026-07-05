@@ -1,9 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom'
+import useAuthStore from '@/stores/useAuthStore'
 import FortyTwoButton from '@/components/FortyTwoButton'
 import SignupForm from './_components/SignupForm'
 
 const Signup = () => {
   const navigate = useNavigate()
+  const isFortyTwoLoginEnabled = useAuthStore(
+    (state) => state.isFortyTwoLoginEnabled,
+  )
 
   return (
     <div className="flex flex-1 items-center justify-center px-5 py-10">
@@ -22,7 +26,14 @@ const Signup = () => {
           <div className="h-px flex-1 bg-black" />
         </div>
 
-        <FortyTwoButton />
+        <FortyTwoButton
+          comingSoon={!isFortyTwoLoginEnabled}
+          onClick={
+            isFortyTwoLoginEnabled
+              ? () => useAuthStore.getState().startFortyTwoLogin()
+              : undefined
+          }
+        />
 
         <p className="mt-5 text-center text-sm text-[#081934]">
           Already have an account?{' '}

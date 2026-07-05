@@ -5,14 +5,16 @@ import FormField from '@/components/FormField'
 import Input from '@/components/Input'
 import { validateLoginInput } from '@/services/auth.validations'
 
-const LoginForm = ({ onSuccess }) => {
+const LoginForm = ({ onSuccess, initialTwoFactorState = null }) => {
   const { login, completeTwoFactorLogin } = useAuthStore()
   const [form, setForm] = useState({ identifier: '', password: '' })
   const [twoFactorForm, setTwoFactorForm] = useState({
     code: '',
     recoveryCode: '',
   })
-  const [twoFactorState, setTwoFactorState] = useState(null)
+  // A 42 OAuth login that lands on a 2FA-enabled account arrives here with
+  // the challenge already issued and skips the password step entirely.
+  const [twoFactorState, setTwoFactorState] = useState(initialTwoFactorState)
   const [twoFactorMethod, setTwoFactorMethod] = useState('totp')
   const [error, setError] = useState('')
   const [validationDetails, setValidationDetails] = useState({})
@@ -100,8 +102,14 @@ const LoginForm = ({ onSuccess }) => {
       <>
         <div className="mb-4 rounded-md border border-[#dce5d6] bg-[#f8fbf7] px-3 py-2 text-sm text-[#3f5248]">
           <p>
-            Finish signing in for <strong>{form.identifier}</strong> using your
-            authenticator app or a recovery code.
+            {form.identifier ? (
+              <>
+                Finish signing in for <strong>{form.identifier}</strong> using
+                your authenticator app or a recovery code.
+              </>
+            ) : (
+              'Finish signing in using your authenticator app or a recovery code.'
+            )}
           </p>
           <p className="mt-2 text-[#50635a]">
             Forgot your authenticator? You can use a recovery code after

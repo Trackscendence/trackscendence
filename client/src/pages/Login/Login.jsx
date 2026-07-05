@@ -7,7 +7,7 @@ import LoginForm from './_components/LoginForm'
 const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const { isAuthenticated, isLoading, isFortyTwoLoginEnabled } = useAuthStore()
 
   const from = location.state?.from?.pathname || '/'
   const params = new URLSearchParams(location.search)
@@ -34,7 +34,10 @@ const Login = () => {
           </p>
         ) : null}
 
-        <LoginForm onSuccess={() => navigate(from, { replace: true })} />
+        <LoginForm
+          initialTwoFactorState={location.state?.twoFactorChallenge || null}
+          onSuccess={() => navigate(from, { replace: true })}
+        />
 
         <div className="my-5 flex items-center gap-4">
           <div className="h-px flex-1 bg-black" />
@@ -42,7 +45,14 @@ const Login = () => {
           <div className="h-px flex-1 bg-black" />
         </div>
 
-        <FortyTwoButton />
+        <FortyTwoButton
+          comingSoon={!isFortyTwoLoginEnabled}
+          onClick={
+            isFortyTwoLoginEnabled
+              ? () => useAuthStore.getState().startFortyTwoLogin()
+              : undefined
+          }
+        />
 
         <p className="mt-5 text-center text-sm text-[#081934]">
           New player?{' '}

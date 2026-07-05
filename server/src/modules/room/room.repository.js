@@ -24,6 +24,9 @@ const ROOM_ERRORS = {
 // Prisma's "transaction failed due to a write conflict, retry" error code.
 const SERIALIZATION_CONFLICT_CODE = 'P2034'
 
+// Prisma's "unique constraint violated" error code.
+const UNIQUE_VIOLATION_CODE = 'P2002'
+
 /**
  * Runs a mutation at Serializable isolation and reports a lost race as a
  * structured CONFLICT result instead of a thrown error, so callers can retry
@@ -113,31 +116,56 @@ const findActiveRoomByUserId = (userId) => {
 /**
  * Seats a player in a room, re-checking status and capacity inside a
  * serializable transaction so two simultaneous joins cannot overshoot the
- * last seat.
+ * last seat. Idempotent per user: if the player already holds a seat in the
+ * room, that seat is returned as success — duplicate seat requests are
+ * routine (the same user's requests can race each other).
  *
  * @param {number} roomId
  * @param {number} userId
  * @returns {Promise<{ room?: Object, error?: string }>}
  */
-const addPlayerToRoom = (roomId, userId) => {
-  return runSerializable(async (tx) => {
-    const room = await tx.room.findUnique({
-      where: { id: roomId },
-      include: { players: true },
-    })
-    if (!room) return { error: ROOM_ERRORS.NOT_FOUND }
-    if (room.status !== 'OPEN') return { error: ROOM_ERRORS.NOT_OPEN }
-    if (room.players.length >= room.capacity) {
-      return { error: ROOM_ERRORS.FULL }
-    }
+const addPlayerToRoom = async (roomId, userId) => {
+  try {
+    return await runSerializable(async (tx) => {
+      const room = await tx.room.findUnique({
+        where: { id: roomId },
+        include: { players: true },
+      })
+      if (!room) return { error: ROOM_ERRORS.NOT_FOUND }
 
-    await tx.roomPlayer.create({ data: { roomId, userId } })
-    const updatedRoom = await tx.room.findUnique({
+      // Already seated (regardless of room status): mission accomplished.
+      if (room.players.some((player) => player.userId === userId)) {
+        const seatedRoom = await tx.room.findUnique({
+          where: { id: roomId },
+          include: roomInclude,
+        })
+        return { room: seatedRoom }
+      }
+
+      if (room.status !== 'OPEN') return { error: ROOM_ERRORS.NOT_OPEN }
+      if (room.players.length >= room.capacity) {
+        return { error: ROOM_ERRORS.FULL }
+      }
+
+      await tx.roomPlayer.create({ data: { roomId, userId } })
+      const updatedRoom = await tx.room.findUnique({
+        where: { id: roomId },
+        include: roomInclude,
+      })
+      return { room: updatedRoom }
+    })
+  } catch (error) {
+    // The only unique constraint this transaction can violate is
+    // (roomId, userId), so a P2002 means a concurrent request already seated
+    // this exact user: fetch the room and report the seat as success.
+    if (error.code !== UNIQUE_VIOLATION_CODE) throw error
+    const seatedRoom = await prisma.room.findUnique({
       where: { id: roomId },
       include: roomInclude,
     })
-    return { room: updatedRoom }
-  })
+    if (!seatedRoom) throw error
+    return { room: seatedRoom }
+  }
 }
 
 /**

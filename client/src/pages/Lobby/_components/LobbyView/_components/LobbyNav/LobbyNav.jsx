@@ -1,0 +1,44 @@
+import { Link } from 'react-router-dom'
+import Avatar from '@/components/Avatar'
+import createRoomIcon from '@/assets/lobby/create-room-icon.svg'
+
+const LobbyNav = ({ user, canCreateRoom, onCreateRoom }) => {
+  return (
+    <header className="flex items-center justify-between border-b border-black/10 bg-white px-8 py-3">
+      <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-[#D9D9D9] shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
+        <span className="text-lg font-black tracking-[-0.05em] text-white">
+          UNO
+        </span>
+      </div>
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={onCreateRoom}
+          disabled={!canCreateRoom}
+          title={
+            canCreateRoom
+              ? undefined
+              : 'A room is already open, join it instead'
+          }
+          className="flex items-center gap-2 rounded-[14px] bg-[#E86D2F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#c95b24] disabled:cursor-not-allowed disabled:bg-[#dda37e]"
+        >
+          <img src={createRoomIcon} alt="" className="h-[15px] w-[15px]" />
+          Create Room
+        </button>
+        <Link
+          to="/users/me"
+          aria-label="Your profile"
+          className="flex items-center gap-3 rounded-full pr-2 transition hover:bg-black/5"
+        >
+          <Avatar alt={user.username} initials={user.initials} size={46} />
+          <span className="flex flex-col">
+            <span className="text-lg text-black">{user.username}</span>
+            <span className="text-xs text-[#2E2D2D]">{user.email}</span>
+          </span>
+        </Link>
+      </div>
+    </header>
+  )
+}
+
+export default LobbyNav

@@ -43,6 +43,8 @@
     "isready",
     "jsdom",
     "keyuri",
+    "linecap",
+    "linejoin",
     "lintstaged",
     "Liskov",
     "Mailpit",

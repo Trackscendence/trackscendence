@@ -26,6 +26,12 @@ const useGameStore = create((set) => ({
   gameState: null,
   gameError: null,
 
+  // Persistent rooms (#185): `rooms_update` -> rooms. The waiting room derives
+  // "my room" (and the opponent's name) from this list; the lobby page renders
+  // it as room cards.
+  rooms: [],
+  roomError: null,
+
   setMatchHistory: (matchHistory) => set({ matchHistory }),
   setLeaderboard: (leaderboard) => set({ leaderboard }),
 
@@ -60,6 +66,8 @@ const useGameStore = create((set) => ({
   setMatch: (match) => set({ match }),
   setGameState: (gameState) => set({ gameState }),
   setGameError: (gameError) => set({ gameError }),
+  setRooms: (rooms) => set({ rooms }),
+  setRoomError: (roomError) => set({ roomError }),
 
   joinLobby: () => socket.emit('join_lobby'),
   // Tells the server to drop us from the matchmaking queue and resets the
@@ -70,6 +78,12 @@ const useGameStore = create((set) => ({
     set({ lobbyCount: 0, match: null })
   },
   clearGame: () => set({ match: null, gameState: null, gameError: null }),
+
+  // Auto-seat: the server puts the player in the open room, creating one if
+  // none exists (first in owns it), and starts the game once the room fills.
+  seatRoom: () => socket.emit('room:seat'),
+  leaveRoom: () => socket.emit('room:leave'),
+  listRooms: () => socket.emit('room:list'),
 
   playCard: (gameId, cardIndex, declaredColor) =>
     socket.emit('game:play_card', { gameId, cardIndex, declaredColor }),

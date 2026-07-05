@@ -17,6 +17,34 @@ const logger = require('#utils/logger')
 const REQUIRED_PLAYERS = 2
 
 /**
+ * Turns a set of players into a running game: persists the game state, builds
+ * the engine, and returns everything the socket layer needs to start play.
+ * Used by both entry points into a game - the auto-queue (`tryStartMatch`) and
+ * a room filling to capacity.
+ *
+ * @param {Array<{userId: string, username: string}>} players
+ * @returns {Promise<{ gameId: string, players: Array<{userId: string, username: string}>, engine: UnoEngine }>}
+ * @throws If game persistence fails; the players are untouched, so the caller
+ *   decides how to recover (re-queue, keep the room open, ...).
+ */
+const createMatch = async (players) => {
+  const gameId = crypto.randomUUID()
+  const gameState = {
+    id: gameId,
+    status: 'IN_PROGRESS',
+    players,
+    startedAt: new Date(),
+  }
+
+  await gameStore.saveGame(gameId, gameState)
+
+  const engine = new UnoEngine(players.map((player) => player.userId))
+  gameStore.setEngine(gameId, engine)
+
+  return { gameId, players, engine }
+}
+
+/**
  * Attempts to form and start a single match from the front of the lobby queue.
  *
  * @returns {Promise<{ gameId: string, players: Array<{userId: string, username: string}>, engine: UnoEngine } | null>}
@@ -30,27 +58,15 @@ const tryStartMatch = async () => {
   }
 
   const players = lobbyStore.extractMatchPlayers(REQUIRED_PLAYERS)
-  const gameId = crypto.randomUUID()
-  const gameState = {
-    id: gameId,
-    status: 'IN_PROGRESS',
-    players,
-    startedAt: new Date(),
-  }
 
   try {
-    await gameStore.saveGame(gameId, gameState)
+    return await createMatch(players)
   } catch (error) {
     // Never lose queued players: put them back at the front and let the caller
     // decide how to surface the failure.
     lobbyStore.addPlayersToFront(players)
     throw error
   }
-
-  const engine = new UnoEngine(players.map((player) => player.userId))
-  gameStore.setEngine(gameId, engine)
-
-  return { gameId, players, engine }
 }
 
 /**
@@ -83,6 +99,7 @@ const handlePlayerDisconnect = async (userId) => {
 
 module.exports = {
   REQUIRED_PLAYERS,
+  createMatch,
   tryStartMatch,
   handlePlayerDisconnect,
 }

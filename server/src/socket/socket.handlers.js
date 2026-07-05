@@ -38,7 +38,7 @@ const registerHandlers = (io, socket) => {
   socket.join('channel:#general')
   socket.join(`user:${socket.user.id}`)
 
-  logger.info('user connected')
+  logger.info(`User ${socket.user.username} (user:${socket.user.id}) connected`)
 
   socket.on('join_lobby', async () => {
     logger.info(`User ${socket.user.username} joined the lobby`)
@@ -84,18 +84,40 @@ const registerHandlers = (io, socket) => {
     }
   })
 
-  socket.on('message', (data) => {
+  socket.on('chat:message', (data) => {
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
       return
     }
 
-    const room = typeof data.room === 'string' ? data.room : ''
+    const room = typeof data.recipient === 'string' ? data.recipient : ''
+
     if (!room || !socket.rooms.has(room)) {
       return
     }
 
     const payload = { ...data, user: socket.user }
-    io.to(room).emit('message', payload)
+    io.to(room).emit('chat:message', payload)
+  })
+
+  socket.on('chat:private_message', (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return
+    }
+    const recipient = typeof data.recipient === 'string' ? data.recipient : ''
+
+    const sender = `user:${socket.user.id}`
+    if (recipient === sender) {
+      return
+    }
+
+    // TODO
+    // if (sender not friend with recipient) {
+    // 	return
+    // }
+
+    const payload = { ...data, user: socket.user }
+    io.to(sender).emit('chat:private_message', payload)
+    io.to(recipient).emit('chat:private_message', payload)
   })
 
   const checkGameEnd = async (gameId, engine) => {

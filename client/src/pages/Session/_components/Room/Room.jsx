@@ -8,30 +8,52 @@ const Room = () => {
   const activeRoom = useChatStore((state) => state.activeRoom)
   const messages = useChatStore((state) => state.messages[activeRoom])
   const addMessage = useChatStore((state) => state.addMessage)
-  const user = useAuthStore((state) => state.user.username)
+  const user = useAuthStore((state) => state.user)
 
-  const handler = (data) => {
-    // console.log('Data received:', data)
+  const handleMessage = (data) => {
     const message = {
       id: Date.now(),
       message: data.message,
       user: data.user,
     }
-    addMessage(useChatStore.getState().activeRoom, message)
+
+    const room = data.recipient
+    addMessage(room, message)
+  }
+
+  const handlePrivateMessage = (data) => {
+    const message = {
+      id: Date.now(),
+      message: data.message,
+      user: data.user,
+    }
+
+    const room =
+      user.id === data.user.id ? data.recipient : `user:${data.user.id}`
+    addMessage(room, message)
   }
 
   useEffect(() => {
-    socket.on('message', handler)
+    socket.on('chat:message', handleMessage)
+    socket.on('chat:private_message', handlePrivateMessage)
+
     return () => {
-      socket.off('message', handler)
+      socket.off('chat:message', handleMessage)
+      socket.off('chat:private_message', handlePrivateMessage)
     }
   }, [])
 
   const sendMessage = () => {
-    socket.emit('message', {
+    const recipient = useChatStore.getState().activeRoom
+    const event = recipient.startsWith('user:')
+      ? 'chat:private_message'
+      : 'chat:message'
+    const message = {
+      recipient: recipient,
       message: messageRef.current.value,
-      room: 'channel:#general',
-    })
+    }
+
+    socket.emit(event, message)
   }
 
   return (
@@ -40,7 +62,7 @@ const Room = () => {
         {messages.map((m) => (
           <li
             className={
-              user === m.user.username
+              user.username === m.user.username
                 ? 'mt-2 w-full place-self-end rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm inline-2/3'
                 : 'mt-2 w-full place-self-start rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm inline-2/3'
             }

@@ -14,18 +14,18 @@ const SideBar = () => {
       <div className="border-e border-[#e1e6de] p-4">
         <ul>
           {rooms
-            .filter((room) => room.startsWith('channel:'))
+            .filter((room) => room.id.startsWith('channel:'))
             .map((room) => (
-              <RoomLabel room={room} key={room} />
+              <RoomLabel room={room} key={room.id} />
             ))}
         </ul>
         <h2 className="mt-4 font-semibold">FRIENDS</h2>
         <hr className="border-[#e1e6de]" />
         <ul>
           {rooms
-            .filter((room) => room.startsWith('user'))
+            .filter((room) => room.id.startsWith('user'))
             .map((room) => (
-              <RoomLabel room={room} key={room} />
+              <RoomLabel room={room} key={room.id} />
             ))}
         </ul>
       </div>

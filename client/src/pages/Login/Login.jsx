@@ -1,6 +1,6 @@
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
-import Button from '@/components/Button'
+import FortyTwoButton from '@/components/FortyTwoButton'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import LoginForm from './_components/LoginForm'
 
@@ -42,9 +42,7 @@ const Login = () => {
           <div className="h-px flex-1 bg-black" />
         </div>
 
-        <Button variant="social" type="button">
-          42
-        </Button>
+        <FortyTwoButton />
 
         <p className="mt-5 text-center text-sm text-[#081934]">
           New player?{' '}

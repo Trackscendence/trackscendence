@@ -6,6 +6,12 @@ const getCurrentProfile = async (req, res) => {
   res.json(result)
 }
 
+const searchUsers = async (req, res) => {
+  const result = await usersService.searchUsers(req.query)
+
+  res.json(result)
+}
+
 const getProfile = async (req, res) => {
   const result = await usersService.getProfileByUsername(
     req.user,
@@ -24,5 +30,6 @@ const updateCurrentUserProfile = async (req, res) => {
 module.exports = {
   getCurrentProfile,
   getProfile,
+  searchUsers,
   updateCurrentUserProfile,
 }

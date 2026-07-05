@@ -33,6 +33,7 @@
     "envsubst",
     "evenodd",
     "healthcheck",
+    "ILIKE",
     "Initialisation",
     "initialise",
     "initialised",

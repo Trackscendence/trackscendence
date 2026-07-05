@@ -93,6 +93,28 @@ const findRelationshipBetweenUsers = (firstUserId, secondUserId) => {
   })
 }
 
+const searchUsersByName = async ({ query, limit, offset }) => {
+  const where = {
+    OR: [
+      { username: { contains: query, mode: 'insensitive' } },
+      { displayName: { contains: query, mode: 'insensitive' } },
+    ],
+  }
+
+  const [users, totalCount] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: [{ username: 'asc' }],
+      skip: offset,
+      take: limit,
+      select: publicIdentitySelect,
+    }),
+    prisma.user.count({ where }),
+  ])
+
+  return { users, totalCount }
+}
+
 const getStatsForUser = async (userId) => {
   const rows = await prisma.$queryRaw`
     SELECT
@@ -180,5 +202,6 @@ module.exports = {
   getStatsForUser,
   listPublicFriendsForUser,
   listRecentMatchesForUser,
+  searchUsersByName,
   updateProfileById,
 }

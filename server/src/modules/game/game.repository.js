@@ -1,4 +1,15 @@
+const { Prisma } = require('@prisma/client')
 const prisma = require('#db/prisma')
+
+// Sort keys map to output-column aliases of the leaderboard query so ORDER BY
+// can reference the aggregates. Only these whitelisted fragments ever reach
+// Prisma.raw — user input never does.
+const LEADERBOARD_SORT_COLUMNS = {
+  wins: '"totalWins"',
+  totalScore: '"totalScore"',
+  gamesPlayed: '"gamesPlayed"',
+  winRate: '"winRate"',
+}
 
 /**
  * Saves a completed game and its players' results to the database.
@@ -28,10 +39,10 @@ const saveGameResult = async ({ startedAt, endedAt, status, players }) => {
       endedAt,
       status,
       players: {
-        create: players.map((p) => ({
-          userId: p.userId,
-          score: p.score,
-          isWinner: p.isWinner,
+        create: players.map((player) => ({
+          userId: player.userId,
+          score: player.score,
+          isWinner: player.isWinner,
         })),
       },
     },
@@ -43,14 +54,52 @@ const saveGameResult = async ({ startedAt, endedAt, status, players }) => {
   return game
 }
 
+// Escapes LIKE pattern metacharacters so a search for "50%" matches the
+// literal text instead of acting as a wildcard.
+const escapeLikePattern = (value) => value.replace(/[\\%_]/g, '\\$&')
+
+const buildLeaderboardWhere = (search) => {
+  if (!search) {
+    return Prisma.empty
+  }
+
+  const pattern = `%${escapeLikePattern(search)}%`
+
+  return Prisma.sql`WHERE (u.username ILIKE ${pattern} OR u."displayName" ILIKE ${pattern})`
+}
+
+const buildLeaderboardHaving = (minGames) => {
+  if (!minGames || minGames < 1) {
+    return Prisma.empty
+  }
+
+  return Prisma.sql`HAVING COUNT(gp.id) >= ${minGames}`
+}
+
 /**
  * Fetches leaderboard stats, aggregating wins for each user.
  *
- * @param {number} limit - Number of leaderboard entries to return
- * @param {number} offset - Number of leading entries to skip (for pagination)
- * @returns {Promise<Array<{ userId: number, username: string, displayName: string | null, totalWins: number, totalScore: number }>>}
+ * @param {Object} options
+ * @param {number} [options.limit] - Number of leaderboard entries to return
+ * @param {number} [options.offset] - Number of leading entries to skip (for pagination)
+ * @param {string} [options.search] - Case-insensitive substring match on username or display name
+ * @param {number} [options.minGames] - Only include players with at least this many recorded games
+ * @param {'wins' | 'totalScore' | 'gamesPlayed' | 'winRate'} [options.sort] - Aggregate to sort by
+ * @param {'asc' | 'desc'} [options.order] - Sort direction
+ * @returns {Promise<Array<{ userId: number, username: string, displayName: string | null, totalWins: number, totalScore: number, gamesPlayed: number, winRate: number }>>}
  */
-const getLeaderboard = async (limit = 10, offset = 0) => {
+const getLeaderboard = async ({
+  limit = 10,
+  offset = 0,
+  search = '',
+  minGames = 0,
+  sort = 'wins',
+  order = 'desc',
+} = {}) => {
+  const sortColumn =
+    LEADERBOARD_SORT_COLUMNS[sort] || LEADERBOARD_SORT_COLUMNS.wins
+  const direction = order === 'asc' ? 'ASC' : 'DESC'
+
   // Use Prisma's native $queryRaw for high-performance database-level aggregation and sorting.
   // This pushes the heavy lifting of counting, summing, and sorting entirely to Postgres.
   const leaderboard = await prisma.$queryRaw`
@@ -59,11 +108,15 @@ const getLeaderboard = async (limit = 10, offset = 0) => {
       u.username,
       u."displayName",
       CAST(COUNT(CASE WHEN gp."isWinner" = true THEN 1 END) AS INTEGER) AS "totalWins",
-      CAST(COALESCE(SUM(gp.score), 0) AS INTEGER) AS "totalScore"
+      CAST(COALESCE(SUM(gp.score), 0) AS INTEGER) AS "totalScore",
+      CAST(COUNT(gp.id) AS INTEGER) AS "gamesPlayed",
+      CAST(COUNT(CASE WHEN gp."isWinner" = true THEN 1 END) AS DOUBLE PRECISION) / COUNT(gp.id) AS "winRate"
     FROM "User" u
     JOIN "GamePlayer" gp ON u.id = gp."userId"
+    ${buildLeaderboardWhere(search)}
     GROUP BY u.id, u.username, u."displayName"
-    ORDER BY "totalWins" DESC, "totalScore" DESC
+    ${buildLeaderboardHaving(minGames)}
+    ORDER BY ${Prisma.raw(sortColumn)} ${Prisma.raw(direction)}, "totalWins" DESC, "totalScore" DESC, u.id ASC
     LIMIT ${limit}
     OFFSET ${offset}
   `
@@ -72,15 +125,26 @@ const getLeaderboard = async (limit = 10, offset = 0) => {
 }
 
 /**
- * Counts how many users appear on the leaderboard (players with at least one
- * recorded game), so paginated consumers can compute the number of pages.
+ * Counts how many users match the current leaderboard filters (players with
+ * at least one recorded game), so paginated consumers can compute the number
+ * of pages.
  *
+ * @param {Object} options
+ * @param {string} [options.search] - Same filter as getLeaderboard
+ * @param {number} [options.minGames] - Same filter as getLeaderboard
  * @returns {Promise<number>}
  */
-const countLeaderboardPlayers = async () => {
+const countLeaderboardPlayers = async ({ search = '', minGames = 0 } = {}) => {
   const rows = await prisma.$queryRaw`
-    SELECT CAST(COUNT(DISTINCT gp."userId") AS INTEGER) AS "totalCount"
-    FROM "GamePlayer" gp
+    SELECT CAST(COUNT(*) AS INTEGER) AS "totalCount"
+    FROM (
+      SELECT u.id
+      FROM "User" u
+      JOIN "GamePlayer" gp ON u.id = gp."userId"
+      ${buildLeaderboardWhere(search)}
+      GROUP BY u.id
+      ${buildLeaderboardHaving(minGames)}
+    ) AS players
   `
 
   return rows[0]?.totalCount || 0

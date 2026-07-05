@@ -1,8 +1,41 @@
 import useChatStore from '@/stores/useChatStore'
 import RoomLabel from '../RoomLabel'
+import useAuthStore from '@/stores/useAuthStore'
+import { listFriends } from '@/services/friends'
+import { useEffect } from 'react'
 
 const SideBar = () => {
   const rooms = useChatStore((state) => state.rooms)
+  const setRooms = useChatStore((state) => state.setRooms)
+  const setMessages = useChatStore((state) => state.setMessages)
+  const token = useAuthStore((state) => state.token)
+
+  // TODO refactor to useProfileStore()
+  useEffect(() => {
+    let isMounted = true
+
+    const setPrivateRooms = async () => {
+      const data = await listFriends(token)
+
+      const privateRooms = data.friends.map((f) => {
+        const roomId = `user:${f.user.id}`
+        setMessages(roomId, [])
+        return {
+          id: roomId,
+          name: f.user.username,
+        }
+      })
+
+      if (isMounted) {
+        setRooms(rooms.concat(privateRooms))
+        setMessages
+      }
+    }
+
+    setPrivateRooms()
+
+    return () => (isMounted = false)
+  }, [token])
 
   return (
     <>

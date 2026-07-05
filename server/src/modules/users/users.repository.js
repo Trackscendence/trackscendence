@@ -93,11 +93,17 @@ const findRelationshipBetweenUsers = (firstUserId, secondUserId) => {
   })
 }
 
+// Escapes LIKE pattern metacharacters: Prisma's `contains` maps to ILIKE on
+// Postgres without escaping, so a search for "50%" would otherwise act as a
+// wildcard instead of matching the literal text.
+const escapeLikePattern = (value) => value.replace(/[\\%_]/g, '\\$&')
+
 const searchUsersByName = async ({ query, limit, offset }) => {
+  const escapedQuery = escapeLikePattern(query)
   const where = {
     OR: [
-      { username: { contains: query, mode: 'insensitive' } },
-      { displayName: { contains: query, mode: 'insensitive' } },
+      { username: { contains: escapedQuery, mode: 'insensitive' } },
+      { displayName: { contains: escapedQuery, mode: 'insensitive' } },
     ],
   }
 

@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useNotificationStore from '@/stores/useNotificationStore'
+import useSocketStore from '@/stores/useSocketStore'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import ProtectedRoute from '@/router/ProtectedRoute'
 import AppLayout from '@/layouts/AppLayout'
@@ -17,6 +18,7 @@ import SignupSuccess from '@/pages/SignupSuccess'
 import Leaderboard from '@/pages/Leaderboard'
 import Profile from '@/pages/Profile'
 import Game from '@/pages/Game'
+import Outcome from '@/pages/Outcome'
 import Lobby from '@/pages/Lobby'
 import WaitingRoom from '@/pages/WaitingRoom'
 import Session from '@/pages/Session'
@@ -38,10 +40,21 @@ const DevControls = import.meta.env.DEV
 const App = () => {
   const notifications = useNotificationStore((state) => state.notifications)
   const dismissNotification = useNotificationStore((state) => state.dismiss)
+  const token = useAuthStore((state) => state.token)
 
   useEffect(() => {
     useAuthStore.getState().init()
   }, [])
+
+  // The app session owns the socket: connect once per login, disconnect when
+  // the token clears (logout or expiry). Pages must only add and remove their
+  // own listeners — a page-level disconnect during the waiting room -> game
+  // navigation made the server abandon the game it had just started (#188).
+  useEffect(() => {
+    if (!token) return undefined
+    useSocketStore.getState().connect(token)
+    return () => useSocketStore.getState().disconnect()
+  }, [token])
 
   useEffect(() => {
     const handler = (e) =>
@@ -69,6 +82,7 @@ const App = () => {
           <Route path="/" element={<WaitingRoom />} />
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/game" element={<Game />} />
+          <Route path="/results" element={<Outcome />} />
           <Route element={<ProfileLayout />}>
             <Route path="/profile" element={<Profile />} />
             <Route

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
 import useDevStore, { selectIsRigged } from './useDevStore'
@@ -20,6 +20,14 @@ const FILL_OPTIONS = [
 const SOURCE_OPTIONS = [
   { value: 'live', label: 'Live backend' },
   { value: 'mocked', label: 'Mocked' },
+]
+
+// The result the "Skip to outcome" jump lands on. 'won' fires confetti, 'lost'
+// is the calm "Try Again", 'ended' is the neutral abandoned state.
+const OUTCOME_OPTIONS = [
+  { value: 'won', label: 'won' },
+  { value: 'lost', label: 'lost' },
+  { value: 'abandoned', label: 'ended' },
 ]
 
 // Injects / withdraws a fake opponent so matchmaking advances without a second
@@ -67,16 +75,29 @@ const StatusLed = ({ rigged }) => (
 )
 
 const DevControls = () => {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   // 'collapsed' = launcher tab, 'expanded' = full panel, 'hidden' = gone.
   const [view, setView] = useState('collapsed')
   const rigged = useDevStore(selectIsRigged)
   const mockOpponent = useDevStore((state) => state.mockOpponent)
   const fillWith = useDevStore((state) => state.fillWith)
   const dataSource = useDevStore((state) => state.dataSource)
+  const outcomeState = useDevStore((state) => state.outcomeState)
   const setFlag = useDevStore((state) => state.setFlag)
   const reset = useDevStore((state) => state.reset)
 
   useMockOpponent()
+
+  // The results screen reads its mode from the URL, not the dev store. When
+  // the radio changes while already on /results, swap the query param in place
+  // so the pick applies immediately — no second "Skip to outcome" click needed.
+  const handleOutcomeChange = (next) => {
+    setFlag('outcomeState', next)
+    if (pathname === '/results') {
+      navigate(`/results?outcome=${next}`, { replace: true })
+    }
+  }
 
   // Ctrl+` fully hides / re-summons the panel when it's in your way.
   useEffect(() => {
@@ -170,6 +191,28 @@ const DevControls = () => {
             variant="dotted"
             onChange={(next) => setFlag('dataSource', next)}
           />
+        </section>
+
+        <div className="border-t border-[#FDE8CF]/10" />
+
+        <section className="flex flex-col gap-3">
+          <h3 className="font-mono text-[11px] tracking-wider text-[#B39B7C] uppercase">
+            Post-game
+          </h3>
+          <RadioGroup
+            label="Outcome"
+            name="dev-outcome"
+            value={outcomeState}
+            options={OUTCOME_OPTIONS}
+            onChange={handleOutcomeChange}
+          />
+          <button
+            type="button"
+            onClick={() => navigate(`/results?outcome=${outcomeState}`)}
+            className="self-start rounded-md bg-[#FFB04F] px-3 py-1.5 font-mono text-[12px] font-bold text-[#1C120A] transition-colors hover:bg-[#ffc275] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFB04F]"
+          >
+            Skip to outcome →
+          </button>
         </section>
 
         <div className="border-t border-[#FDE8CF]/10" />

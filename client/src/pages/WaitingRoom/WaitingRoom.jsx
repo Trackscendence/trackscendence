@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
-import useSocketStore from '@/stores/useSocketStore'
 import getInitials from '@/utils/getInitials'
 import WaitingRoomView from './_components/WaitingRoomView'
 
@@ -22,20 +21,20 @@ const WaitingRoom = () => {
   const rooms = useGameStore((state) => state.rooms)
   const [isOverlayVisible, setIsOverlayVisible] = useState(false)
 
-  // Connect the socket and take a seat. The server seats the player in the
-  // open room — creating one if none exists, so the first to arrive owns it —
-  // and starts the game once every seat is filled.
+  // Take a seat while this page is mounted. The server seats the player in
+  // the open room — creating one if none exists, so the first to arrive owns
+  // it — and starts the game once every seat is filled. The socket itself is
+  // connected at the app level (App.jsx) and stays up across navigation, so
+  // unmounting sends an explicit room:leave instead of disconnecting.
+  // Leaving is safe after a match starts: the room is IN_GAME by then and
+  // room:leave only unseats players from OPEN rooms.
   useEffect(() => {
     if (!token) return undefined
-    const { connect, disconnect } = useSocketStore.getState()
-    const { seatRoom, leaveLobby } = useGameStore.getState()
-    connect(token)
+    const { seatRoom, leaveRoom, leaveLobby } = useGameStore.getState()
     seatRoom()
     return () => {
+      leaveRoom()
       leaveLobby()
-      // The server unseats this player when their socket drops, so navigating
-      // away is the same as leaving the room.
-      disconnect()
     }
   }, [token])
 

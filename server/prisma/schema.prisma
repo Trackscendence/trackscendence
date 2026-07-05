@@ -19,32 +19,57 @@ enum Role {
 }
 
 model User {
-  id                      Int      @id @default(autoincrement())
-  email                   String   @unique
-  username                String   @unique
-  displayName             String?
-  bio                     String?
-  passwordHash            String
-  passwordResetTokenId    String?  @unique
-  passwordResetTokenHash  String?
-  passwordResetTokenExpiry DateTime?
-  tokenVersion            Int      @default(0)
-  twoFactorChallengeVersion Int    @default(0)
-  twoFactorEnabled        Boolean  @default(false)
-  twoFactorSecretCiphertext String?
+  id                               Int      @id @default(autoincrement())
+  email                            String   @unique
+  username                         String   @unique
+  displayName                      String?
+  bio                              String?
+  avatarUrl                        String?
+  passwordHash                     String
+  passwordResetTokenId             String?  @unique
+  passwordResetTokenHash           String?
+  passwordResetTokenExpiry         DateTime?
+  tokenVersion                     Int      @default(0)
+  gamesPlayed                      Int      @default(0)
+  wins                             Int      @default(0)
+  losses                           Int      @default(0)
+  rank                             Int?
+  twoFactorChallengeVersion        Int      @default(0)
+  twoFactorEnabled                 Boolean  @default(false)
+  twoFactorSecretCiphertext        String?
   twoFactorPendingSecretCiphertext String?
-  role                    Role     @default(USER)
-  twoFactorRecoveryCodes  UserTwoFactorRecoveryCode[]
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  games                   GamePlayer[]
-  ownedRooms              Room[]       @relation("RoomOwner")
-  roomMemberships         RoomPlayer[]
-  outgoingFriendships     Friendship[] @relation("FriendshipRequester")
-  incomingFriendships     Friendship[] @relation("FriendshipAddressee")
-  friendshipsBlockedByUser Friendship[] @relation("FriendshipBlocker")
-  failedLoginCount        Int      @default(0)
-  lockedOutUntil          DateTime?
+  role                             Role     @default(USER)
+  twoFactorRecoveryCodes           UserTwoFactorRecoveryCode[]
+  createdAt                        DateTime @default(now())
+  updatedAt                        DateTime @updatedAt
+  games                            GamePlayer[]
+  outgoingFriendships              Friendship[] @relation("FriendshipRequester")
+  incomingFriendships              Friendship[] @relation("FriendshipAddressee")
+  friendshipsBlockedByUser         Friendship[] @relation("FriendshipBlocker")
+  failedLoginCount                 Int      @default(0)
+  lockedOutUntil                   DateTime?
+  ownedRooms                       Room[]       @relation("RoomOwner")
+  roomMemberships                  RoomPlayer[]
+  apiKeys                          ApiKey[]
+}
+
+model ApiKey {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  name       String
+  keyHash    String    @unique
+  keyPrefix  String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Only the SHA-256 hash of the key is stored; the plaintext key is shown to
+  // the owner once at creation time. Revocation is a soft delete (revokedAt)
+  // so issued keys stay auditable.
+  @@index([userId])
 }
 
 model UserTwoFactorRecoveryCode {

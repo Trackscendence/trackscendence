@@ -1,9 +1,18 @@
 import { create } from 'zustand'
 import { socket } from '@/services/socket'
+import { getLeaderboard } from '@/services/game'
+import useAuthStore from '@/stores/useAuthStore'
+
+// Monotonic id for leaderboard loads so a slow, older request cannot
+// overwrite the result of a newer one.
+let leaderboardRequestId = 0
 
 const useGameStore = create((set) => ({
   matchHistory: [],
   leaderboard: [],
+  leaderboardPagination: null,
+  isLeaderboardLoading: false,
+  leaderboardError: null,
   currentMatch: null,
 
   // Pre-game waiting room state, driven by the #88 socket contract:
@@ -25,6 +34,32 @@ const useGameStore = create((set) => ({
 
   setMatchHistory: (matchHistory) => set({ matchHistory }),
   setLeaderboard: (leaderboard) => set({ leaderboard }),
+
+  // Fetch the ranked-players list for the results screen and the leaderboard
+  // page. `params` supports search/minGames/sort/order/page/limit; the
+  // endpoint returns `{ leaderboard, pagination }`. Failures leave the
+  // previous entries in place so consumers can fall back to them instead of
+  // crashing.
+  loadLeaderboard: async (params = {}) => {
+    const requestId = ++leaderboardRequestId
+    const token = useAuthStore.getState().token
+    set({ isLeaderboardLoading: true, leaderboardError: null })
+    try {
+      const response = await getLeaderboard(params, token)
+      if (requestId !== leaderboardRequestId) return
+      set({
+        leaderboard: response?.leaderboard ?? [],
+        leaderboardPagination: response?.pagination ?? null,
+        isLeaderboardLoading: false,
+      })
+    } catch (error) {
+      if (requestId !== leaderboardRequestId) return
+      set({
+        isLeaderboardLoading: false,
+        leaderboardError: error?.message || 'Failed to load the leaderboard',
+      })
+    }
+  },
   setCurrentMatch: (currentMatch) => set({ currentMatch }),
 
   setLobbyCount: (lobbyCount) => set({ lobbyCount }),
@@ -35,10 +70,13 @@ const useGameStore = create((set) => ({
   setRoomError: (roomError) => set({ roomError }),
 
   joinLobby: () => socket.emit('join_lobby'),
-  // No server `leave_lobby` event exists yet; the server drops a player from
-  // the queue when their socket disconnects, so leaving is handled at the
-  // socket layer. This just resets the local waiting-room state.
-  leaveLobby: () => set({ lobbyCount: 0, match: null }),
+  // Tells the server to drop us from the matchmaking queue and resets the
+  // local waiting-room state. The socket itself stays connected — it is owned
+  // by the app session (App.jsx), not by the lobby page.
+  leaveLobby: () => {
+    socket.emit('leave_lobby')
+    set({ lobbyCount: 0, match: null })
+  },
   clearGame: () => set({ match: null, gameState: null, gameError: null }),
 
   // Auto-seat: the server puts the player in the open room, creating one if

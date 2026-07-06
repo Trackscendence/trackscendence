@@ -2,7 +2,7 @@ import Card from '@/components/Card'
 
 const CARD_LAYER_CLASSES = ['z-0', 'z-10', 'z-20', 'z-30', 'z-40', 'z-50']
 
-const PlayerHand = ({ cards, player }) => {
+const PlayerHand = ({ cards, onCardClick, player }) => {
   return (
     <div className="w-full overflow-hidden">
       <ul
@@ -14,7 +14,12 @@ const PlayerHand = ({ cards, player }) => {
             className={`relative ${CARD_LAYER_CLASSES[cardPosition] ?? 'z-50'} ${cardPosition === 0 ? 'shrink-0' : '-ml-9 shrink-0'}`}
             key={card.id}
           >
-            <Card {...card} playable={false} />
+            <Card
+              {...card}
+              onClick={
+                onCardClick ? () => onCardClick(cardPosition) : undefined
+              }
+            />
           </li>
         ))}
       </ul>

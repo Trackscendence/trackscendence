@@ -32,10 +32,17 @@ const toCard = (serverCard, index) => {
 // Mirrors the engine's canPlayCard so the hand can show what is legal without
 // a server round trip: wilds always play, otherwise match the declared color
 // or the top card's value.
-const isCardPlayable = (serverCard, state) =>
+const matchesTopCard = (serverCard, state) =>
   serverCard.color === 'WILD' ||
   serverCard.color === state.currentColor ||
   serverCard.value === state.topCard.value
+
+// A card is actionable only on the holder's turn, and after a draw the engine
+// accepts nothing but the drawn card (it sits at the end of the hand).
+const isCardPlayable = (serverCard, index, state, isMyTurn, handSize) =>
+  isMyTurn &&
+  (!state.hasDrawnThisTurn || index === handSize - 1) &&
+  matchesTopCard(serverCard, state)
 
 // Seat layout mirrors the mock's arrangement per opponent count.
 const OPPONENT_SEATS = {
@@ -49,6 +56,8 @@ const OPPONENT_SEATS = {
  * @param {Array<{userId: number, username: string}>} matchPlayers from game_start
  * @param {number} ownUserId
  * @param {string} ownUsername
+ * @param {boolean} [isSpectator] strips every interaction flag — used by the
+ *   Rig's simulation, which plays all seats itself
  * @returns {Object} GameTable props
  */
 const mapServerGameState = ({
@@ -56,10 +65,13 @@ const mapServerGameState = ({
   matchPlayers,
   ownUserId,
   ownUsername,
+  isSpectator = false,
 }) => {
   const usernamesById = new Map(
     (matchPlayers ?? []).map((player) => [player.userId, player.username]),
   )
+  const isMyTurn =
+    !isSpectator && !state.winner && state.currentPlayer === ownUserId
 
   const opponentIds = Object.keys(state.playerHandsSizes ?? {})
     .map(Number)
@@ -72,19 +84,24 @@ const mapServerGameState = ({
     cardCount: state.playerHandsSizes[userId],
   }))
 
+  const myHand = state.myHand ?? []
   const topCard = toCard(state.topCard, 'top')
   return {
     currentPlayer: {
       id: ownUserId,
       username: ownUsername,
       seat: 'bottom',
-      cards: (state.myHand ?? []).map((card, index) => ({
+      cards: myHand.map((card, index) => ({
         ...toCard(card, index),
-        playable: isCardPlayable(card, state),
+        playable: isCardPlayable(card, index, state, isMyTurn, myHand.length),
       })),
     },
     opponents,
     currentTurnPlayerId: state.currentPlayer,
+    // Drawing is once per turn; after a playable draw the engine keeps the
+    // turn, so passing (or playing the drawn card) is the only way out.
+    canDraw: isMyTurn && !state.hasDrawnThisTurn,
+    canPass: isMyTurn && Boolean(state.hasDrawnThisTurn),
     deckSize: state.deckSize,
     direction: state.playDirection === -1 ? 'counter-clockwise' : 'clockwise',
     // Draw penalties are applied by the engine the moment the card is played,

@@ -9,14 +9,15 @@ const toCardColor = (serverColor) =>
   typeof serverColor === 'string' ? serverColor.toLowerCase() : 'wild'
 
 // Engine values '0'-'9' render as number cards; action values map onto the
-// Card symbol types. WILD_DRAW_FOUR reuses the wild_draw3 art until the +4
-// Figma export lands (#196) — the engine already deals a real Draw Four.
+// Card symbol types. The engine deals a real Wild Draw Four (+4 art) and this
+// game's custom Wild Draw Three (+3 art) (#143/#196).
 const ACTION_TYPES = {
   SKIP: 'skip',
   REVERSE: 'reverse',
   DRAW_TWO: 'draw2',
   WILD: 'wild',
-  WILD_DRAW_FOUR: 'wild_draw3',
+  WILD_DRAW_THREE: 'wild_draw3',
+  WILD_DRAW_FOUR: 'wild_draw4',
 }
 
 const toCard = (serverCard, index) => {

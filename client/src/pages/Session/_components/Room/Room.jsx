@@ -10,30 +10,30 @@ const Room = () => {
   const addMessage = useChatStore((state) => state.addMessage)
   const user = useAuthStore((state) => state.user)
 
-  const handleMessage = (data) => {
-    const message = {
-      id: Date.now(),
-      message: data.message,
-      user: data.user,
-    }
-
-    const room = data.recipient
-    addMessage(room, message)
-  }
-
-  const handlePrivateMessage = (data) => {
-    const message = {
-      id: Date.now(),
-      message: data.message,
-      user: data.user,
-    }
-
-    const room =
-      user.id === data.user.id ? data.recipient : `user:${data.user.id}`
-    addMessage(room, message)
-  }
-
   useEffect(() => {
+    const handleMessage = (data) => {
+      const message = {
+        id: Date.now(),
+        message: data.message,
+        user: data.user,
+      }
+
+      const room = data.recipient
+      addMessage(room, message)
+    }
+
+    const handlePrivateMessage = (data) => {
+      const message = {
+        id: Date.now(),
+        message: data.message,
+        user: data.user,
+      }
+
+      const room =
+        user.id === data.user.id ? data.recipient : `user:${data.user.id}`
+      addMessage(room, message)
+    }
+
     socket.on('chat:message', handleMessage)
     socket.on('chat:private_message', handlePrivateMessage)
 
@@ -41,7 +41,7 @@ const Room = () => {
       socket.off('chat:message', handleMessage)
       socket.off('chat:private_message', handlePrivateMessage)
     }
-  }, [])
+  }, [user.id, addMessage])
 
   const sendMessage = () => {
     const recipient = useChatStore.getState().activeRoom

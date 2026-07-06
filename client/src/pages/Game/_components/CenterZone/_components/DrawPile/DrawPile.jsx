@@ -1,12 +1,12 @@
 import Card from '@/components/Card'
 
-const DrawPile = ({ deckSize, onDrawPileClick }) => {
+const DrawPile = ({ canDraw = true, deckSize, onDrawPileClick }) => {
   return (
     <div className="relative">
       <Card
         faceDown
         onClick={onDrawPileClick}
-        playable={deckSize > 0}
+        playable={canDraw}
         aria-label="Draw a card"
       />
       <span className="sr-only">

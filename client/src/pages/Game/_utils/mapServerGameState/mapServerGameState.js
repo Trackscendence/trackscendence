@@ -1,7 +1,10 @@
+import getPlayerIdentity from '@/utils/getPlayerIdentity'
+
 // Maps the server's game_state_update payload (engine public state + myHand)
 // onto the props GameTable was designed around. Pure: no store reads, no side
 // effects, so the translation stays testable and the socket shape changes in
-// exactly one place.
+// exactly one place. Player names and avatars go through getPlayerIdentity so
+// the table shows the same identity as the lobby and waiting room.
 
 // Engine colors are uppercase ('RED'); the Card component's palette keys are
 // lowercase ('red').
@@ -54,9 +57,11 @@ const OPPONENT_SEATS = {
 
 /**
  * @param {Object} state game_state_update payload
- * @param {Array<{userId: number, username: string}>} matchPlayers from game_start
+ * @param {Array<{userId: number, username: string, displayName?: string, avatarUrl?: string}>} matchPlayers from game_start
  * @param {number} ownUserId
  * @param {string} ownUsername
+ * @param {string} [ownDisplayName] the session user's display name
+ * @param {string} [ownAvatarUrl] the session user's avatar
  * @param {boolean} [isSpectator] strips every interaction flag — used by the
  *   Rig's simulation, which plays all seats itself
  * @returns {Object} GameTable props
@@ -66,10 +71,12 @@ const mapServerGameState = ({
   matchPlayers,
   ownUserId,
   ownUsername,
+  ownDisplayName,
+  ownAvatarUrl,
   isSpectator = false,
 }) => {
-  const usernamesById = new Map(
-    (matchPlayers ?? []).map((player) => [player.userId, player.username]),
+  const playersById = new Map(
+    (matchPlayers ?? []).map((player) => [player.userId, player]),
   )
   const isMyTurn =
     !isSpectator && !state.winner && state.currentPlayer === ownUserId
@@ -78,19 +85,30 @@ const mapServerGameState = ({
     .map(Number)
     .filter((userId) => userId !== ownUserId)
   const seats = OPPONENT_SEATS[opponentIds.length] ?? OPPONENT_SEATS[3]
-  const opponents = opponentIds.map((userId, index) => ({
-    id: userId,
-    username: usernamesById.get(userId) ?? `Player ${index + 2}`,
-    seat: seats[index] ?? 'top',
-    cardCount: state.playerHandsSizes[userId],
-  }))
+  const opponents = opponentIds.map((userId, index) => {
+    const known = playersById.get(userId)
+    const identity = getPlayerIdentity(known)
+    return {
+      id: userId,
+      username: known ? identity.name : `Player ${index + 2}`,
+      avatarUrl: identity.avatarUrl,
+      seat: seats[index] ?? 'top',
+      cardCount: state.playerHandsSizes[userId],
+    }
+  })
 
+  const ownIdentity = getPlayerIdentity({
+    username: ownUsername,
+    displayName: ownDisplayName,
+    avatarUrl: ownAvatarUrl,
+  })
   const myHand = state.myHand ?? []
   const topCard = toCard(state.topCard, 'top')
   return {
     currentPlayer: {
       id: ownUserId,
-      username: ownUsername,
+      username: ownIdentity.name,
+      avatarUrl: ownIdentity.avatarUrl,
       seat: 'bottom',
       cards: myHand.map((card, index) => ({
         ...toCard(card, index),

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
-import getInitials from '@/utils/getInitials'
+import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import QuickStartModal from '@/components/QuickStartModal'
 import LobbyView from './_components/LobbyView'
 
@@ -36,6 +36,7 @@ const Lobby = () => {
 
   if (!user) return null
 
+  const identity = getPlayerIdentity(user)
   const hasOpenRoom = rooms.some((room) => room.status === 'OPEN')
 
   return (
@@ -43,8 +44,10 @@ const Lobby = () => {
       <LobbyView
         user={{
           username: user.username,
+          displayName: identity.name,
           email: user.email,
-          initials: getInitials(user.username),
+          initials: identity.initials,
+          avatarUrl: identity.avatarUrl,
         }}
         rooms={rooms}
         canCreateRoom={!hasOpenRoom}

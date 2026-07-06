@@ -1,0 +1,73 @@
+# Shared server body for the HTTP (default.conf) and HTTPS (tls.conf) blocks.
+# Kept in one place so the two blocks can never drift; included from inside each
+# server{}. Rendered by the nginx image's envsubst step (the .inc name keeps it
+# out of the conf.d/*.conf auto-include, so it only loads where it is included).
+root /usr/share/nginx/html;
+index index.html;
+# Avatar uploads: request cap slightly above the server's 2 MB upload
+# limit so the backend, not nginx, produces the friendly error.
+client_max_body_size 3m;
+
+# gzip compression
+gzip on;
+gzip_types text/plain text/css application/json application/javascript text/xml;
+gzip_min_length 256;
+
+# SPA client-side routing
+location / {
+    try_files $uri $uri/ /index.html;
+}
+
+# Reverse proxy to backend API.
+# BACKEND_HOST / BACKEND_PORT are substituted at container start by the
+# nginx image's envsubst step. Defaults (server:3001) match Docker Compose;
+# on Railway set BACKEND_HOST=server.railway.internal.
+#
+# The backend host goes through an nginx variable ($api_backend) so the name
+# is re-resolved at request time via the resolver, rather than being cached
+# once at startup. On Railway the server gets a new private IP on every
+# redeploy, so a startup-cached IP would go stale and hang. NGINX_LOCAL_RESOLVERS
+# is filled from /etc/resolv.conf by the image's 15-local-resolvers.envsh.
+location /api/ {
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+    set $api_backend ${BACKEND_HOST};
+    proxy_pass http://$api_backend:${BACKEND_PORT};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# Uploaded avatars are served by the backend. `^~` beats the static-asset
+# regex below, which would otherwise catch /uploads/*.png itself.
+location ^~ /uploads/ {
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+    set $uploads_backend ${BACKEND_HOST};
+    proxy_pass http://$uploads_backend:${BACKEND_PORT};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# Reverse proxy to websocket (same runtime-resolution approach as /api/)
+location /websocket/ {
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+    set $ws_backend ${BACKEND_HOST};
+    proxy_pass http://$ws_backend:${BACKEND_PORT};
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# Cache static assets
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+}

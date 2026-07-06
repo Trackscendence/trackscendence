@@ -1,0 +1,14 @@
+# HTTPS edge, used only when ENABLE_TLS=1 (the evaluated local compose stack).
+# The entrypoint (50-tls.sh) generates the self-signed cert before nginx starts
+# and deletes this rendered file when TLS is off, so nginx never needs a cert
+# it does not have. Same server body as the HTTP block via the shared include.
+server {
+    listen 8443 ssl;
+    server_name localhost;
+
+    ssl_certificate /etc/nginx/certs/server.crt;
+    ssl_certificate_key /etc/nginx/certs/server.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    include /etc/nginx/conf.d/app-locations.inc;
+}

@@ -33,8 +33,16 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+    # HTTPS for the evaluated stack (#60): TLS terminates here in nginx with a
+    # self-signed cert generated at start. Railway keeps ENABLE_TLS unset and
+    # serves plain HTTP behind its own TLS edge, so this flag lives in compose
+    # only.
+    environment:
+      ENABLE_TLS: '1'
+      CLIENT_HTTPS_PORT: '${CLIENT_HTTPS_PORT:-8443}'
     ports:
       - '${CLIENT_PORT}:8080'
+      - '${CLIENT_HTTPS_PORT:-8443}:8443'
     depends_on:
       - server
 

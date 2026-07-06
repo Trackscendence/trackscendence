@@ -167,7 +167,14 @@ npm run compose:dev
 npm run compose:up
 ```
 
-- Consolidated Web Application: `http://localhost:8080`
+- Consolidated Web Application: `https://localhost:8443`
+
+The production stack terminates HTTPS in nginx with a self-signed certificate
+generated at container start, so browser-to-backend traffic (including the
+websocket, which upgrades to `wss://`) is encrypted. The first visit shows a
+one-time "your connection is not private" warning; accept it to proceed, which
+is expected for a locally-run project. Plain `http://localhost:8080` redirects
+to the HTTPS origin. Set `CLIENT_HTTPS_PORT` in `.env` to change the port.
 
 **Local Mode (no Docker):**
 

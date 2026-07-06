@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
 import getInitials from '@/utils/getInitials'
@@ -21,6 +21,10 @@ const OTHER_COLOR = 'bg-[#E03325]'
 
 const WaitingRoom = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+  // Set by the lobby's Create/Join buttons: seat the player as soon as this
+  // page mounts instead of letting the decide timer offer Quick Start.
+  const seatIntent = location.state?.seatIntent
   const user = useAuthStore((state) => state.user)
   const token = useAuthStore((state) => state.token)
   const match = useGameStore((state) => state.match)
@@ -32,42 +36,64 @@ const WaitingRoom = () => {
   // room is open. Once seated, the room itself drives the view.
   const [phase, setPhase] = useState('deciding')
 
-  // The single-room flow (#154): on arrival, join the one open room if there
-  // is one, otherwise offer Quick Start so the first player opens it. The
-  // socket is app-owned and stays up across navigation, so unmounting sends an
-  // explicit room:leave rather than disconnecting.
+  // The single-room flow (#154). Two ways in: with a seat intent from the
+  // lobby's Create/Join, we seat the player straight away; on a direct arrival
+  // (post-login) we join the one open room if there is one, otherwise offer
+  // Quick Start so the first player opens it. The socket is app-owned and stays
+  // up across navigation, so unmounting sends an explicit room:leave rather
+  // than disconnecting.
   useEffect(() => {
     if (!token) return undefined
-    const { listRooms, leaveRoom, leaveLobby, setRoomClosed } =
-      useGameStore.getState()
+    const {
+      listRooms,
+      leaveRoom,
+      leaveLobby,
+      setRoomClosed,
+      seatRoom,
+      joinRoomById,
+    } = useGameStore.getState()
     setRoomClosed(false)
     listRooms()
-    const decideTimer = setTimeout(() => {
-      const state = useGameStore.getState()
-      const ownId = useAuthStore.getState().user?.id
-      const seated = state.rooms.some((room) =>
-        room.players.some((player) => player.userId === ownId),
-      )
-      if (seated) {
-        setPhase('seated')
-        return
-      }
-      const openRoom = state.rooms.find(
-        (room) => room.status === 'OPEN' && room.players.length < room.capacity,
-      )
-      if (openRoom) {
-        state.seatRoom()
-        setPhase('seated')
-      } else {
-        setPhase('choosing')
-      }
-    }, ROOM_DECIDE_MS)
+    // Arriving from the lobby with an explicit intent: emit the seat here so
+    // it survives this effect's mount/cleanup/remount (StrictMode) — the
+    // cleanup's room:leave would otherwise undo a seat emitted by the lobby.
+    // The reactive `rooms` then renders the room once the server confirms it,
+    // so there is no decide timer and Quick Start never shows.
+    if (seatIntent) {
+      if (seatIntent.type === 'join') joinRoomById(seatIntent.roomId)
+      else seatRoom(seatIntent.capacity)
+    }
+    // Direct arrival (post-login): decide for ourselves after a short beat —
+    // auto-join the one open room, or offer Quick Start to open the first one.
+    const decideTimer = seatIntent
+      ? null
+      : setTimeout(() => {
+          const state = useGameStore.getState()
+          const ownId = useAuthStore.getState().user?.id
+          const seated = state.rooms.some((room) =>
+            room.players.some((player) => player.userId === ownId),
+          )
+          if (seated) {
+            setPhase('seated')
+            return
+          }
+          const openRoom = state.rooms.find(
+            (room) =>
+              room.status === 'OPEN' && room.players.length < room.capacity,
+          )
+          if (openRoom) {
+            state.seatRoom()
+            setPhase('seated')
+          } else {
+            setPhase('choosing')
+          }
+        }, ROOM_DECIDE_MS)
     return () => {
-      clearTimeout(decideTimer)
+      if (decideTimer) clearTimeout(decideTimer)
       leaveRoom()
       leaveLobby()
     }
-  }, [token])
+  }, [token, seatIntent])
 
   // The owner ended the room out from under this player (#221): hand back to
   // the lobby. The owner who pressed End is already navigating there.

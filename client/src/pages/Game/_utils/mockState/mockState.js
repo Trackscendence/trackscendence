@@ -117,8 +117,60 @@ export const getMockGameState = ({
   })
 }
 
-export default {
-  2: createState(MOCK_PLAYER_SEATS[2]),
-  3: createState(MOCK_PLAYER_SEATS[3]),
-  4: createState(MOCK_PLAYER_SEATS[4]),
+// --- Query-param driven mock (dev-only design mode) --------------------------
+// The Rig's data-source switch sends the game page here with ?source=mock;
+// the remaining params keep every table arrangement reachable by URL.
+
+const SUPPORTED_PLAYER_COUNTS = new Set(['2', '3', '4'])
+const SUPPORTED_DIRECTIONS = new Set(['clockwise', 'counter-clockwise'])
+const SUPPORTED_SEATS = new Set(['bottom', 'top', 'left', 'right'])
+
+const getPlayerCount = (value) => {
+  if (SUPPORTED_PLAYER_COUNTS.has(value)) return Number(value)
+  return 4
+}
+
+const getDirection = (value) => {
+  if (SUPPORTED_DIRECTIONS.has(value)) return value
+  return undefined
+}
+
+const getNonNegativeInteger = (value) => {
+  if (value == null) return undefined
+  const parsedValue = Number(value)
+  if (!Number.isInteger(parsedValue) || parsedValue < 0) return undefined
+  return parsedValue
+}
+
+const getSeat = (value) => {
+  if (SUPPORTED_SEATS.has(value)) return value
+  return 'bottom'
+}
+
+/**
+ * Builds the full GameTable prop set from mock data shaped by the page's
+ * query params (?players=, ?direction=, ?handSize=, ?pendingDraw=,
+ * ?current-player=).
+ */
+export const getMockGameFromSearchParams = (searchParams) => {
+  const game = getMockGameState({
+    direction: getDirection(searchParams.get('direction')),
+    handSize: getNonNegativeInteger(searchParams.get('handSize')),
+    pendingDraw: getNonNegativeInteger(searchParams.get('pendingDraw')),
+    playerCount: getPlayerCount(searchParams.get('players')),
+  })
+  const currentSeat = getSeat(searchParams.get('current-player'))
+  const currentPlayer =
+    game.players.find((player) => player.seat === currentSeat) ??
+    game.players[0]
+
+  return {
+    currentPlayer,
+    currentTurnPlayerId: game.currentTurnPlayerId,
+    deckSize: game.deckSize,
+    direction: game.direction,
+    opponents: game.players.filter((player) => player.id !== currentPlayer.id),
+    pendingDraw: game.pendingDraw,
+    topCard: game.topCard,
+  }
 }

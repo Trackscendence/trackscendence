@@ -25,6 +25,11 @@ const useGameStore = create((set) => ({
   match: null,
   gameState: null,
   gameError: null,
+  // The players of the running game, written alongside `match` on game_start
+  // but with a longer life: leaving the waiting room clears `match` (its
+  // navigate-on-match effect must not refire on remount), while the game page
+  // still needs the identities to caption opponents. Only clearGame resets it.
+  gamePlayers: [],
 
   // Persistent rooms (#185): `rooms_update` -> rooms. The waiting room derives
   // "my room" (and the opponent's name) from this list; the lobby page renders
@@ -64,6 +69,7 @@ const useGameStore = create((set) => ({
 
   setLobbyCount: (lobbyCount) => set({ lobbyCount }),
   setMatch: (match) => set({ match }),
+  setGamePlayers: (gamePlayers) => set({ gamePlayers }),
   setGameState: (gameState) => set({ gameState }),
   setGameError: (gameError) => set({ gameError }),
   setRooms: (rooms) => set({ rooms }),
@@ -77,7 +83,8 @@ const useGameStore = create((set) => ({
     socket.emit('leave_lobby')
     set({ lobbyCount: 0, match: null })
   },
-  clearGame: () => set({ match: null, gameState: null, gameError: null }),
+  clearGame: () =>
+    set({ match: null, gameState: null, gameError: null, gamePlayers: [] }),
 
   // Auto-seat: the server puts the player in the open room, creating one if
   // none exists (first in owns it), and starts the game once the room fills.

@@ -9,10 +9,11 @@ that carries these rules to the client is documented separately in
 
 ## The deck
 
-A standard 108-card deck: for each of the four colors (red, yellow, green,
-blue) one `0`, two each of `1`–`9`, and two each of Skip, Reverse, and Draw
-Two; plus four Wild and four Wild Draw Four cards. Built in `initDeck()` and
-shuffled with Fisher-Yates in `shuffleDeck()`.
+A 112-card deck: the standard 108 UNO cards plus this game's four custom Wild
+Draw Three cards. For each of the four colors (red, yellow, green, blue) one
+`0`, two each of `1`–`9`, and two each of Skip, Reverse, and Draw Two; plus
+four Wild, four Wild Draw Three, and four Wild Draw Four cards. Built in
+`initDeck()` and shuffled with Fisher-Yates in `shuffleDeck()`.
 
 Each card is `{ type, color, value }` where `type` is `NUMBER`, `ACTION`, or
 `WILD`. Wild cards carry `color: 'WILD'` until played, when the player declares
@@ -29,6 +30,8 @@ effect applies immediately:
 - **Skip** — the first player loses their turn.
 - **Draw Two** — the first player draws two and is skipped.
 - **Wild** — the engine picks a random starting color (a deviation, see below).
+- **Wild Draw Three** — treated as a Wild opener: the engine picks a random
+  starting color and no one draws. It is not returned to the deck.
 - **Wild Draw Four** — never allowed as the starting card: it is returned to
   the deck and another is flipped.
 
@@ -55,6 +58,8 @@ Handled in `playCard()`:
 - **Reverse** — play direction flips. With only two players it acts as a Skip.
 - **Draw Two** — the next player draws two cards and is skipped.
 - **Wild** — the player declares the active color; no draw.
+- **Wild Draw Three** — the next player draws three cards, is skipped, and the
+  player declares the active color. A custom card, see the deviations below.
 - **Wild Draw Four** — the next player draws four cards, is skipped, and the
   player declares the active color.
 
@@ -68,23 +73,25 @@ the current top card in place (`_drawOne()`).
 The first player to empty their hand wins; `playCard()` sets `winner`. The
 winner then scores the sum of every opponent's remaining hand: number cards at
 face value, action cards (Skip, Reverse, Draw Two) at 20, and wilds (Wild, Wild
-Draw Four) at 50. Everyone else scores 0. Computed by `getScores()` (with
+Draw Three, Wild Draw Four) at 50. Everyone else scores 0. Computed by
+`getScores()` (with
 per-card values from `cardPoints()`), persisted to `GamePlayer.score`.
 
 ## Rule-to-engine map
 
-| Rule                                                         | Engine                        | Status                                |
-| ------------------------------------------------------------ | ----------------------------- | ------------------------------------- |
-| 108-card deck composition                                    | `initDeck()`                  | done                                  |
-| Deal 7, flip first card, apply its effect                    | `dealCards()`, `startGame()`  | done                                  |
-| Play matches by color, value, or wild; wilds declare a color | `canPlayCard()`, `playCard()` | done                                  |
-| Can't/won't play → draw one; play it if playable, else pass  | `drawCard()`, `pass()`        | done                                  |
-| After drawing, only the drawn card may be played             | `playCard()`                  | done                                  |
-| Skip / Reverse (Skip with 2 players) / Draw Two              | `playCard()` action handling  | done                                  |
-| Wild Draw Four (+4, skip, declare color)                     | `playCard()`                  | done in engine; UI art pending (#196) |
-| Draw pile empty → reshuffle discard, keep top card           | `_drawOne()`                  | done                                  |
-| Win = first empty hand                                       | `playCard()` sets `winner`    | done                                  |
-| Scoring: winner takes opponents' hand points                 | `getScores()`, `cardPoints()` | done (#197)                           |
+| Rule                                                         | Engine                        | Status      |
+| ------------------------------------------------------------ | ----------------------------- | ----------- |
+| 112-card deck composition (108 + 4 Wild Draw Three)          | `initDeck()`                  | done        |
+| Deal 7, flip first card, apply its effect                    | `dealCards()`, `startGame()`  | done        |
+| Play matches by color, value, or wild; wilds declare a color | `canPlayCard()`, `playCard()` | done        |
+| Can't/won't play → draw one; play it if playable, else pass  | `drawCard()`, `pass()`        | done        |
+| After drawing, only the drawn card may be played             | `playCard()`                  | done        |
+| Skip / Reverse (Skip with 2 players) / Draw Two              | `playCard()` action handling  | done        |
+| Wild Draw Three (+3, skip, declare color) — custom card      | `playCard()`                  | done        |
+| Wild Draw Four (+4, skip, declare color)                     | `playCard()`                  | done        |
+| Draw pile empty → reshuffle discard, keep top card           | `_drawOne()`                  | done        |
+| Win = first empty hand                                       | `playCard()` sets `winner`    | done        |
+| Scoring: winner takes opponents' hand points                 | `getScores()`, `cardPoints()` | done (#197) |
 
 The engine test file (`game.engine.test.js`) covers each implemented row,
 including a full scoring pass.
@@ -93,6 +100,10 @@ including a full scoring pass.
 
 These differ from physical UNO on purpose:
 
+- **Custom Wild Draw Three card.** Standard UNO has no +3 card. This game adds
+  four Wild Draw Three cards that play like a lighter Wild Draw Four: the next
+  player draws three, is skipped, and the player declares the color. It has its
+  own art and corner label (`+3`).
 - **No "UNO!" call-out penalty.** A player at one card is not required to
   announce it, and there is no two-card penalty for being caught.
 - **No Wild Draw Four challenge.** The card is always accepted; the next player
@@ -101,8 +112,10 @@ These differ from physical UNO on purpose:
   Wild, the engine picks a random starting color rather than letting the first
   player choose, so the game can never open in a stuck state.
 
-## Known UI gap
+## Card art
 
-The engine deals and resolves a real **Wild Draw Four**. Until the +4 art is
-exported (#196) the table renders it with the older custom Wild Draw Three
-artwork; the underlying card and its +4 effect are correct.
+Both wild-draw cards have their own centre art and corner labels: Wild Draw
+Four renders the `+4` primitive and Wild Draw Three the `+3` primitive
+(`client/src/components/Card/_components/Symbol`). The server value maps to the
+card `type` in `mapServerGameState` (`WILD_DRAW_FOUR` → `wild_draw4`,
+`WILD_DRAW_THREE` → `wild_draw3`).

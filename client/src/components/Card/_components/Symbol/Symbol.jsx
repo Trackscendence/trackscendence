@@ -3,6 +3,7 @@ import ReverseCenter from '@/assets/cards/symbols/reverse-center.svg?react'
 import SkipCenter from '@/assets/cards/symbols/skip-center.svg?react'
 import WildCenter from '@/assets/cards/symbols/wildcard-center.svg?react'
 import WildDraw3Center from '@/assets/cards/symbols/wildcard-draw3-center.svg?react'
+import WildDraw4Center from '@/assets/cards/symbols/wildcard-draw4-center.svg?react'
 import Corners from './_components/Corners'
 
 const SYMBOLS = {
@@ -31,6 +32,11 @@ const SYMBOLS = {
     Center: WildDraw3Center,
     centerClass: 'h-[89px] w-[60px]',
     corners: { label: '+3' },
+  },
+  wild_draw4: {
+    Center: WildDraw4Center,
+    centerClass: 'h-[89px] w-[67px]',
+    corners: { label: '+4' },
   },
 }
 

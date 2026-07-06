@@ -59,7 +59,8 @@ class UnoEngine {
   }
 
   /**
-   * Initializes the standard 108 card UNO deck.
+   * Initializes the deck: the standard 108 UNO cards plus this game's four
+   * custom Wild Draw Three cards, for 112 in total.
    */
   initDeck() {
     this.drawPile = []
@@ -99,12 +100,17 @@ class UnoEngine {
       })
     })
 
-    // Four Wild cards and Four Wild Draw Four cards
+    // Four each of Wild, Wild Draw Four, and this game's custom Wild Draw Three.
     for (let i = 0; i < 4; i++) {
       this.drawPile.push({
         type: CARD_TYPES.WILD,
         color: COLORS.WILD,
         value: VALUES.WILD,
+      })
+      this.drawPile.push({
+        type: CARD_TYPES.WILD,
+        color: COLORS.WILD,
+        value: VALUES.WILD_DRAW_THREE,
       })
       this.drawPile.push({
         type: CARD_TYPES.WILD,
@@ -311,6 +317,14 @@ class UnoEngine {
       this.nextTurn()
       const targetId = this.playerOrder[this.currentPlayerIndex]
       this.players[targetId].push(this._drawOne(), this._drawOne())
+    } else if (cardToPlay.value === VALUES.WILD_DRAW_THREE) {
+      this.nextTurn()
+      const targetId = this.playerOrder[this.currentPlayerIndex]
+      this.players[targetId].push(
+        this._drawOne(),
+        this._drawOne(),
+        this._drawOne(),
+      )
     } else if (cardToPlay.value === VALUES.WILD_DRAW_FOUR) {
       this.nextTurn()
       const targetId = this.playerOrder[this.currentPlayerIndex]

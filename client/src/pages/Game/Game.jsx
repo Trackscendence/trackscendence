@@ -1,4 +1,5 @@
-import { useSearchParams } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
@@ -13,6 +14,10 @@ import { getMockGameFromSearchParams } from './_utils/mockState'
 // The mock table is display-only; its handlers go nowhere.
 const noop = () => undefined
 
+// Breathing room between the final broadcast and the results screen, so the
+// winning move is seen landing instead of being cut off mid-animation.
+const GAME_OVER_NAVIGATE_DELAY_MS = 1200
+
 const GameScreen = ({ children }) => (
   <main className="bg-surface-warm relative min-h-[100svh]">
     <ExitGameButton />
@@ -22,10 +27,23 @@ const GameScreen = ({ children }) => (
 )
 
 const Game = () => {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const user = useAuthStore((state) => state.user)
   const gameState = useGameStore((state) => state.gameState)
   const gamePlayers = useGameStore((state) => state.gamePlayers)
+  const gameOutcome = useGameStore((state) => state.gameOutcome)
+
+  // game_over ends the game here: hold the final table for a beat, then hand
+  // over to the results screen, which reads the outcome from the store.
+  useEffect(() => {
+    if (!gameOutcome) return undefined
+    const navigateTimer = setTimeout(
+      () => navigate('/results'),
+      GAME_OVER_NAVIGATE_DELAY_MS,
+    )
+    return () => clearTimeout(navigateTimer)
+  }, [gameOutcome, navigate])
 
   // Mock table for design work, reachable only in dev builds through the
   // Rig's data-source switch (which adds ?source=mock). Vite erases this

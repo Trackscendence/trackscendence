@@ -13,7 +13,9 @@ const roomRepository = require('#modules/room/room.repository')
 const {
   MAX_OPEN_ROOMS,
   DEFAULT_CAPACITY,
+  ALLOWED_CAPACITIES,
 } = require('#modules/room/room.constants')
+const BadRequestException = require('#exceptions/bad-request.exception')
 const ConflictException = require('#exceptions/conflict.exception')
 
 // Retries absorb the races the repository reports as structured errors:
@@ -52,23 +54,35 @@ const listRooms = async () => {
 }
 
 /**
- * Seats a user for a game. Idempotent: re-uses the open or in-game room they
- * are already in (so a double-mounted effect or a refresh mid-game never
- * opens a second room for the same player), else joins the first open room
- * with a free seat, else creates a new room with them as owner (subject to
- * MAX_OPEN_ROOMS).
+ * Seats a user in the single shared room. Idempotent: re-uses the open or
+ * in-game room they are already in (so a double-mounted effect or a refresh
+ * mid-game never opens a second room for the same player).
+ *
+ * There is at most one open room at a time. If it exists, everyone joins it,
+ * whatever its size — the creator's capacity choice stands. If none exists, the
+ * caller opens it: with an explicit `capacity` (the lobby's "create a room for
+ * N") at that size, otherwise the default two-player quick game (#156).
  *
  * @param {{ id: number, username: string }} user
+ * @param {{ capacity?: number }} [options]
  * @returns {Promise<Object>} the room DTO the user is seated in; the caller
  *   checks `isRoomFull` on it to decide whether the match should start
  */
-const seatUser = async (user) => {
+const seatUser = async (user, { capacity } = {}) => {
+  if (capacity !== undefined && !ALLOWED_CAPACITIES.includes(capacity)) {
+    throw new BadRequestException('Unsupported room size', {
+      details: [`Room size must be one of ${ALLOWED_CAPACITIES.join(', ')}`],
+    })
+  }
+
   for (let attempt = 0; attempt < SEAT_ATTEMPTS; attempt += 1) {
     const currentRoom = await roomRepository.findActiveRoomByUserId(user.id)
     if (currentRoom) {
       return toRoomDto(currentRoom)
     }
 
+    // Join the open room if there is one, whatever its size — a single shared
+    // room means everyone gathers in the same place.
     const visibleRooms = await roomRepository.findVisibleRooms()
     const joinableRooms = visibleRooms.filter(
       (room) => room.status === 'OPEN' && room.players.length < room.capacity,
@@ -84,9 +98,11 @@ const seatUser = async (user) => {
       // Someone else took the seat first; try the next candidate.
     }
 
+    // No open room: open one. The capacity choice only matters here, when the
+    // caller is the one creating the room.
     const { room: createdRoom } = await roomRepository.createRoomIfUnderLimit({
       name: `${user.username}'s room`,
-      capacity: DEFAULT_CAPACITY,
+      capacity: capacity ?? DEFAULT_CAPACITY,
       ownerId: user.id,
       maxOpenRooms: MAX_OPEN_ROOMS,
     })
@@ -98,6 +114,41 @@ const seatUser = async (user) => {
   }
 
   throw new ConflictException('No seat is available right now, try again')
+}
+
+/**
+ * Joins a user into a specific open room by id (the lobby grid's "join this
+ * room" for a configurable room someone else created). Idempotent: if the
+ * user already holds a seat somewhere, that seat is returned. Refuses when the
+ * room is gone, no longer open, or already full.
+ *
+ * @param {{ id: number }} user
+ * @param {number} roomId
+ * @returns {Promise<Object>} the room DTO the user is now seated in
+ */
+const joinRoom = async (user, roomId) => {
+  for (let attempt = 0; attempt < SEAT_ATTEMPTS; attempt += 1) {
+    const currentRoom = await roomRepository.findActiveRoomByUserId(user.id)
+    if (currentRoom) {
+      return toRoomDto(currentRoom)
+    }
+
+    const { room, error } = await roomRepository.addPlayerToRoom(
+      roomId,
+      user.id,
+    )
+    if (room) {
+      return toRoomDto(room)
+    }
+    if (error === roomRepository.ROOM_ERRORS.CONFLICT) {
+      // A concurrent seat/leave shifted the room; re-read and retry.
+      continue
+    }
+    // NOT_FOUND, NOT_OPEN, or FULL: the room can no longer be joined.
+    throw new ConflictException('That room is no longer available')
+  }
+
+  throw new ConflictException('Could not join the room, try again')
 }
 
 /**
@@ -196,6 +247,7 @@ module.exports = {
   isRoomFull,
   listRooms,
   seatUser,
+  joinRoom,
   leaveOpenRoom,
   markRoomInGame,
   claimRoomForGame,

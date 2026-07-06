@@ -1,10 +1,10 @@
-const normalizeEmail = (email = '') => email.trim().toLowerCase()
+const normalizeEmail = (email) => email.trim().toLowerCase()
 
-const normalizeUsername = (username = '') => username.trim().toLowerCase()
+const normalizeUsername = (username) => username.trim().toLowerCase()
 
-const normalizeIdentifier = (identifier = '') => identifier.trim().toLowerCase()
+const normalizeIdentifier = (identifier) => identifier.trim().toLowerCase()
 
-const normalizePassword = (password = '') =>
+const normalizePassword = (password) =>
   typeof password === 'string' ? password : ''
 
 const normalizeRegistrationInput = ({ email, username, password } = {}) => {

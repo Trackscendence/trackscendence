@@ -25,6 +25,11 @@ const useGameStore = create((set) => ({
   match: null,
   gameState: null,
   gameError: null,
+  // How the last game ended for this user: 'won' | 'lost' | 'abandoned',
+  // written by handleGameOver. The Game page navigates to /results when it
+  // appears; game_start and clearGame reset it so a stale outcome can never
+  // bounce a fresh game straight to the results screen.
+  gameOutcome: null,
   // The players of the running game, written alongside `match` on game_start
   // but with a longer life: leaving the waiting room clears `match` (its
   // navigate-on-match effect must not refire on remount), while the game page
@@ -72,6 +77,25 @@ const useGameStore = create((set) => ({
   setGamePlayers: (gamePlayers) => set({ gamePlayers }),
   setGameState: (gameState) => set({ gameState }),
   setGameError: (gameError) => set({ gameError }),
+  setGameOutcome: (gameOutcome) => set({ gameOutcome }),
+
+  // Maps a game_over payload onto this user's outcome. 'player_left' means
+  // the match ended without a result; otherwise the winner id decides it.
+  handleGameOver: (payload) =>
+    set((state) => {
+      // A late game_over from a game this client already replaced must not
+      // hijack the current one.
+      if (state.gameState && payload.gameId !== state.gameState.gameId) {
+        return {}
+      }
+      if (payload.reason === 'player_left') {
+        return { gameOutcome: 'abandoned' }
+      }
+      const ownUserId = useAuthStore.getState().user?.id
+      return {
+        gameOutcome: payload.winnerUserId === ownUserId ? 'won' : 'lost',
+      }
+    }),
   setRooms: (rooms) => set({ rooms }),
   setRoomError: (roomError) => set({ roomError }),
 
@@ -84,7 +108,13 @@ const useGameStore = create((set) => ({
     set({ lobbyCount: 0, match: null })
   },
   clearGame: () =>
-    set({ match: null, gameState: null, gameError: null, gamePlayers: [] }),
+    set({
+      match: null,
+      gameState: null,
+      gameError: null,
+      gameOutcome: null,
+      gamePlayers: [],
+    }),
 
   // Auto-seat: the server puts the player in the open room, creating one if
   // none exists (first in owns it), and starts the game once the room fills.

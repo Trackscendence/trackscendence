@@ -48,12 +48,19 @@ const Room = () => {
     const event = recipient.startsWith('user:')
       ? 'chat:private_message'
       : 'chat:message'
+    const text = messageRef.current.value.trim()
+
+    if (!text) {
+      return
+    }
+
     const message = {
       recipient: recipient,
-      message: messageRef.current.value,
+      message: text,
     }
 
     socket.emit(event, message)
+    messageRef.current.value = ''
   }
 
   return (
@@ -62,7 +69,7 @@ const Room = () => {
         {messages.map((m) => (
           <li
             className={
-              user.username === m.user.username
+              user.id === m.user.id
                 ? 'mt-2 w-full place-self-end rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm inline-2/3'
                 : 'mt-2 w-full place-self-start rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm inline-2/3'
             }

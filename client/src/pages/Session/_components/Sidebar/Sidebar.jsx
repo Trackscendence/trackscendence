@@ -7,7 +7,6 @@ import { useEffect } from 'react'
 const SideBar = () => {
   const rooms = useChatStore((state) => state.rooms)
   const addRoom = useChatStore((state) => state.addRoom)
-  const setMessages = useChatStore((state) => state.setMessages)
   const token = useAuthStore((state) => state.token)
 
   // TODO refactor to useProfileStore()
@@ -15,10 +14,11 @@ const SideBar = () => {
     const setPrivateRooms = async () => {
       const data = await listFriends(token)
 
+      useChatStore.setState(useChatStore.getInitialState())
+
       data.friends.map((f) => {
         const roomId = `user:${f.user.id}`
         addRoom(roomId, f.user.username)
-        setMessages(roomId, [])
         return {
           id: roomId,
           name: f.user.username,
@@ -27,7 +27,7 @@ const SideBar = () => {
     }
 
     setPrivateRooms()
-  }, [token])
+  }, [token, addRoom])
 
   return (
     <>

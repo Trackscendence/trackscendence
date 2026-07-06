@@ -17,6 +17,10 @@ const useChatStore = create((set) => ({
         ...state.rooms,
         [roomId]: { name: roomName },
       },
+      messages: {
+        ...state.messages,
+        [roomId]: state.messages[roomId] || [],
+      },
     })),
   setRooms: (rooms) => set({ rooms }),
   setActiveRoom: (activeRoom) => set({ activeRoom }),

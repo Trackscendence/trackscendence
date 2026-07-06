@@ -90,8 +90,9 @@ const registerHandlers = (io, socket) => {
     }
 
     const room = typeof data.recipient === 'string' ? data.recipient : ''
+    const message = typeof data.message === 'string' ? data.message : ''
 
-    if (!room || !socket.rooms.has(room)) {
+    if (!room || !message || !socket.rooms.has(room)) {
       return
     }
 
@@ -103,7 +104,17 @@ const registerHandlers = (io, socket) => {
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
       return
     }
+
     const recipient = typeof data.recipient === 'string' ? data.recipient : ''
+    const message = typeof data.message === 'string' ? data.message : ''
+
+    if (!recipient || !message) {
+      return
+    }
+
+    if (!recipient.startsWith('user:')) {
+      return
+    }
 
     const sender = `user:${socket.user.id}`
     if (recipient === sender) {

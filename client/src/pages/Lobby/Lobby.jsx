@@ -24,18 +24,15 @@ const Lobby = () => {
     return undefined
   }, [token])
 
-  // Create opens the Quick Start picker to choose a room size, then seats the
-  // player as its owner and heads to the waiting room. Join seats the player
-  // into the chosen room and does the same.
+  // Create opens the Quick Start picker to choose a room size; Join targets a
+  // specific room. Both hand the seat off to the waiting room as navigation
+  // intent rather than emitting it here: the waiting room owns seating so its
+  // mount/cleanup cycle can't leave the room right after the lobby opened it.
   const handleCreateRoom = () => setIsQuickStartOpen(true)
-  const handlePickSize = (size) => {
-    useGameStore.getState().seatRoom(size)
-    navigate('/')
-  }
-  const handleJoinRoom = (roomId) => {
-    useGameStore.getState().joinRoomById(roomId)
-    navigate('/')
-  }
+  const handlePickSize = (size) =>
+    navigate('/', { state: { seatIntent: { type: 'create', capacity: size } } })
+  const handleJoinRoom = (roomId) =>
+    navigate('/', { state: { seatIntent: { type: 'join', roomId } } })
 
   if (!user) return null
 

@@ -266,6 +266,9 @@ const registerHandlers = (io, socket) => {
     if (!state || state.status !== 'IN_PROGRESS') return
     state.status = 'COMPLETED'
     state.winner = engine.winner
+    // Capture the final scores before the engine is freed below; the winner
+    // takes the sum of the opponents' hands, everyone else scores 0 (#197).
+    state.scores = engine.getScores()
     state.endedAt = new Date()
     await gameStore.saveGame(gameId, state)
     gameStore.deleteEngine(gameId)

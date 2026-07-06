@@ -36,9 +36,18 @@ const GAME_RULES = {
   MAX_PLAYERS: 10,
 }
 
+// Classic UNO end-of-round scoring: number cards score their face value,
+// action cards (Skip, Reverse, Draw Two) score 20, and wilds (Wild, Wild
+// Draw Four) score 50. The winner collects the sum of everyone else's hand.
+const CARD_POINTS = {
+  ACTION: 20,
+  WILD: 50,
+}
+
 module.exports = {
   COLORS,
   VALUES,
   CARD_TYPES,
   GAME_RULES,
+  CARD_POINTS,
 }

@@ -95,8 +95,9 @@ const toLeaderboardEntry = (entry, rank) => ({
  * Shapes a finished in-memory game state into the repository's save contract.
  * The repository validates winner counts (COMPLETED: exactly one, ABANDONED:
  * zero), which this mapping guarantees by flagging only the recorded winner
- * and only for completed games. Scores are 0 until the engine computes real
- * ones (#197).
+ * and only for completed games. Scores come from the engine (#197): the
+ * winner collects the opponents' hand points, everyone else 0. Abandoned
+ * games carry no scores, so the map is absent and every score falls back to 0.
  */
 const buildGameResultPayload = (state) => ({
   startedAt: state.startedAt,
@@ -104,7 +105,7 @@ const buildGameResultPayload = (state) => ({
   status: state.status,
   players: state.players.map((player) => ({
     userId: player.userId,
-    score: 0,
+    score: state.scores?.[player.userId] ?? 0,
     isWinner: state.status === 'COMPLETED' && player.userId === state.winner,
   })),
 })

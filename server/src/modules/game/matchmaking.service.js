@@ -120,6 +120,11 @@ const handlePlayerDisconnect = async (userId) => {
     logger.error(`Failed to persist abandoned game ${game.id}`, error)
   }
 
+  // Flushed to PostgreSQL and the engine freed above, so drop the in-memory
+  // record. Without this the abandoned game leaks in activeGames for the life
+  // of the process and slows findActiveGameByUser, which scans every entry.
+  await gameStore.deleteGame(game.id)
+
   logger.info(`Game ${game.id} abandoned by ${userId}`)
   return game
 }

@@ -1,15 +1,12 @@
 import { Link } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
+import Logo from '@/components/Logo'
 import AccountMenu from './_components/AccountMenu'
 
 const LobbyNav = ({ user, canCreateRoom, onCreateRoom }) => {
   return (
     <header className="flex items-center justify-between border-b border-black/10 bg-white px-8 py-3">
-      <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-[#D9D9D9] shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
-        <span className="text-lg font-black tracking-[-0.05em] text-white">
-          UNO
-        </span>
-      </div>
+      <Logo />
       <div className="flex items-center gap-4">
         <button
           type="button"

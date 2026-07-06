@@ -50,6 +50,8 @@ const toRoomDto = (room) => ({
   players: room.players.map(({ user }) => ({
     userId: user.id,
     username: user.username,
+    displayName: user.displayName,
+    avatarUrl: user.avatarUrl,
   })),
 })
 

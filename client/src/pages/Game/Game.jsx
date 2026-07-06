@@ -105,6 +105,8 @@ const Game = () => {
     matchPlayers: gamePlayers,
     ownUserId: user.id,
     ownUsername: user.username,
+    ownDisplayName: user.displayName,
+    ownAvatarUrl: user.avatarUrl,
     isSpectator: isSimulatedGame,
   })
 

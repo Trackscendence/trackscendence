@@ -64,14 +64,6 @@ const SettingsPage = () => {
   const user = useAuthStore((state) => state.user)
   const [activeKey, setActiveKey] = useState('account')
 
-  const handleLogout = async () => {
-    try {
-      await useAuthStore.getState().logout()
-    } finally {
-      navigate('/login', { replace: true })
-    }
-  }
-
   if (!user) {
     return (
       <div className="flex items-center justify-center py-10 text-sm font-medium text-[#8a6a52]">
@@ -124,16 +116,6 @@ const SettingsPage = () => {
               </SettingsCard>
             </>
           )}
-
-          <div className="flex justify-end">
-            <button
-              className="rounded-xl border border-[#e2b3a3] px-5 py-2.5 text-sm font-semibold text-[#b6523b] transition hover:bg-[#fff1ed] focus-visible:ring-2 focus-visible:ring-[#b6523b] focus-visible:outline-none"
-              type="button"
-              onClick={handleLogout}
-            >
-              Log out
-            </button>
-          </div>
         </div>
       </div>
     </div>

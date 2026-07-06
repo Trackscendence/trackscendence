@@ -230,6 +230,34 @@ const setRoomInGame = (roomId, gameId) => {
 }
 
 /**
+ * Compare-and-set claim of a room for match start: flips OPEN to IN_GAME
+ * only while the room is still OPEN. `updateMany` makes the status check and
+ * the flip one statement, so of two concurrent callers exactly one sees
+ * count 1; the loser must not start a match.
+ * @param {number} roomId
+ * @returns {Promise<boolean>} true when this caller won the claim
+ */
+const claimRoomForGame = async (roomId) => {
+  const { count } = await prisma.room.updateMany({
+    where: { id: roomId, status: 'OPEN' },
+    data: { status: 'IN_GAME' },
+  })
+  return count === 1
+}
+
+/**
+ * Reverts a claimed room to OPEN after a failed match start. Guarded on the
+ * game id still being empty so a room with a running game can never reopen.
+ * @param {number} roomId
+ */
+const reopenClaimedRoom = async (roomId) => {
+  await prisma.room.updateMany({
+    where: { id: roomId, status: 'IN_GAME', gameId: null },
+    data: { status: 'OPEN' },
+  })
+}
+
+/**
  * Closes every room tied to a finished game.
  * @param {string} gameId runtime game UUID
  * @returns {Promise<number>} number of rooms closed
@@ -251,5 +279,7 @@ module.exports = {
   addPlayerToRoom,
   removePlayerFromRoom,
   setRoomInGame,
+  claimRoomForGame,
+  reopenClaimedRoom,
   closeRoomsByGameId,
 }

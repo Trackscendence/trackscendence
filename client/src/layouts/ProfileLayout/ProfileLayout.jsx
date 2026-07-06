@@ -1,9 +1,9 @@
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
+import BackButton from '@/components/BackButton'
 import LobbyChip from '@/components/LobbyChip'
 import PlayerSearch from './_components/PlayerSearch'
 
 const ProfileLayout = () => {
-  const navigate = useNavigate()
   const { pathname } = useLocation()
   // The player search belongs to the signed-in user's own profile only, not
   // the public /users/:username view or /leaderboard this layout also wraps.
@@ -14,27 +14,7 @@ const ProfileLayout = () => {
       {/* Back and Lobby stay flush in the top corners; the search sits between
           them on the same line, top-aligned with the two tabs. */}
       <header className="relative z-20 flex items-start gap-4">
-        <button
-          className="flex h-[27px] w-[138px] shrink-0 items-center justify-center gap-1 border-2 border-black bg-white text-sm font-semibold text-black uppercase transition hover:bg-black hover:text-white focus:ring-2 focus:ring-black/25 focus:outline-none"
-          type="button"
-          onClick={() => navigate(-1)}
-        >
-          <svg
-            aria-hidden="true"
-            className="h-3.5 w-3.5"
-            fill="none"
-            viewBox="0 0 16 16"
-          >
-            <path
-              d="M10 3 5 8l5 5M5.5 8H14"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-            />
-          </svg>
-          Back
-        </button>
+        <BackButton className="h-[27px] w-[138px] shrink-0" />
 
         <div className="flex flex-1 justify-center px-4">
           {showSearch ? <PlayerSearch /> : null}

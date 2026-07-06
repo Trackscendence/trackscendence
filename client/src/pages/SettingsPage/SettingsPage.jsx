@@ -1,46 +1,74 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
+import SettingsSidebar from './_components/SettingsSidebar'
 import TwoFactorSettings from './_components/TwoFactorSettings'
 
-// Settings wears the game's identity rather than a generic account skin: a
-// warm header carrying the four-color dot motif from the in-game color picker,
-// and each section tagged with an UNO card color the way the deck groups cards
-// (Account blue, Password red, Two-factor green). Reached from the profile
-// gear menu (#219). Avatar upload joins here once the client has a multipart
-// request path; for now the profile edit dialog owns it.
-
-// The four UNO colors, in the deck's usual order. The header echoes the wild
-// color picker with these.
-const DECK_DOTS = [
-  { color: '#EA5A2A', name: 'red' },
-  { color: '#F4C745', name: 'yellow' },
-  { color: '#489E52', name: 'green' },
-  { color: '#3684CC', name: 'blue' },
+// The settings sidebar. Account and Security are live; the rest are shown but
+// disabled until those features exist (spec 260706 item 6, Figma node 89:312).
+const NAV_ITEMS = [
+  {
+    key: 'account',
+    label: 'Account',
+    description: 'Name, avatar, email',
+    enabled: true,
+  },
+  {
+    key: 'security',
+    label: 'Security',
+    description: 'Password & 2FA',
+    enabled: true,
+  },
+  {
+    key: 'notifications',
+    label: 'Notifications',
+    description: 'Alerts & digests',
+    enabled: false,
+  },
+  {
+    key: 'privacy',
+    label: 'Privacy',
+    description: 'Visibility & data',
+    enabled: false,
+  },
+  {
+    key: 'preferences',
+    label: 'Preferences',
+    description: 'Language & theme',
+    enabled: false,
+  },
+  {
+    key: 'danger',
+    label: 'Danger Zone',
+    description: 'Delete account',
+    enabled: false,
+    danger: true,
+  },
 ]
 
-// One card per settings topic, tagged with its UNO color on the left edge and
-// a matching eyebrow. A hook-free presenter, kept local to the page.
-const SectionCard = ({ accent, eyebrow, title, description, children }) => (
-  <section
-    className="rounded-2xl border border-l-[6px] border-[#efdcc6] bg-white p-6 shadow-[0_10px_30px_rgba(61,18,0,0.06)]"
-    style={{ borderLeftColor: accent }}
-  >
-    <p
-      className="text-xs font-bold tracking-[0.14em] uppercase"
-      style={{ color: accent }}
-    >
-      {eyebrow}
+const SECTION_COPY = {
+  account: {
+    title: 'Account',
+    description: 'Manage your public profile and personal details.',
+  },
+  security: {
+    title: 'Security',
+    description: 'Keep your account safe with a strong password and 2FA.',
+  },
+}
+
+// One card per settings block, matching the Figma's white bordered cards.
+const Card = ({ title, children }) => (
+  <section className="rounded-2xl border border-[#e8893a2e] bg-white p-6 shadow-[0_10px_30px_rgba(61,18,0,0.05)]">
+    <p className="text-xs font-bold tracking-[0.14em] text-[#8a6845] uppercase">
+      {title}
     </p>
-    <h2 className="mt-1 text-lg font-black text-[#3d1200]">{title}</h2>
-    {description ? (
-      <p className="mt-2 text-sm text-[#8a6a52]">{description}</p>
-    ) : null}
-    <div className="mt-5">{children}</div>
+    <div className="mt-4">{children}</div>
   </section>
 )
 
 const InfoRow = ({ label, value }) => (
-  <div className="rounded-xl bg-[#fbf1e6] px-4 py-3">
+  <div className="rounded-xl border border-[#e8893a2e] bg-[#fdf5ec] px-4 py-3">
     <p className="text-xs font-semibold tracking-wide text-[#a07a5c] uppercase">
       {label}
     </p>
@@ -53,6 +81,7 @@ const InfoRow = ({ label, value }) => (
 const SettingsPage = () => {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
+  const [activeKey, setActiveKey] = useState('account')
 
   const handleLogout = async () => {
     try {
@@ -70,83 +99,66 @@ const SettingsPage = () => {
     )
   }
 
+  const section = SECTION_COPY[activeKey] ?? SECTION_COPY.account
+
   return (
-    <div className="space-y-6">
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFD9A8] to-[#F5B173] px-6 py-7 text-[#3d1200] sm:px-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto w-full max-w-[1104px]">
+      <h1 className="text-3xl font-black tracking-[-0.025em] text-[#1c1410] sm:text-4xl">
+        Settings
+      </h1>
+      <p className="mt-1.5 text-sm text-[#8a6845]">
+        Manage your account and security.
+      </p>
+
+      <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-start">
+        <SettingsSidebar
+          items={NAV_ITEMS}
+          activeKey={activeKey}
+          onSelect={setActiveKey}
+        />
+
+        <div className="flex-1 space-y-6">
           <div>
-            <button
-              className="text-xs font-semibold tracking-wide text-[#8a4a1e] uppercase transition hover:text-[#3d1200] focus:outline-none focus-visible:underline"
-              type="button"
-              onClick={() => navigate('/profile')}
-            >
-              &larr; Back to profile
-            </button>
-            <h1 className="mt-2 text-3xl font-black tracking-[-0.02em] sm:text-4xl">
-              Settings
-            </h1>
-            <p className="mt-1 text-sm text-[#7a3810]">
-              Your account, password, and sign-in security.
-            </p>
+            <h2 className="text-2xl font-black tracking-[-0.025em] text-[#1c1410]">
+              {section.title}
+            </h2>
+            <p className="mt-1 text-sm text-[#8a6845]">{section.description}</p>
           </div>
-          <div className="flex items-center gap-1.5" aria-hidden="true">
-            {DECK_DOTS.map((dot) => (
-              <span
-                key={dot.name}
-                className="h-3 w-3 rounded-full ring-2 ring-white/70"
-                style={{ backgroundColor: dot.color }}
-              />
-            ))}
+
+          {activeKey === 'account' ? (
+            <Card title="Personal info">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <InfoRow label="Username" value={user.username} />
+                <InfoRow label="Email" value={user.email} />
+              </div>
+            </Card>
+          ) : (
+            <>
+              <Card title="Password">
+                <button
+                  className="rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none"
+                  type="button"
+                  onClick={() => navigate('/change-password')}
+                >
+                  Change password
+                </button>
+              </Card>
+              <Card title="Two-factor authentication">
+                <TwoFactorSettings />
+              </Card>
+            </>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              className="rounded-xl border border-[#e2b3a3] px-5 py-2.5 text-sm font-semibold text-[#b6523b] transition hover:bg-[#fff1ed] focus-visible:ring-2 focus-visible:ring-[#b6523b] focus-visible:outline-none"
+              type="button"
+              onClick={handleLogout}
+            >
+              Log out
+            </button>
           </div>
         </div>
-      </header>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <SectionCard
-          accent="#3684CC"
-          eyebrow="Identity"
-          title="Account"
-          description="How you show up at the table."
-        >
-          <div className="space-y-3">
-            <InfoRow label="Username" value={user.username} />
-            <InfoRow label="Email" value={user.email} />
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          accent="#EA5A2A"
-          eyebrow="Access"
-          title="Password"
-          description="Rotate it if you think it has been exposed or want stronger access."
-        >
-          <button
-            className="rounded-xl bg-[#EA5A2A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf4a1e] focus-visible:ring-2 focus-visible:ring-[#EA5A2A] focus-visible:ring-offset-2 focus-visible:outline-none"
-            type="button"
-            onClick={() => navigate('/change-password')}
-          >
-            Change password
-          </button>
-        </SectionCard>
-      </div>
-
-      <SectionCard
-        accent="#489E52"
-        eyebrow="Security"
-        title="Two-factor authentication"
-        description="Add a one-time code from an authenticator app on top of your password."
-      >
-        <TwoFactorSettings />
-      </SectionCard>
-
-      <div className="flex justify-end">
-        <button
-          className="rounded-xl border border-[#e2b3a3] px-5 py-2.5 text-sm font-semibold text-[#b6523b] transition hover:bg-[#fff1ed] focus-visible:ring-2 focus-visible:ring-[#b6523b] focus-visible:outline-none"
-          type="button"
-          onClick={handleLogout}
-        >
-          Log out
-        </button>
       </div>
     </div>
   )

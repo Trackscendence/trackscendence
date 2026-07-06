@@ -26,11 +26,16 @@ const parseError = async (response) => {
 const REQUEST_TIMEOUT_MS = 30_000
 
 const request = async (path, { method = 'GET', body, token } = {}) => {
+  // FormData bodies (file uploads) must go out untouched: the browser sets a
+  // multipart Content-Type with the right boundary, and encoding them as JSON
+  // would corrupt them. Everything else is JSON.
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+
   const headers = {
     Accept: 'application/json',
   }
 
-  if (body) {
+  if (body && !isFormData) {
     headers['Content-Type'] = 'application/json'
   }
 
@@ -46,7 +51,7 @@ const request = async (path, { method = 'GET', body, token } = {}) => {
     response = await fetch(`${apiBaseUrl}${path}`, {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
       signal: controller.signal,
     })
   } catch (err) {

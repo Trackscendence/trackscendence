@@ -10,6 +10,7 @@ const ProfileAvatar = ({ profile }) => {
       className="text-[42px]"
       initials={profileFormatters.getInitials(profile)}
       size={132}
+      src={profile.avatarUrl || undefined}
     />
   )
 }

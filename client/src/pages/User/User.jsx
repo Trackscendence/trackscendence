@@ -9,7 +9,6 @@ import useProfileStore from '@/stores/useProfileStore'
 const User = () => {
   const { username } = useParams()
   const authUsername = useAuthStore((state) => state.user?.username)
-  const actionError = useProfileStore((state) => state.actionError)
   const error = useProfileStore((state) => state.error)
   const isLoading = useProfileStore((state) => state.isLoading)
   const isSubmitting = useProfileStore((state) => state.isSubmitting)
@@ -55,7 +54,6 @@ const User = () => {
 
   return (
     <ProfileSurface
-      actionError={actionError}
       friends={[]}
       isOwnProfile={false}
       isSubmitting={isSubmitting}
@@ -63,7 +61,6 @@ const User = () => {
       profile={profile}
       relationship={relationship}
       onFriendRequest={useProfileStore.getState().sendFriendRequest}
-      onProfileUpdate={useProfileStore.getState().updateCurrentProfile}
     />
   )
 }

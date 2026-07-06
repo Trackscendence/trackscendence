@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 
-// The gear menu on the own-profile header (#219): Settings links to the
-// account settings page, Log out clears the session. A small container — it
-// owns its open state and reaches the logout action directly rather than
-// prop-drilling it down through the profile surface.
-const ProfileMenu = () => {
+// The gear menu next to the lobby avatar (#219): Settings links to the account
+// settings page, Log out clears the session. A small container: it owns its
+// open state and reaches the logout action directly rather than prop-drilling
+// it down through the lobby nav.
+const AccountMenu = () => {
   const navigate = useNavigate()
   const menuRef = useRef(null)
   const [isOpen, setIsOpen] = useState(false)
@@ -90,4 +90,4 @@ const ProfileMenu = () => {
   )
 }
 
-export default ProfileMenu
+export default AccountMenu

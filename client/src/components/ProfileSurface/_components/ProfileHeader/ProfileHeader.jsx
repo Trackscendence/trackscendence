@@ -1,6 +1,5 @@
 import Button from '@/components/Button'
 import ProfileAvatar from '../ProfileAvatar'
-import ProfileMenu from '../ProfileMenu'
 import ProfileStatStrip from '../ProfileStatStrip'
 import ProfileTabs from '../ProfileTabs'
 import profileActions from '../../_utils/profileActions'
@@ -33,7 +32,6 @@ const ProfileHeader = ({
                 <h1 className="text-2xl font-semibold break-words text-[#3d1200] sm:text-[28px]">
                   {profileFormatters.getDisplayName(profile)}
                 </h1>
-                {isOwnProfile && <ProfileMenu />}
               </div>
               <p className="mt-1 text-sm break-all text-[#7a3810]">
                 {metadata}

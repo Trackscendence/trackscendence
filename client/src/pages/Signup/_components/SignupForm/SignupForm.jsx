@@ -200,7 +200,7 @@ const SignupForm = ({ onSuccess }) => {
         }}
         title="Privacy Policy"
       >
-        <div className="test-sm space-y-4 leading-6">
+        <div className="space-y-4 text-sm leading-6">
           <Privacy />
         </div>
 

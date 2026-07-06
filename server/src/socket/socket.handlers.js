@@ -85,11 +85,22 @@ const registerHandlers = (io, socket) => {
       logger.info(`User ${socket.user.username} seated in room ${room.id}`)
 
       if (room.status === 'OPEN' && roomService.isRoomFull(room)) {
-        // If createMatch throws, the room stays OPEN and full; a member
-        // leaving frees a seat and the next seat retries the start.
-        const match = await matchmaking.createMatch(room.players)
-        await roomService.markRoomInGame(room.id, match.gameId)
-        startMatch(io, match)
+        // Two concurrent seats of the last slot both see a full OPEN room
+        // (socket.io does not serialize async handlers), and both used to
+        // start a match — two parallel games for the same players (#232).
+        // The claim is a compare-and-set; only its winner starts the match.
+        if (await roomService.claimRoomForGame(room.id)) {
+          try {
+            const match = await matchmaking.createMatch(room.players)
+            await roomService.markRoomInGame(room.id, match.gameId)
+            startMatch(io, match)
+          } catch (error) {
+            // A failed start must not strand the room in IN_GAME with no
+            // game: reopen it so a member leaving or the next seat retries.
+            await roomService.releaseRoomClaim(room.id)
+            throw error
+          }
+        }
       }
 
       await broadcastRooms(io)

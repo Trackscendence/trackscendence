@@ -126,6 +126,9 @@ const useGameStore = create((set) => ({
     socket.emit('game:play_card', { gameId, cardIndex, declaredColor }),
   drawCard: (gameId) => socket.emit('game:draw_card', { gameId }),
   passTurn: (gameId) => socket.emit('game:pass_turn', { gameId }),
+  // Ask the server to replay the current state of a running game (page
+  // refresh, reconnect). The reply arrives as a normal game_state_update.
+  requestGameState: (gameId) => socket.emit('game:state', { gameId }),
 }))
 
 export default useGameStore

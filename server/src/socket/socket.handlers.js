@@ -159,6 +159,7 @@ const registerHandlers = (io, socket) => {
     if (abandonedGame) {
       io.to(`game:${abandonedGame.id}`).emit('game_over', {
         gameId: abandonedGame.id,
+        winnerUserId: null,
         reason: 'player_left',
         abandonedBy: socket.user.id,
       })
@@ -204,7 +205,7 @@ const registerHandlers = (io, socket) => {
     await gameStore.saveGame(gameId, state)
     gameStore.deleteEngine(gameId)
 
-    // Persist before any game_over emit (#203) so the results screen reads a
+    // Persist before the game_over emit so the results screen reads a
     // leaderboard that already includes this game. A failed save loses the
     // stats row (logged, worth alerting on) but must never block tearing the
     // game down for the players.
@@ -213,6 +214,14 @@ const registerHandlers = (io, socket) => {
     } catch (error) {
       logger.error(`Failed to persist completed game ${gameId}`, error)
     }
+
+    // Same payload shape as the abandon path below: winnerUserId carries the
+    // outcome, reason says how the game ended.
+    io.to(`game:${gameId}`).emit('game_over', {
+      gameId,
+      winnerUserId: engine.winner,
+      reason: 'completed',
+    })
 
     // The room served its purpose once the game ends; close it so the
     // lobby offers a fresh room for the next round.

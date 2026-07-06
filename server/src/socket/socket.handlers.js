@@ -177,6 +177,30 @@ const registerHandlers = (io, socket) => {
     }
   })
 
+  // Owner-only "End the room" (#221): closes the whole OPEN room instead of
+  // just unseating the caller. Every seated player (the owner included) gets a
+  // room:closed so their waiting room hands back to the lobby, and the grid
+  // drops the room right away via the broadcast.
+  socket.on('room:end', async () => {
+    try {
+      const endedRoom = await roomService.endOwnedRoom(socket.user.id)
+      if (!endedRoom) {
+        return socket.emit('room_error', {
+          message: 'You can only end a room you own',
+        })
+      }
+      endedRoom.players.forEach((player) => {
+        io.to(`user:${player.userId}`).emit('room:closed', {
+          roomId: endedRoom.id,
+        })
+      })
+      await broadcastRooms(io)
+    } catch (error) {
+      logger.error('Failed to end room', error)
+      socket.emit('room_error', { message: 'Unable to end the room' })
+    }
+  })
+
   // Lobby page hydration: send the room list to just this socket; later
   // changes arrive via the broadcast in `broadcastRooms`.
   socket.on('room:list', async () => {

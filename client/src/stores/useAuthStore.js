@@ -22,6 +22,20 @@ const applyAuthenticatedResult = (set, result) => {
   return result
 }
 
+// How hard a provider probe retries while the request keeps failing. Right
+// after the stack starts the client is served before the API can answer, so
+// the first probes fail; ~8 attempts a couple of seconds apart covers the boot
+// window without hammering.
+const PROVIDERS_PROBE_MAX_ATTEMPTS = 8
+const PROVIDERS_PROBE_RETRY_MS = 1500
+
+// Tracks the current in-flight probe so overlapping callers (app init plus the
+// auth pages re-checking on mount) share one retry loop instead of each running
+// their own.
+let providersProbe = null
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
 const useAuthStore = create((set, get) => ({
   user: null,
   token: localStorage.getItem(AUTH_TOKEN_KEY),
@@ -32,18 +46,40 @@ const useAuthStore = create((set, get) => ({
   // starts in the "Soon" state until the first successful probe.
   isFortyTwoLoginEnabled: false,
 
-  // Probes the server for available OAuth providers. Safe to call repeatedly:
-  // the auth pages re-run it on mount so a transient failure at startup (e.g.
-  // the probe racing the server coming up) self-heals the next time the login
-  // or signup screen is shown, rather than leaving the 42 button stuck on
-  // "Soon" for the whole session.
-  loadAuthProviders: async () => {
-    try {
-      const { providers } = await fetchAuthProviders()
-      set({ isFortyTwoLoginEnabled: Boolean(providers?.fortyTwo) })
-    } catch {
-      // Keep the current state; a later probe will retry.
-    }
+  // Probes the server for available OAuth providers and flips the 42 button on
+  // where the flow can actually work. The probe races the API coming up right
+  // after the stack starts, so a *failed* request is retried a few times before
+  // giving up — otherwise the button stays stuck on "Soon" for the whole
+  // session until a manual refresh. A request that *succeeds* is authoritative,
+  // including one that reports 42 as not configured, so it stops retrying now.
+  // Concurrent callers share the in-flight probe rather than each looping.
+  loadAuthProviders: () => {
+    if (providersProbe) return providersProbe
+
+    providersProbe = (async () => {
+      for (
+        let attempt = 1;
+        attempt <= PROVIDERS_PROBE_MAX_ATTEMPTS;
+        attempt += 1
+      ) {
+        try {
+          const { providers } = await fetchAuthProviders()
+          set({ isFortyTwoLoginEnabled: Boolean(providers?.fortyTwo) })
+          return
+        } catch {
+          // The server is likely still starting up; wait and try again.
+          if (attempt < PROVIDERS_PROBE_MAX_ATTEMPTS) {
+            await delay(PROVIDERS_PROBE_RETRY_MS)
+          }
+        }
+      }
+    })()
+
+    providersProbe.finally(() => {
+      providersProbe = null
+    })
+
+    return providersProbe
   },
 
   init: async () => {

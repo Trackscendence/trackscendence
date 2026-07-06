@@ -1,4 +1,4 @@
-const { describe, it } = require('node:test')
+const { describe, it, mock, afterEach } = require('node:test')
 const assert = require('node:assert')
 
 process.env.DATABASE_URL =
@@ -6,6 +6,7 @@ process.env.DATABASE_URL =
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 
 const roomService = require('#modules/room/room.service')
+const roomRepository = require('#modules/room/room.repository')
 
 // The capacity guard runs before any database access, so it can be exercised
 // without a live database (#156).
@@ -26,5 +27,72 @@ describe('seatUser capacity validation', () => {
 
   it('rejects a non-numeric capacity', async () => {
     await assert.rejects(() => roomService.seatUser(user, { capacity: NaN }))
+  })
+})
+
+// Filling a larger room means several players race for the same seats, and the
+// serializable seat transactions abort on conflict. The service absorbs those
+// aborts by retrying, so the last joiner is never stranded (#154). This drives
+// the retry loop with a stubbed repository: the seat write loses the race a few
+// times before it lands, and the caller must still end up seated.
+describe('seatUser survives repeated seat contention', () => {
+  const user = { id: 7, username: 'racer' }
+  const seatedRoom = {
+    id: 1,
+    name: "owner's room",
+    capacity: 4,
+    status: 'OPEN',
+    owner: { id: 2, username: 'owner' },
+    players: [{ user: { id: 7, username: 'racer' } }],
+  }
+
+  afterEach(() => mock.restoreAll())
+
+  it('retries until the contended seat write lands', async () => {
+    mock.method(roomRepository, 'findActiveRoomByUserId', async () => null)
+    mock.method(roomRepository, 'findVisibleRooms', async () => [
+      { id: 1, status: 'OPEN', capacity: 4, players: [] },
+    ])
+    // A room already exists, so the caller can never create one; its only path
+    // to a seat is winning the contended join, which loses twice then lands.
+    mock.method(roomRepository, 'createRoomIfUnderLimit', async () => ({
+      error: roomRepository.ROOM_ERRORS.LIMIT_REACHED,
+    }))
+    let joinAttempts = 0
+    mock.method(roomRepository, 'addPlayerToRoom', async () => {
+      joinAttempts += 1
+      if (joinAttempts < 3) {
+        return { error: roomRepository.ROOM_ERRORS.CONFLICT }
+      }
+      return { room: seatedRoom }
+    })
+
+    const dto = await roomService.seatUser(user, { capacity: 4 })
+
+    assert.strictEqual(dto.id, 1)
+    assert.strictEqual(joinAttempts, 3)
+    assert.deepStrictEqual(
+      dto.players.map((player) => player.userId),
+      [7],
+    )
+  })
+
+  it('gives up with a clear error once the attempt budget is spent', async () => {
+    mock.method(roomRepository, 'findActiveRoomByUserId', async () => null)
+    mock.method(roomRepository, 'findVisibleRooms', async () => [
+      { id: 1, status: 'OPEN', capacity: 4, players: [] },
+    ])
+    mock.method(roomRepository, 'createRoomIfUnderLimit', async () => ({
+      error: roomRepository.ROOM_ERRORS.LIMIT_REACHED,
+    }))
+    // The seat never lands: every attempt loses the race.
+    mock.method(roomRepository, 'addPlayerToRoom', async () => ({
+      error: roomRepository.ROOM_ERRORS.CONFLICT,
+    }))
+
+    await assert.rejects(
+      () => roomService.seatUser(user, { capacity: 4 }),
+      /No seat is available/,
+    )
   })
 })

@@ -44,6 +44,8 @@ const {
   MAX_LOGIN_ATTEMPTS,
   LOCKED_DURATION_MINUTES,
   GENERIC_ACCOUNT_LOCKED_MESSAGE,
+  FORTYTWO_LOGIN_FAILED_MESSAGE,
+  FORTYTWO_NOT_AVAILABLE_MESSAGE,
 } = require('#modules/auth/auth.constants')
 
 const toSafeAuthUser = (user) => ({

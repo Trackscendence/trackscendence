@@ -52,29 +52,26 @@ export const loadLeaderboardContext = async (token) => {
   }
 }
 
+// The leaderboard aggregation is intentionally left out of these fetches so the
+// profile and friends resolve without waiting on it. The store loads it off the
+// critical path via loadLeaderboardContext once the profile has rendered.
 export const loadCurrentProfileData = async (token) => {
-  const [profileResult, friendContext, leaderboardContext] = await Promise.all([
+  const [profileResult, friendContext] = await Promise.all([
     getProfile(token),
     loadFriendContext(token),
-    loadLeaderboardContext(token),
   ])
   return {
     currentProfile: profileResult.user,
     relationship: profileResult.relationship,
     ...friendContext,
-    leaderboard: leaderboardContext.leaderboard,
   }
 }
 
 export const loadPublicProfileData = async ({ token, username }) => {
-  const [result, leaderboardContext] = await Promise.all([
-    getUserByUsername(username, token),
-    loadLeaderboardContext(token),
-  ])
+  const result = await getUserByUsername(username, token)
   return {
     publicProfile: result.user,
     relationship: result.relationship,
-    leaderboard: leaderboardContext.leaderboard,
   }
 }
 

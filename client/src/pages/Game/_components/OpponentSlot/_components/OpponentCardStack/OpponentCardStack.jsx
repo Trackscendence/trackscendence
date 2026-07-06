@@ -11,11 +11,11 @@ const HORIZONTAL_OFFSETS = [
 
 const VERTICAL_OFFSETS = [
   'top-0',
-  'top-[69px]',
+  'top-[46px]',
+  'top-[92px]',
   'top-[138px]',
-  'top-[207px]',
-  'top-[276px]',
-  'top-[345px]',
+  'top-[184px]',
+  'top-[230px]',
 ]
 
 const HORIZONTAL_WIDTHS = [
@@ -29,11 +29,11 @@ const HORIZONTAL_WIDTHS = [
 
 const VERTICAL_HEIGHTS = [
   'h-[213px]',
-  'h-[282px]',
+  'h-[259px]',
+  'h-[305px]',
   'h-[351px]',
-  'h-[420px]',
-  'h-[489px]',
-  'h-[558px]',
+  'h-[397px]',
+  'h-[443px]',
 ]
 
 const getCardIds = (playerId, cardCount) => {

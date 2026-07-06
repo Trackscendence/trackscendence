@@ -40,7 +40,7 @@ const GameTable = ({
         </div>
 
         {leftOpponent && (
-          <div className="flex min-h-[21rem] items-center justify-center [grid-area:left] md:absolute md:top-1/2 md:left-0 md:min-h-0 md:-translate-y-1/2 md:justify-start">
+          <div className="flex min-h-[21rem] items-center justify-center [grid-area:left] md:absolute md:top-[38%] md:left-0 md:min-h-0 md:-translate-y-1/2 md:justify-start">
             <OpponentSlot
               isActive={leftOpponent.id === currentTurnPlayerId}
               orientation="left"
@@ -66,7 +66,7 @@ const GameTable = ({
         </div>
 
         {rightOpponent && (
-          <div className="flex min-h-[21rem] items-center justify-center [grid-area:right] md:absolute md:top-1/2 md:right-0 md:min-h-0 md:-translate-y-1/2 md:justify-end">
+          <div className="flex min-h-[21rem] items-center justify-center [grid-area:right] md:absolute md:top-[38%] md:right-0 md:min-h-0 md:-translate-y-1/2 md:justify-end">
             <OpponentSlot
               isActive={rightOpponent.id === currentTurnPlayerId}
               orientation="right"

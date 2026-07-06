@@ -3,7 +3,6 @@ import Panel from '@/components/Panel'
 import ProfileSurface from '@/components/ProfileSurface'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import useProfileStore from '@/stores/useProfileStore'
-import PlayerSearch from './_components/PlayerSearch'
 
 const Profile = () => {
   const actionError = useProfileStore((state) => state.actionError)
@@ -49,7 +48,6 @@ const Profile = () => {
 
   return (
     <div className="space-y-6">
-      <PlayerSearch />
       <ProfileSurface
         actionError={actionError}
         friends={friends}

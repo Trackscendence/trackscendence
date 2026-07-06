@@ -15,6 +15,14 @@ const systemController = require('#modules/system/system.controller')
 
 const app = express()
 
+// Every deployment path puts exactly one proxy in front of Express (nginx in
+// the compose stack, the Vite proxy in dev, Railway's edge on staging), so
+// trust that single hop: req.ip becomes the real client address and the rate
+// limiter buckets per visitor instead of lumping everyone behind the proxy
+// together. Never `true` — that trusts arbitrary client-supplied
+// X-Forwarded-For chains and lets callers spoof their way past rate limits.
+app.set('trust proxy', 1)
+
 app.use(helmet())
 app.use(cors({ origin: config.CORS_ORIGIN }))
 app.use(express.json())

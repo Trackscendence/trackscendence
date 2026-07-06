@@ -12,6 +12,24 @@ export const updateProfile = (payload, token) => {
   })
 }
 
+export const uploadAvatar = (file, token) => {
+  const formData = new FormData()
+  formData.append('avatar', file)
+
+  return request('/users/me/avatar', {
+    method: 'POST',
+    body: formData,
+    token,
+  })
+}
+
+export const deleteAvatar = (token) => {
+  return request('/users/me/avatar', {
+    method: 'DELETE',
+    token,
+  })
+}
+
 export const getUserByUsername = (username, token) => {
   return request(`/users/${encodeURIComponent(username)}`, { token })
 }

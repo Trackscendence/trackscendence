@@ -1,10 +1,12 @@
 import {
+  clearAvatar,
   emptyFriendContext,
   getActiveToken,
   loadCurrentProfileData,
   loadFriendContext,
   loadPublicProfileData,
   requestFriendship,
+  saveAvatar,
   saveCurrentProfile,
 } from './profileStore.helpers'
 import useNotificationStore from './useNotificationStore'
@@ -122,6 +124,50 @@ export const createProfileActions = (set, get) => ({
         currentProfile,
         isSubmitting: false,
       })
+
+      return result
+    } catch (error) {
+      set({ actionError: error.message, isSubmitting: false })
+      return null
+    }
+  },
+
+  uploadAvatar: async (file) => {
+    const token = getActiveToken()
+
+    if (!token) {
+      set({ actionError: 'Authentication required' })
+      return null
+    }
+
+    set({ actionError: '', isSubmitting: true })
+
+    try {
+      const { currentProfile, result } = await saveAvatar({ file, token })
+
+      set({ currentProfile, isSubmitting: false })
+
+      return result
+    } catch (error) {
+      set({ actionError: error.message, isSubmitting: false })
+      return null
+    }
+  },
+
+  removeAvatar: async () => {
+    const token = getActiveToken()
+
+    if (!token) {
+      set({ actionError: 'Authentication required' })
+      return null
+    }
+
+    set({ actionError: '', isSubmitting: true })
+
+    try {
+      const { currentProfile, result } = await clearAvatar({ token })
+
+      set({ currentProfile, isSubmitting: false })
 
       return result
     } catch (error) {

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import ProfileEditDialog from './_components/ProfileEditDialog'
 import ProfileFriends from './_components/ProfileFriends'
 import ProfileGames from './_components/ProfileGames'
 import ProfileHeader from './_components/ProfileHeader'
@@ -7,36 +6,20 @@ import ProfileOverview from './_components/ProfileOverview'
 import ProfileSidebar from './_components/ProfileSidebar'
 
 const ProfileSurface = ({
-  actionError,
   friends = [],
   isOwnProfile,
   isSubmitting,
   leaderboard = [],
   onFriendRequest,
-  onProfileUpdate,
   profile,
   relationship,
 }) => {
   const [activeTab, setActiveTab] = useState('overview')
-  const [isEditOpen, setIsEditOpen] = useState(false)
   const visibleFriends = isOwnProfile ? friends : profile.friends || []
 
-  const handlePrimaryAction = () => {
-    if (isOwnProfile) {
-      setIsEditOpen(true)
-      return
-    }
-
-    void onFriendRequest()
-  }
-
-  const handleProfileUpdate = async (payload) => {
-    const result = await onProfileUpdate(payload)
-
-    if (result) {
-      setIsEditOpen(false)
-    }
-  }
+  // The owner's header links to /settings for edits; only the friend-request
+  // button routes through here, so this always sends a friend request.
+  const handlePrimaryAction = () => void onFriendRequest()
 
   return (
     <div className="w-full bg-white">
@@ -76,17 +59,6 @@ const ProfileSurface = ({
           />
         )}
       </div>
-
-      {isOwnProfile && (
-        <ProfileEditDialog
-          error={actionError}
-          isOpen={isEditOpen}
-          isSubmitting={isSubmitting}
-          profile={profile}
-          onClose={() => setIsEditOpen(false)}
-          onSubmit={handleProfileUpdate}
-        />
-      )}
     </div>
   )
 }

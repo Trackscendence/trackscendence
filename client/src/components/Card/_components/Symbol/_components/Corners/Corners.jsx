@@ -4,6 +4,9 @@ import SkipCorner from '@/assets/cards/symbols/skip-symbol.svg?react'
 const CORNER_TEXT_CLASS =
   'absolute z-10 text-[34px] leading-none font-black text-white [-webkit-text-stroke:1px_black] [paint-order:stroke_fill]'
 
+// Each corner is one of the four play colors. A white outline keeps every
+// diamond legible even when the card body is that same color (a yellow corner
+// on a yellow-declared wild would otherwise vanish).
 const WILD_DIAMONDS = [
   'top-1.5 left-[11px] bg-[#EA5A2A]',
   'top-1.5 right-[7px] bg-[#F4C745]',
@@ -43,7 +46,7 @@ const renderWildCorners = () => (
     {WILD_DIAMONDS.map((className) => (
       <span
         aria-hidden="true"
-        className={`absolute z-10 h-[22px] w-[22px] rotate-45 ${className}`}
+        className={`absolute z-10 h-[22px] w-[22px] rotate-45 border-2 border-white ${className}`}
         key={className}
       />
     ))}

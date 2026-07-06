@@ -41,7 +41,7 @@ const SignupForm = ({ onSuccess }) => {
     const { isValid, errors } = validateSignupInput(normalizedForm)
 
     if (!isValid) {
-      setValidationDetails(errors)
+      setValidationDetails(Object.values(errors))
       return
     }
 
@@ -174,7 +174,7 @@ const SignupForm = ({ onSuccess }) => {
         }}
         title="Terms of Service"
       >
-        <div className="flex-1 overflow-y-auto">
+        <div className="space-y-4 text-sm leading-6">
           <TermsOfService />
         </div>
 

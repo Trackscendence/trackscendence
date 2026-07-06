@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import FortyTwoButton from '@/components/FortyTwoButton'
@@ -8,6 +9,12 @@ const Signup = () => {
   const isFortyTwoLoginEnabled = useAuthStore(
     (state) => state.isFortyTwoLoginEnabled,
   )
+
+  // Re-check provider availability on mount so the 42 button recovers if the
+  // startup probe missed.
+  useEffect(() => {
+    useAuthStore.getState().loadAuthProviders()
+  }, [])
 
   return (
     <div className="flex flex-1 items-center justify-center px-5 py-10">

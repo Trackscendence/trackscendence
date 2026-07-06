@@ -48,7 +48,10 @@ const GameTable = ({
           <CenterZone
             deckSize={deckSize}
             direction={direction}
-            isUnoVisible={currentPlayer.cards.length === 1}
+            isOpponentUno={opponents.some(
+              (opponent) => opponent.cardCount === 1,
+            )}
+            isOwnUno={currentPlayer.cards.length === 1}
             onDrawPileClick={onDrawPileClick}
             onUnoClick={onUnoClick}
             pendingDraw={pendingDraw}

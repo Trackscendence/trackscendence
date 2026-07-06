@@ -28,8 +28,17 @@ const useDevStore = create(
       // for the results screen — not a rigged state, so it stays out of
       // `selectIsRigged`.
       outcomeState: 'won',
+      // Game simulation: bots play a full game on the table, no second player
+      // needed. The switch is a rig flag (never persisted); speed and player
+      // count are harmless preferences.
+      simulateGame: false,
+      simSpeed: 'normal',
+      simPlayers: '2',
+      // Bumped by the Restart button; the sim hook re-deals when it changes.
+      simRunId: 0,
 
       setFlag: (key, value) => set({ [key]: value }),
+      restartSim: () => set((state) => ({ simRunId: state.simRunId + 1 })),
       reset: () =>
         set({
           mockOpponent: false,
@@ -37,6 +46,9 @@ const useDevStore = create(
           instantMatch: false,
           dataSource: 'live',
           outcomeState: 'won',
+          simulateGame: false,
+          simSpeed: 'normal',
+          simPlayers: '2',
         }),
     }),
     {
@@ -48,10 +60,14 @@ const useDevStore = create(
       partialize: (state) => ({
         fillWith: state.fillWith,
         outcomeState: state.outcomeState,
+        simSpeed: state.simSpeed,
+        simPlayers: state.simPlayers,
       }),
       migrate: (persistedState) => ({
         fillWith: persistedState?.fillWith ?? 'uno',
         outcomeState: persistedState?.outcomeState ?? 'won',
+        simSpeed: persistedState?.simSpeed ?? 'normal',
+        simPlayers: persistedState?.simPlayers ?? '2',
       }),
     },
   ),
@@ -60,6 +76,6 @@ const useDevStore = create(
 // True whenever the panel is faking something — drives the orange status LED so
 // you always know at a glance that what's on screen is rigged, not real.
 export const selectIsRigged = (state) =>
-  state.mockOpponent || state.dataSource !== 'live'
+  state.mockOpponent || state.dataSource !== 'live' || state.simulateGame
 
 export default useDevStore

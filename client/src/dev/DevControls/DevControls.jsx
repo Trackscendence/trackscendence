@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
-import useLogoStore from '@/stores/useLogoStore'
 import useDevStore, { selectIsRigged } from './useDevStore'
 import ToggleSwitch from './controls/ToggleSwitch'
 import RadioGroup from './controls/RadioGroup'
@@ -41,15 +40,6 @@ const OUTCOME_OPTIONS = [
   { value: 'won', label: 'won' },
   { value: 'lost', label: 'lost' },
   { value: 'end', label: 'ended' },
-]
-
-// Preview the candidate UNO logos in the lobby nav. 'text' is the shipping
-// lettered badge; 'png' is the raster art; 'svg' is the traced vector (kept so
-// its poor rendering is visible next to the others).
-const LOGO_OPTIONS = [
-  { value: 'text', label: 'text' },
-  { value: 'png', label: 'png' },
-  { value: 'svg', label: 'svg' },
 ]
 
 // Injects / withdraws a fake opponent so matchmaking advances without a second
@@ -112,8 +102,6 @@ const DevControls = () => {
   const setFlag = useDevStore((state) => state.setFlag)
   const restartSim = useDevStore((state) => state.restartSim)
   const reset = useDevStore((state) => state.reset)
-  const logoVariant = useLogoStore((state) => state.variant)
-  const setLogoVariant = useLogoStore((state) => state.setVariant)
 
   // The simulated game's winner, for the status line under the sim controls.
   const simWinnerId = useGameStore((state) =>
@@ -330,27 +318,9 @@ const DevControls = () => {
 
         <div className="border-t border-[#FDE8CF]/10" />
 
-        <section className="flex flex-col gap-3">
-          <h3 className="font-mono text-[11px] tracking-wider text-[#B39B7C] uppercase">
-            Appearance
-          </h3>
-          <RadioGroup
-            label="Logo"
-            name="dev-logo"
-            value={logoVariant}
-            options={LOGO_OPTIONS}
-            onChange={setLogoVariant}
-          />
-        </section>
-
-        <div className="border-t border-[#FDE8CF]/10" />
-
         <button
           type="button"
-          onClick={() => {
-            reset()
-            setLogoVariant('text')
-          }}
+          onClick={reset}
           className="self-start font-mono text-[12px] text-[#E03325] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFB04F]"
         >
           Reset to live

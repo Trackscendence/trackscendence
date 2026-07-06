@@ -104,7 +104,12 @@ export const createProfileActions = (set, get) => ({
     }
   },
 
+  // The three profile writes below (details, avatar upload, avatar remove)
+  // share isSubmitting as a single-writer gate: while one is in flight the
+  // others bail out, so the profile can never take two overlapping writes.
   updateCurrentProfile: async (payload) => {
+    if (get().isSubmitting) return null
+
     const token = getActiveToken()
 
     if (!token) {
@@ -133,6 +138,8 @@ export const createProfileActions = (set, get) => ({
   },
 
   uploadAvatar: async (file) => {
+    if (get().isSubmitting) return null
+
     const token = getActiveToken()
 
     if (!token) {
@@ -155,6 +162,8 @@ export const createProfileActions = (set, get) => ({
   },
 
   removeAvatar: async () => {
+    if (get().isSubmitting) return null
+
     const token = getActiveToken()
 
     if (!token) {

@@ -6,7 +6,8 @@ import Uno from './_components/Uno'
 const CenterZone = ({
   deckSize,
   direction,
-  isUnoVisible,
+  isOpponentUno,
+  isOwnUno,
   onDrawPileClick,
   onUnoClick,
   pendingDraw,
@@ -16,9 +17,11 @@ const CenterZone = ({
     <div className="flex flex-wrap items-center justify-center gap-5">
       <DrawPile deckSize={deckSize} onDrawPileClick={onDrawPileClick} />
       <DiscardPile pendingDraw={pendingDraw} topCard={topCard} />
-      <DirectionIndicator direction={direction}>
-        {isUnoVisible && <Uno onUnoClick={onUnoClick} />}
-      </DirectionIndicator>
+      <DirectionIndicator
+        bottomOverlay={isOwnUno ? <Uno onUnoClick={onUnoClick} /> : null}
+        direction={direction}
+        topOverlay={isOpponentUno ? <Uno /> : null}
+      />
     </div>
   )
 }

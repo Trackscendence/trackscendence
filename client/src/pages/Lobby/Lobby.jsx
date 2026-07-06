@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
 import getInitials from '@/utils/getInitials'
+import QuickStartModal from '@/components/QuickStartModal'
 import LobbyView from './_components/LobbyView'
 
 const Lobby = () => {
@@ -10,6 +11,7 @@ const Lobby = () => {
   const user = useAuthStore((state) => state.user)
   const token = useAuthStore((state) => state.token)
   const rooms = useGameStore((state) => state.rooms)
+  const [isQuickStartOpen, setIsQuickStartOpen] = useState(false)
 
   // Hydrate the room list; later changes arrive via the server's
   // `rooms_update` broadcasts. The socket itself is connected at the app
@@ -22,27 +24,42 @@ const Lobby = () => {
     return undefined
   }, [token])
 
-  // Create and Join both enter the waiting room, where auto-seat puts the
-  // player in the open room or creates one — so the first to enter owns it.
-  // Create is only offered while no room is open; everyone else can just join.
-  const handleEnterRoom = () => navigate('/')
+  // Create opens the Quick Start picker to choose a room size, then seats the
+  // player as its owner and heads to the waiting room. Join seats the player
+  // into the chosen room and does the same.
+  const handleCreateRoom = () => setIsQuickStartOpen(true)
+  const handlePickSize = (size) => {
+    useGameStore.getState().seatRoom(size)
+    navigate('/')
+  }
+  const handleJoinRoom = (roomId) => {
+    useGameStore.getState().joinRoomById(roomId)
+    navigate('/')
+  }
 
   if (!user) return null
 
   const hasOpenRoom = rooms.some((room) => room.status === 'OPEN')
 
   return (
-    <LobbyView
-      user={{
-        username: user.username,
-        email: user.email,
-        initials: getInitials(user.username),
-      }}
-      rooms={rooms}
-      canCreateRoom={!hasOpenRoom}
-      onCreateRoom={handleEnterRoom}
-      onJoinRoom={handleEnterRoom}
-    />
+    <>
+      <LobbyView
+        user={{
+          username: user.username,
+          email: user.email,
+          initials: getInitials(user.username),
+        }}
+        rooms={rooms}
+        canCreateRoom={!hasOpenRoom}
+        onCreateRoom={handleCreateRoom}
+        onJoinRoom={handleJoinRoom}
+      />
+      <QuickStartModal
+        isOpen={isQuickStartOpen}
+        onPick={handlePickSize}
+        onCancel={() => setIsQuickStartOpen(false)}
+      />
+    </>
   )
 }
 

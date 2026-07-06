@@ -2,7 +2,7 @@
   "scripts": {
     "prepare": "husky",
     "install:all": "npm install && npm install --prefix server && npm install --prefix client",
-    "client:dev": "npm run dev --prefix client",
+    "client:dev": "cross-env VITE_API_PROXY_TARGET=http://localhost:3001 npm run dev --prefix client",
     "server:dev": "npm run dev --prefix server",
     "dev": "concurrently \"npm:client:dev\" \"npm:server:dev\"",
     "lint": "npm run lint:client",
@@ -33,6 +33,7 @@
   "devDependencies": {
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
+    "cross-env": "^10.1.0",
     "cspell": "^10.0.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.7",

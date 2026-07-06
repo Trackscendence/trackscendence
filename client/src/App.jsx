@@ -96,9 +96,10 @@ const App = () => {
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 
+          <Route path="/change-password" element={<ChangePassword />} />
+
           <Route element={<AppLayout />}>
             <Route path="/session" element={<Session />} />
-            <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/game" element={<Game />} />
             <Route element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]} />}>
               <Route path="/admin" element={<AdminAccess />} />

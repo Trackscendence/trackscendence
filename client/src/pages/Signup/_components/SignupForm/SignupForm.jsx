@@ -6,6 +6,8 @@ import Input from '@/components/Input'
 import { validateSignupInput } from '@/services/auth.validations'
 import { normalizeSignupInput } from '@/services/auth.normalizations'
 import Modal from '@/components/Modal'
+import TermsOfService from '@/pages/TermsOfService/TermsOfService'
+import Privacy from '@/pages/Privacy/Privacy'
 
 const SignupForm = ({ onSuccess }) => {
   const [form, setForm] = useState({ username: '', email: '', password: '' })
@@ -172,8 +174,8 @@ const SignupForm = ({ onSuccess }) => {
         }}
         title="Terms of Service"
       >
-        <div className="space-y-4 text-sm leading-6">
-          <p>Terms of Service goes here!!!</p>
+        <div className="flex-1 overflow-y-auto">
+          <TermsOfService />
         </div>
 
         <div className="mt-6 flex justify-end">
@@ -199,7 +201,7 @@ const SignupForm = ({ onSuccess }) => {
         title="Privacy Policy"
       >
         <div className="test-sm space-y-4 leading-6">
-          <p>Privacy Policy goes here!!!</p>
+          <Privacy />
         </div>
 
         <div className="mt-6 flex justify-end">

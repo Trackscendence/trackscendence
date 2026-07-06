@@ -169,6 +169,18 @@ npm run compose:up
 
 - Consolidated Web Application: `http://localhost:8080`
 
+**Local Mode (no Docker):**
+
+```bash
+npm run dev
+```
+
+Requires a running PostgreSQL and a filled `.env`. The browser talks only to
+the Vite origin (`http://localhost:5173`); API and websocket traffic is
+proxied to the backend, which the `dev` script assumes is on
+`http://localhost:3001`. If your backend runs elsewhere, set
+`VITE_API_PROXY_TARGET` accordingly.
+
 ---
 
 ## 7. Developer Documentation

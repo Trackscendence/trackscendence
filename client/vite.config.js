@@ -21,6 +21,14 @@ export default defineConfig({
         target: process.env.VITE_API_PROXY_TARGET || 'http://server:3001',
         changeOrigin: true,
       },
+      // Same-origin sockets, the routing model production nginx already
+      // uses. `ws: true` is required: the client connects with
+      // transports: ['websocket'] and no polling fallback, so the proxy
+      // must handle the upgrade itself.
+      '/websocket': {
+        target: process.env.VITE_API_PROXY_TARGET || 'http://server:3001',
+        ws: true,
+      },
     },
   },
 })

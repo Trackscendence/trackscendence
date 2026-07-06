@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
 import getInitials from '@/utils/getInitials'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import QuickStartModal from '@/components/QuickStartModal'
 import WaitingRoomView from './_components/WaitingRoomView'
 import OwnerLeaveModal from './_components/OwnerLeaveModal'
 
@@ -10,9 +12,12 @@ import OwnerLeaveModal from './_components/OwnerLeaveModal'
 // beat, then hand off to the game table — mirrors the design's 1.3s + fade.
 const OVERLAY_DELAY_MS = 1300
 const NAVIGATE_DELAY_MS = 2900
+// A short beat for the room list to hydrate before deciding to auto-join or
+// offer Quick Start, so the modal never flashes ahead of a rooms_update.
+const ROOM_DECIDE_MS = 700
 
 const YOU_COLOR = 'bg-[#FFB04F]'
-const OPPONENT_COLOR = 'bg-[#E03325]'
+const OTHER_COLOR = 'bg-[#E03325]'
 
 const WaitingRoom = () => {
   const navigate = useNavigate()
@@ -23,23 +28,42 @@ const WaitingRoom = () => {
   const roomClosed = useGameStore((state) => state.roomClosed)
   const [isOverlayVisible, setIsOverlayVisible] = useState(false)
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
+  // 'deciding' while the room list loads, then 'choosing' (Quick Start) when no
+  // room is open. Once seated, the room itself drives the view.
+  const [phase, setPhase] = useState('deciding')
 
-  // Take a seat while this page is mounted. The server seats the player in
-  // the open room — creating one if none exists, so the first to arrive owns
-  // it — and starts the game once every seat is filled. The socket itself is
-  // connected at the app level (App.jsx) and stays up across navigation, so
-  // unmounting sends an explicit room:leave instead of disconnecting.
-  // Leaving is safe after a match starts: the room is IN_GAME by then and
-  // room:leave only unseats players from OPEN rooms.
+  // The single-room flow (#154): on arrival, join the one open room if there
+  // is one, otherwise offer Quick Start so the first player opens it. The
+  // socket is app-owned and stays up across navigation, so unmounting sends an
+  // explicit room:leave rather than disconnecting.
   useEffect(() => {
     if (!token) return undefined
-    const { seatRoom, leaveRoom, leaveLobby, setRoomClosed } =
+    const { listRooms, leaveRoom, leaveLobby, setRoomClosed } =
       useGameStore.getState()
-    // Clear any leftover close signal from a previous room before seating, so
-    // a stale flag can't bounce this fresh visit straight back to the lobby.
     setRoomClosed(false)
-    seatRoom()
+    listRooms()
+    const decideTimer = setTimeout(() => {
+      const state = useGameStore.getState()
+      const ownId = useAuthStore.getState().user?.id
+      const seated = state.rooms.some((room) =>
+        room.players.some((player) => player.userId === ownId),
+      )
+      if (seated) {
+        setPhase('seated')
+        return
+      }
+      const openRoom = state.rooms.find(
+        (room) => room.status === 'OPEN' && room.players.length < room.capacity,
+      )
+      if (openRoom) {
+        state.seatRoom()
+        setPhase('seated')
+      } else {
+        setPhase('choosing')
+      }
+    }, ROOM_DECIDE_MS)
     return () => {
+      clearTimeout(decideTimer)
       leaveRoom()
       leaveLobby()
     }
@@ -95,30 +119,63 @@ const WaitingRoom = () => {
     }
     leaveToLobby()
   }
-  const you = {
-    name: user.username,
-    initials: getInitials(user.username),
-    colorClass: YOU_COLOR,
+  const handleQuickStart = (size) => {
+    useGameStore.getState().seatRoom(size)
+    setPhase('seated')
   }
-  // The opponent shows up as soon as they take their seat; once the match
-  // starts, `match` carries the same identities.
-  const opponentIdentity =
-    match?.players.find((player) => player.userId !== user.id) ??
-    myRoom?.players.find((player) => player.userId !== user.id)
-  const opponent = opponentIdentity
-    ? {
-        name: opponentIdentity.username,
-        initials: getInitials(opponentIdentity.username),
-        colorClass: OPPONENT_COLOR,
-      }
-    : null
+
+  // Not seated yet: offer Quick Start once we know no room is open, otherwise
+  // hold on the loader while the room list settles.
+  if (!myRoom) {
+    return (
+      <div className="bg-surface-waiting flex h-screen flex-col items-center justify-center">
+        {phase === 'choosing' ? (
+          <QuickStartModal
+            isOpen
+            onPick={handleQuickStart}
+            onCancel={() => navigate('/lobby')}
+          />
+        ) : (
+          <LoadingSpinner
+            className="bg-surface-waiting text-[#3d1200]"
+            message="Finding a room"
+          />
+        )}
+      </div>
+    )
+  }
+
+  // Build the seats: you first (gold), the rest red, padded to capacity so the
+  // empty seats show as breathing placeholders.
+  const otherPlayers = myRoom.players.filter(
+    (player) => player.userId !== user.id,
+  )
+  const slots = [
+    {
+      key: `p-${user.id}`,
+      name: user.username,
+      initials: getInitials(user.username),
+      colorClass: YOU_COLOR,
+      isSelf: true,
+    },
+    ...otherPlayers.map((player) => ({
+      key: `p-${player.userId}`,
+      name: player.username,
+      initials: getInitials(player.username),
+      colorClass: OTHER_COLOR,
+    })),
+  ]
+  while (slots.length < myRoom.capacity) slots.push(null)
+
+  const neededMore = Math.max(0, myRoom.capacity - myRoom.players.length)
+  const isMatched = Boolean(match) || myRoom.players.length >= myRoom.capacity
 
   return (
     <>
       <WaitingRoomView
-        you={you}
-        opponent={opponent}
-        isMatched={Boolean(match)}
+        slots={slots}
+        isMatched={isMatched}
+        neededMore={neededMore}
         isOverlayVisible={isOverlayVisible}
         onLeaveRoom={handleLeaveRoom}
       />

@@ -1,4 +1,4 @@
-const StatusLine = ({ isMatched }) => {
+const StatusLine = ({ isMatched, neededMore }) => {
   return (
     <span
       className={`text-[clamp(15px,1.4vw,19px)] transition-all duration-300 ${
@@ -7,7 +7,9 @@ const StatusLine = ({ isMatched }) => {
           : 'font-medium text-[#9A7050]'
       }`}
     >
-      {isMatched ? 'All players here' : 'Need one more'}
+      {isMatched
+        ? 'All players here'
+        : `Need ${neededMore} more player${neededMore === 1 ? '' : 's'}`}
     </span>
   )
 }

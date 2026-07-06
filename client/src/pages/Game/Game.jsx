@@ -2,13 +2,15 @@ import { useSearchParams } from 'react-router-dom'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
+import { DEV_GAME_ID } from '@/dev/DevControls/constants'
 import ChatPanelButton from './_components/ChatPanelButton'
 import ExitGameButton from './_components/ExitGameButton'
 import GameTable from './_components/GameTable'
+import LiveGameTable from './_components/LiveGameTable'
 import mapServerGameState from './_utils/mapServerGameState'
 import { getMockGameFromSearchParams } from './_utils/mockState'
 
-// Move sending is #200; until then the table is display-only.
+// The mock table is display-only; its handlers go nowhere.
 const noop = () => undefined
 
 const GameScreen = ({ children }) => (
@@ -58,16 +60,33 @@ const Game = () => {
     )
   }
 
+  // The Rig's simulation plays every seat itself (including this user's), so
+  // its table is a spectator surface: no flag it maps is interactive, and no
+  // click may reach the socket — the server has no game under the dev id.
+  // In production builds this is statically false and the dev import above
+  // tree-shakes away with it.
+  const isSimulatedGame =
+    import.meta.env.DEV && gameState.gameId === DEV_GAME_ID
+
   const table = mapServerGameState({
     state: gameState,
     matchPlayers: gamePlayers,
     ownUserId: user.id,
     ownUsername: user.username,
+    isSpectator: isSimulatedGame,
   })
+
+  if (isSimulatedGame) {
+    return (
+      <GameScreen>
+        <GameTable {...table} onDrawPileClick={noop} onUnoClick={noop} />
+      </GameScreen>
+    )
+  }
 
   return (
     <GameScreen>
-      <GameTable {...table} onDrawPileClick={noop} onUnoClick={noop} />
+      <LiveGameTable gameId={gameState.gameId} table={table} />
     </GameScreen>
   )
 }

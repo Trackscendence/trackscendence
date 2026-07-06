@@ -29,7 +29,7 @@ const ProfileLayout = () => {
 
       <Link
         className="absolute top-0 right-0 z-20 flex h-[27px] w-[138px] items-center justify-center gap-1 bg-black text-sm font-semibold text-white uppercase transition hover:bg-[#f2652a] focus:ring-2 focus:ring-[#f2652a]/35 focus:outline-none"
-        to="/"
+        to="/lobby"
       >
         <svg
           aria-hidden="true"

@@ -40,6 +40,11 @@ const useGameStore = create((set) => ({
   // "my room" (and the opponent's name) from this list; the lobby page renders
   // it as room cards.
   rooms: [],
+  // Suppresses the player's own room in incoming `rooms_update`s after they
+  // leave, until the server confirms, so a late in-flight broadcast can't
+  // re-show it (order-independent; still correct once multiple concurrent
+  // rooms exist — it only ever hides the player's OWN room).
+  suppressOwnRoom: false,
   roomError: null,
   // Set by the `room:closed` event (#221) when an owner ends the room the
   // player is seated in; the waiting room watches it and hands back to the
@@ -100,7 +105,25 @@ const useGameStore = create((set) => ({
         gameOutcome: payload.winnerUserId === ownUserId ? 'won' : 'lost',
       }
     }),
-  setRooms: (rooms) => set({ rooms }),
+  setRooms: (rooms) =>
+    set((state) => {
+      if (!state.suppressOwnRoom) return { rooms }
+      const ownUserId = useAuthStore.getState().user?.id
+      const stillSeated =
+        !!ownUserId &&
+        rooms.some((room) =>
+          room.players.some((player) => player.userId === ownUserId),
+        )
+      // An update that already lacks our room is the server confirming the
+      // leave — stop suppressing and accept it as-is.
+      if (!stillSeated) return { rooms, suppressOwnRoom: false }
+      // Otherwise this is a stale in-flight broadcast: keep our own room hidden.
+      return {
+        rooms: rooms.filter(
+          (room) => !room.players.some((player) => player.userId === ownUserId),
+        ),
+      }
+    }),
   setRoomError: (roomError) => set({ roomError }),
   setRoomClosed: (roomClosed) => set({ roomClosed }),
 
@@ -125,20 +148,27 @@ const useGameStore = create((set) => ({
   // a default two-player one); with a capacity it opens a room of that size
   // when none exists (the Quick Start choice). The game starts once the room
   // fills.
-  seatRoom: (capacity) =>
-    socket.emit('room:seat', capacity != null ? { capacity } : {}),
+  seatRoom: (capacity) => {
+    set({ suppressOwnRoom: false })
+    socket.emit('room:seat', capacity != null ? { capacity } : {})
+  },
   // Join a specific open room by id (the lobby grid's join button).
-  joinRoomById: (roomId) => socket.emit('room:join', { roomId }),
+  joinRoomById: (roomId) => {
+    set({ suppressOwnRoom: false })
+    socket.emit('room:join', { roomId })
+  },
   // Leaving unseats just this player; ending closes the whole room (owner
   // only, enforced server-side). Both optimistically drop the player's own
   // room from the local grid so the lobby never lingers on a room they just
   // left while the authoritative rooms_update is in flight (#221).
   leaveRoom: () => {
     socket.emit('room:leave')
+    set({ suppressOwnRoom: true })
     useGameStore.getState().dropOwnRoom()
   },
   endRoom: () => {
     socket.emit('room:end')
+    set({ suppressOwnRoom: true })
     useGameStore.getState().dropOwnRoom()
   },
   dropOwnRoom: () =>

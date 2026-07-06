@@ -258,6 +258,21 @@ const reopenClaimedRoom = async (roomId) => {
 }
 
 /**
+ * Closes a single OPEN room (the owner's explicit "End the room" action).
+ * Guarded on OPEN so it never touches a room that has meanwhile started a
+ * game or already closed.
+ * @param {number} roomId
+ * @returns {Promise<number>} rows closed (0 or 1)
+ */
+const closeOpenRoomById = async (roomId) => {
+  const { count } = await prisma.room.updateMany({
+    where: { id: roomId, status: 'OPEN' },
+    data: { status: 'CLOSED' },
+  })
+  return count
+}
+
+/**
  * Closes every room tied to a finished game.
  * @param {string} gameId runtime game UUID
  * @returns {Promise<number>} number of rooms closed
@@ -281,5 +296,6 @@ module.exports = {
   setRoomInGame,
   claimRoomForGame,
   reopenClaimedRoom,
+  closeOpenRoomById,
   closeRoomsByGameId,
 }

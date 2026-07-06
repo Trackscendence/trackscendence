@@ -4,6 +4,7 @@ import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
 import getInitials from '@/utils/getInitials'
 import WaitingRoomView from './_components/WaitingRoomView'
+import OwnerLeaveModal from './_components/OwnerLeaveModal'
 
 // Once a match forms, hold on "All players here", reveal the overlay after a
 // beat, then hand off to the game table — mirrors the design's 1.3s + fade.
@@ -19,7 +20,9 @@ const WaitingRoom = () => {
   const token = useAuthStore((state) => state.token)
   const match = useGameStore((state) => state.match)
   const rooms = useGameStore((state) => state.rooms)
+  const roomClosed = useGameStore((state) => state.roomClosed)
   const [isOverlayVisible, setIsOverlayVisible] = useState(false)
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
 
   // Take a seat while this page is mounted. The server seats the player in
   // the open room — creating one if none exists, so the first to arrive owns
@@ -30,13 +33,25 @@ const WaitingRoom = () => {
   // room:leave only unseats players from OPEN rooms.
   useEffect(() => {
     if (!token) return undefined
-    const { seatRoom, leaveRoom, leaveLobby } = useGameStore.getState()
+    const { seatRoom, leaveRoom, leaveLobby, setRoomClosed } =
+      useGameStore.getState()
+    // Clear any leftover close signal from a previous room before seating, so
+    // a stale flag can't bounce this fresh visit straight back to the lobby.
+    setRoomClosed(false)
     seatRoom()
     return () => {
       leaveRoom()
       leaveLobby()
     }
   }, [token])
+
+  // The owner ended the room out from under this player (#221): hand back to
+  // the lobby. The owner who pressed End is already navigating there.
+  useEffect(() => {
+    if (!roomClosed) return
+    useGameStore.getState().setRoomClosed(false)
+    navigate('/lobby')
+  }, [roomClosed, navigate])
 
   // Match found: reveal the start overlay, then navigate to the game table.
   useEffect(() => {
@@ -55,16 +70,31 @@ const WaitingRoom = () => {
     }
   }, [match, navigate])
 
-  const handleLeaveRoom = () => {
-    useGameStore.getState().leaveRoom()
-    navigate('/lobby')
-  }
-
   if (!user) return null
 
   const myRoom = rooms.find((room) =>
     room.players.some((player) => player.userId === user.id),
   )
+  // Owning the room unlocks the leave/end choice; everyone else just leaves.
+  // Once a match starts the room is IN_GAME and the leave button is moot, so
+  // the modal only ever matters while the room is still OPEN.
+  const isOwner = myRoom?.owner.userId === user.id
+
+  const leaveToLobby = () => {
+    useGameStore.getState().leaveRoom()
+    navigate('/lobby')
+  }
+  const endRoom = () => {
+    useGameStore.getState().endRoom()
+    navigate('/lobby')
+  }
+  const handleLeaveRoom = () => {
+    if (isOwner && !match) {
+      setIsLeaveModalOpen(true)
+      return
+    }
+    leaveToLobby()
+  }
   const you = {
     name: user.username,
     initials: getInitials(user.username),
@@ -84,13 +114,21 @@ const WaitingRoom = () => {
     : null
 
   return (
-    <WaitingRoomView
-      you={you}
-      opponent={opponent}
-      isMatched={Boolean(match)}
-      isOverlayVisible={isOverlayVisible}
-      onLeaveRoom={handleLeaveRoom}
-    />
+    <>
+      <WaitingRoomView
+        you={you}
+        opponent={opponent}
+        isMatched={Boolean(match)}
+        isOverlayVisible={isOverlayVisible}
+        onLeaveRoom={handleLeaveRoom}
+      />
+      <OwnerLeaveModal
+        isOpen={isLeaveModalOpen}
+        onClose={() => setIsLeaveModalOpen(false)}
+        onLeave={leaveToLobby}
+        onEnd={endRoom}
+      />
+    </>
   )
 }
 

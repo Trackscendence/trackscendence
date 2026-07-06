@@ -1,4 +1,10 @@
-const { COLORS, VALUES, CARD_TYPES, GAME_RULES } = require('./game.constants')
+const {
+  COLORS,
+  VALUES,
+  CARD_TYPES,
+  GAME_RULES,
+  CARD_POINTS,
+} = require('./game.constants')
 
 /**
  * UnoEngine - Core game logic engine for UNO.
@@ -395,6 +401,55 @@ class UnoEngine {
   }
 
   /**
+   * Point value of a single card under classic UNO scoring: number cards at
+   * face value, action cards at 20, wilds at 50.
+   *
+   * @param {Object} card
+   * @returns {number}
+   */
+  cardPoints(card) {
+    if (card.type === CARD_TYPES.NUMBER) {
+      return Number(card.value)
+    }
+    if (card.type === CARD_TYPES.WILD) {
+      return CARD_POINTS.WILD
+    }
+    return CARD_POINTS.ACTION
+  }
+
+  /**
+   * Final per-player scores keyed by player id. The winner collects the sum
+   * of every opponent's remaining hand; everyone else scores 0. Before a
+   * winner exists this is all zeros, so it is safe to include in every state
+   * broadcast.
+   *
+   * @returns {Object<string, number>}
+   */
+  getScores() {
+    const scores = {}
+    this.playerOrder.forEach((id) => {
+      scores[id] = 0
+    })
+
+    if (!this.winner) {
+      return scores
+    }
+
+    scores[this.winner] = this.playerOrder
+      .filter((id) => id !== this.winner)
+      .reduce(
+        (total, id) =>
+          total +
+          this.players[id].reduce(
+            (handTotal, card) => handTotal + this.cardPoints(card),
+            0,
+          ),
+        0,
+      )
+    return scores
+  }
+
+  /**
    * Returns the turn order of player IDs. Exposed so callers can iterate
    * players without reaching into the engine's internal `playerOrder`.
    * @returns {string[]}
@@ -427,6 +482,7 @@ class UnoEngine {
       currentPlayer: this.playerOrder[this.currentPlayerIndex],
       playDirection: this.playDirection,
       winner: this.winner,
+      scores: this.getScores(),
       deckSize: this.drawPile.length,
       hasDrawnThisTurn: this.hasDrawnThisTurn,
       // Keep drawn card private to the acting player/caller context.

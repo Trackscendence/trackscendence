@@ -71,7 +71,7 @@ const Room = () => {
             className={
               user.id === m.user.id
                 ? 'mt-2 w-full place-self-end rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm inline-2/3'
-                : 'mt-2 w-full place-self-start rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm inline-2/3'
+                : 'mt-2 w-full place-self-start rounded-md bg-[#D9E7E0] px-4 py-2.5 text-sm'
             }
             key={m.id}
           >

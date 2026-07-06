@@ -13,6 +13,7 @@ const authToken = require('#modules/auth/auth.token')
 const authTwoFactor = require('#modules/auth/auth.two-factor')
 const {
   normalizeIdentifier,
+  normalizeEmail,
   normalizeRegistrationInput,
 } = require('#modules/auth/auth.normalizations')
 const {

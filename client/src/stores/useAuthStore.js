@@ -29,15 +29,25 @@ const useAuthStore = create((set, get) => ({
   isLoading: Boolean(localStorage.getItem(AUTH_TOKEN_KEY)),
   // The server reports which OAuth providers it has credentials for, so the
   // 42 button enables itself exactly where the flow can actually work. It
-  // starts out (and stays, if the probe fails) in the "Soon" state.
+  // starts in the "Soon" state until the first successful probe.
   isFortyTwoLoginEnabled: false,
 
+  // Probes the server for available OAuth providers. Safe to call repeatedly:
+  // the auth pages re-run it on mount so a transient failure at startup (e.g.
+  // the probe racing the server coming up) self-heals the next time the login
+  // or signup screen is shown, rather than leaving the 42 button stuck on
+  // "Soon" for the whole session.
+  loadAuthProviders: async () => {
+    try {
+      const { providers } = await fetchAuthProviders()
+      set({ isFortyTwoLoginEnabled: Boolean(providers?.fortyTwo) })
+    } catch {
+      // Keep the current state; a later probe will retry.
+    }
+  },
+
   init: async () => {
-    fetchAuthProviders()
-      .then(({ providers }) =>
-        set({ isFortyTwoLoginEnabled: Boolean(providers?.fortyTwo) }),
-      )
-      .catch(() => {})
+    get().loadAuthProviders()
 
     const storedToken = localStorage.getItem(AUTH_TOKEN_KEY)
 

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import FortyTwoButton from '@/components/FortyTwoButton'
@@ -8,6 +9,12 @@ const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated, isLoading, isFortyTwoLoginEnabled } = useAuthStore()
+
+  // Re-check provider availability whenever the login screen is shown, so the
+  // 42 button recovers if the startup probe missed.
+  useEffect(() => {
+    useAuthStore.getState().loadAuthProviders()
+  }, [])
 
   const from = location.state?.from?.pathname || '/'
   const params = new URLSearchParams(location.search)

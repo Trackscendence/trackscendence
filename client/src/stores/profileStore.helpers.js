@@ -13,11 +13,6 @@ import {
   uploadAvatar,
 } from '@/services/users'
 import useAuthStore from '@/stores/useAuthStore'
-import {
-  withMockFriends,
-  withMockLeaderboard,
-  withMockProfileStats,
-} from './profileStore.mocks'
 
 export const emptyFriendContext = {
   friends: [],
@@ -37,7 +32,7 @@ export const loadFriendContext = async (token) => {
   ])
 
   return {
-    friends: withMockFriends(friendsResult.friends || []),
+    friends: friendsResult.friends || [],
     incomingRequests: requestsResult.incoming || [],
     outgoingRequests: requestsResult.outgoing || [],
   }
@@ -63,16 +58,11 @@ export const loadCurrentProfileData = async (token) => {
     loadFriendContext(token),
     loadLeaderboardContext(token),
   ])
-  const currentProfile = withMockProfileStats(profileResult.user)
-
   return {
-    currentProfile,
+    currentProfile: profileResult.user,
     relationship: profileResult.relationship,
     ...friendContext,
-    leaderboard: withMockLeaderboard({
-      leaderboard: leaderboardContext.leaderboard,
-      profile: currentProfile,
-    }),
+    leaderboard: leaderboardContext.leaderboard,
   }
 }
 
@@ -81,15 +71,10 @@ export const loadPublicProfileData = async ({ token, username }) => {
     getUserByUsername(username, token),
     loadLeaderboardContext(token),
   ])
-  const publicProfile = withMockProfileStats(result.user)
-
   return {
-    publicProfile,
+    publicProfile: result.user,
     relationship: result.relationship,
-    leaderboard: withMockLeaderboard({
-      leaderboard: leaderboardContext.leaderboard,
-      profile: publicProfile,
-    }),
+    leaderboard: leaderboardContext.leaderboard,
   }
 }
 

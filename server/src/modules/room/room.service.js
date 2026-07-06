@@ -21,9 +21,20 @@ const ConflictException = require('#exceptions/conflict.exception')
 // Retries absorb the races the repository reports as structured errors:
 // losing a create/join race (including serialization CONFLICTs — React strict
 // mode alone double-fires seat requests) means the room list just changed, so
-// the next pass sees the winner's room and joins or re-uses it.
-const SEAT_ATTEMPTS = 3
-const LEAVE_ATTEMPTS = 3
+// the next pass sees the winner's room and joins or re-uses it. Filling a
+// larger room means several players contend for the same room's seats at once,
+// and serializable transactions abort on conflict, so a plain 3 retries can
+// leave the last joiner stranded and the room one seat short. More attempts
+// with a jittered backoff let every joiner find a clean window (#154).
+const SEAT_ATTEMPTS = 10
+const LEAVE_ATTEMPTS = 5
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Jittered backoff between contended attempts, so concurrent joiners stop
+// colliding on the same serialized window instead of retrying in lockstep.
+const backoffBeforeRetry = (attempt) =>
+  sleep(15 + Math.floor(Math.random() * 25) * (attempt + 1))
 
 /**
  * Shapes a Prisma room row into the payload clients receive. Players are in
@@ -110,7 +121,8 @@ const seatUser = async (user, { capacity } = {}) => {
       return toRoomDto(createdRoom)
     }
     // The room limit was hit between our list and our create, meaning a new
-    // room just opened - loop around and join it.
+    // room just opened - back off briefly, then loop around and join it.
+    await backoffBeforeRetry(attempt)
   }
 
   throw new ConflictException('No seat is available right now, try again')
@@ -141,7 +153,8 @@ const joinRoom = async (user, roomId) => {
       return toRoomDto(room)
     }
     if (error === roomRepository.ROOM_ERRORS.CONFLICT) {
-      // A concurrent seat/leave shifted the room; re-read and retry.
+      // A concurrent seat/leave shifted the room; back off, re-read, retry.
+      await backoffBeforeRetry(attempt)
       continue
     }
     // NOT_FOUND, NOT_OPEN, or FULL: the room can no longer be joined.

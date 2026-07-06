@@ -156,6 +156,28 @@ const releaseRoomClaim = async (roomId) => {
 }
 
 /**
+ * The owner's explicit "End the room" action (#221): closes the OPEN room the
+ * caller owns and returns its DTO so the caller can bounce every seated player
+ * back to the lobby. Refuses when the caller is not the owner, the room has
+ * already started a game, or nothing was open to close.
+ *
+ * @param {number} userId
+ * @returns {Promise<Object|null>} the closed room's DTO, or null when the
+ *   caller may not end it
+ */
+const endOwnedRoom = async (userId) => {
+  const room = await roomRepository.findActiveRoomByUserId(userId)
+  if (!room || room.status !== 'OPEN' || room.ownerId !== userId) {
+    return null
+  }
+  const closed = await roomRepository.closeOpenRoomById(room.id)
+  if (closed === 0) {
+    return null
+  }
+  return toRoomDto(room)
+}
+
+/**
  * Closes the room(s) attached to a finished or abandoned game.
  *
  * @param {string} gameId runtime game UUID
@@ -178,5 +200,6 @@ module.exports = {
   markRoomInGame,
   claimRoomForGame,
   releaseRoomClaim,
+  endOwnedRoom,
   closeRoomsForGame,
 }

@@ -40,6 +40,9 @@ const handleGameError = (data) => {
 const handleRoomsUpdate = (data) => useGameStore.getState().setRooms(data)
 const handleRoomError = (data) =>
   useGameStore.getState().setRoomError(data.message)
+// The owner ended the room this player was seated in (#221); the waiting room
+// watches roomClosed and returns to the lobby.
+const handleRoomClosed = () => useGameStore.getState().setRoomClosed(true)
 
 const useSocketStore = create((set) => ({
   isConnected: false,
@@ -61,6 +64,7 @@ const useSocketStore = create((set) => ({
     socket.on('game_error', handleGameError)
     socket.on('rooms_update', handleRoomsUpdate)
     socket.on('room_error', handleRoomError)
+    socket.on('room:closed', handleRoomClosed)
 
     socket.connect()
   },
@@ -76,6 +80,7 @@ const useSocketStore = create((set) => ({
     socket.off('game_error', handleGameError)
     socket.off('rooms_update', handleRoomsUpdate)
     socket.off('room_error', handleRoomError)
+    socket.off('room:closed', handleRoomClosed)
 
     socket.disconnect()
     socket.auth = {}

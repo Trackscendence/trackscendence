@@ -75,6 +75,31 @@ const broadcastRooms = async (io) => {
   io.emit('rooms_update', await roomService.listRooms())
 }
 
+/**
+ * Starts the match for a room that just filled to capacity. Shared by every
+ * path that seats a player (auto-seat, create, join). The claim is a
+ * compare-and-set so two concurrent seats of the last slot can't both start a
+ * game for the same players (#232); a failed start aborts the never-announced
+ * match and reopens the room.
+ */
+const startMatchIfRoomFull = async (io, room) => {
+  if (room.status !== 'OPEN' || !roomService.isRoomFull(room)) return
+  if (!(await roomService.claimRoomForGame(room.id))) return
+
+  let match
+  try {
+    match = await matchmaking.createMatch(room.players)
+    await roomService.markRoomInGame(room.id, match.gameId)
+  } catch (error) {
+    if (match) {
+      await matchmaking.abortMatch(match.gameId)
+    }
+    await roomService.releaseRoomClaim(room.id)
+    throw error
+  }
+  startMatch(io, match)
+}
+
 const registerHandlers = (io, socket) => {
   socket.join('channel:#general')
   socket.join(`user:${socket.user.id}`)
@@ -124,41 +149,41 @@ const registerHandlers = (io, socket) => {
   // Auto-seat: called by the waiting room on mount. Whoever arrives first
   // creates the room (and owns it), everyone after that fills a seat. When the
   // last seat fills, the match starts for exactly the room's players.
-  socket.on('room:seat', async () => {
+  socket.on('room:seat', async (data) => {
     try {
-      const room = await roomService.seatUser(socket.user)
+      // An explicit capacity (the lobby's "create a room for N") opens a room
+      // of that size; no capacity keeps the quick two-player auto-seat.
+      const rawCapacity =
+        data && typeof data === 'object' ? data.capacity : undefined
+      const capacity = rawCapacity == null ? undefined : Number(rawCapacity)
+
+      const room = await roomService.seatUser(socket.user, { capacity })
       logger.info(`User ${socket.user.username} seated in room ${room.id}`)
 
-      if (room.status === 'OPEN' && roomService.isRoomFull(room)) {
-        // Two concurrent seats of the last slot both see a full OPEN room
-        // (socket.io does not serialize async handlers), and both used to
-        // start a match — two parallel games for the same players (#232).
-        // The claim is a compare-and-set; only its winner starts the match.
-        if (await roomService.claimRoomForGame(room.id)) {
-          let match
-          try {
-            match = await matchmaking.createMatch(room.players)
-            await roomService.markRoomInGame(room.id, match.gameId)
-          } catch (error) {
-            // Compensate in reverse order: a game that was created but never
-            // announced must not leak its engine, and a failed start must not
-            // strand the room in IN_GAME — reopen it so a member leaving or
-            // the next seat retries.
-            if (match) {
-              await matchmaking.abortMatch(match.gameId)
-            }
-            await roomService.releaseRoomClaim(room.id)
-            throw error
-          }
-          startMatch(io, match)
-        }
-      }
-
+      await startMatchIfRoomFull(io, room)
       await broadcastRooms(io)
     } catch (error) {
       logger.error('Failed to seat player', error)
       socket.emit('room_error', {
         message: error.message || 'Unable to join a room',
+      })
+    }
+  })
+
+  // Join a specific room from the lobby grid (a configurable room someone else
+  // created). The match starts if this seat fills it.
+  socket.on('room:join', async (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return
+    try {
+      const room = await roomService.joinRoom(socket.user, Number(data.roomId))
+      logger.info(`User ${socket.user.username} joined room ${room.id}`)
+
+      await startMatchIfRoomFull(io, room)
+      await broadcastRooms(io)
+    } catch (error) {
+      logger.error('Failed to join room', error)
+      socket.emit('room_error', {
+        message: error.message || 'Unable to join the room',
       })
     }
   })

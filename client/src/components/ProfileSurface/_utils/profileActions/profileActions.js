@@ -1,8 +1,6 @@
-const getProfileActionState = ({ isOwnProfile, relationship }) => {
-  if (isOwnProfile) {
-    return { isDisabled: false, label: 'Edit profile', variant: 'orange' }
-  }
-
+// Only the friend-request button uses this now; the owner's header shows a
+// settings gear instead, so there is no own-profile action state here.
+const getProfileActionState = ({ relationship }) => {
   if (relationship?.status === 'FRIENDS') {
     return { isDisabled: true, label: 'Friends', variant: 'orangeOutline' }
   }

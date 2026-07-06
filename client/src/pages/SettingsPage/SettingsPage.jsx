@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
+import AccountSettings from './_components/AccountSettings'
+import SettingsCard from './_components/SettingsCard'
 import SettingsSidebar from './_components/SettingsSidebar'
 import TwoFactorSettings from './_components/TwoFactorSettings'
 
@@ -57,27 +59,6 @@ const SECTION_COPY = {
   },
 }
 
-// One card per settings block, matching the Figma's white bordered cards.
-const Card = ({ title, children }) => (
-  <section className="rounded-2xl border border-[#e8893a2e] bg-white p-6 shadow-[0_10px_30px_rgba(61,18,0,0.05)]">
-    <p className="text-xs font-bold tracking-[0.14em] text-[#8a6845] uppercase">
-      {title}
-    </p>
-    <div className="mt-4">{children}</div>
-  </section>
-)
-
-const InfoRow = ({ label, value }) => (
-  <div className="rounded-xl border border-[#e8893a2e] bg-[#fdf5ec] px-4 py-3">
-    <p className="text-xs font-semibold tracking-wide text-[#a07a5c] uppercase">
-      {label}
-    </p>
-    <p className="mt-1 text-base font-semibold break-all text-[#3d1200]">
-      {value}
-    </p>
-  </div>
-)
-
 const SettingsPage = () => {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
@@ -126,15 +107,10 @@ const SettingsPage = () => {
           </div>
 
           {activeKey === 'account' ? (
-            <Card title="Personal info">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <InfoRow label="Username" value={user.username} />
-                <InfoRow label="Email" value={user.email} />
-              </div>
-            </Card>
+            <AccountSettings user={user} />
           ) : (
             <>
-              <Card title="Password">
+              <SettingsCard title="Password">
                 <button
                   className="rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none"
                   type="button"
@@ -142,10 +118,10 @@ const SettingsPage = () => {
                 >
                   Change password
                 </button>
-              </Card>
-              <Card title="Two-factor authentication">
+              </SettingsCard>
+              <SettingsCard title="Two-factor authentication">
                 <TwoFactorSettings />
-              </Card>
+              </SettingsCard>
             </>
           )}
 

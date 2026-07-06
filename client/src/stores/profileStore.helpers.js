@@ -5,7 +5,13 @@ import {
   sendFriendRequest,
 } from '@/services/friends'
 import { getLeaderboard } from '@/services/game'
-import { getProfile, getUserByUsername, updateProfile } from '@/services/users'
+import {
+  deleteAvatar,
+  getProfile,
+  getUserByUsername,
+  updateProfile,
+  uploadAvatar,
+} from '@/services/users'
 import useAuthStore from '@/stores/useAuthStore'
 import {
   withMockFriends,
@@ -97,6 +103,29 @@ export const requestFriendship = async ({ profileId, token }) => {
 
 export const saveCurrentProfile = async ({ payload, token }) => {
   const result = await updateProfile(payload, token)
+  useAuthStore.getState().updateUser(result.authUser)
+
+  return {
+    currentProfile: result.user,
+    result,
+  }
+}
+
+// Avatar upload and removal share the profile-update shape: the server returns
+// the refreshed profile plus an auth payload, so both the profile store and the
+// session user (navbar, settings preview) stay in sync from one response.
+export const saveAvatar = async ({ file, token }) => {
+  const result = await uploadAvatar(file, token)
+  useAuthStore.getState().updateUser(result.authUser)
+
+  return {
+    currentProfile: result.user,
+    result,
+  }
+}
+
+export const clearAvatar = async ({ token }) => {
+  const result = await deleteAvatar(token)
   useAuthStore.getState().updateUser(result.authUser)
 
   return {

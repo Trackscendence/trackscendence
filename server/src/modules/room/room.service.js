@@ -89,14 +89,21 @@ const seatUser = async (user, { capacity } = {}) => {
   }
 
   for (let attempt = 0; attempt < SEAT_ATTEMPTS; attempt += 1) {
-    const currentRoom = await roomRepository.findActiveRoomByUserId(user.id)
+    // One read serves both checks on the seat hot path: the visible-rooms list
+    // already carries the OPEN/IN_GAME room this user is seated in (if any), so
+    // the idempotency check reuses it instead of spending a separate
+    // findActiveRoomByUserId round-trip. On a warm DB that is one fewer query
+    // per attempt — the common create/join path drops from three reads to two.
+    const visibleRooms = await roomRepository.findVisibleRooms()
+    const currentRoom = visibleRooms.find((room) =>
+      room.players.some((player) => player.user.id === user.id),
+    )
     if (currentRoom) {
       return toRoomDto(currentRoom)
     }
 
     // Join the open room if there is one, whatever its size — a single shared
     // room means everyone gathers in the same place.
-    const visibleRooms = await roomRepository.findVisibleRooms()
     const joinableRooms = visibleRooms.filter(
       (room) => room.status === 'OPEN' && room.players.length < room.capacity,
     )

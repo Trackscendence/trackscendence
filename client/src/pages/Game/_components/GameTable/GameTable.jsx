@@ -1,5 +1,6 @@
 import CenterZone from '../CenterZone'
 import OpponentSlot from '../OpponentSlot'
+import PassTurnButton from '../PassTurnButton'
 import PlayerHand from '../PlayerHand'
 
 const getOpponentBySeat = (opponents, seat) => {
@@ -7,11 +8,15 @@ const getOpponentBySeat = (opponents, seat) => {
 }
 
 const GameTable = ({
+  canDraw,
+  canPass,
   currentPlayer,
   currentTurnPlayerId,
   deckSize,
   direction,
+  onCardClick,
   onDrawPileClick,
+  onPassClick,
   onUnoClick,
   opponents,
   pendingDraw,
@@ -46,6 +51,7 @@ const GameTable = ({
 
         <div className="flex min-h-72 items-center justify-center [grid-area:center] md:absolute md:top-[55%] md:left-1/2 md:min-h-0 md:-translate-x-1/2 md:-translate-y-1/2">
           <CenterZone
+            canDraw={canDraw}
             deckSize={deckSize}
             direction={direction}
             isOpponentUno={opponents.some(
@@ -69,8 +75,19 @@ const GameTable = ({
           </div>
         )}
 
-        <div className="flex items-end justify-center [grid-area:bottom] md:absolute md:right-0 md:bottom-0 md:left-0">
-          <PlayerHand cards={currentPlayer.cards} player={currentPlayer} />
+        <div className="relative flex items-end justify-center [grid-area:bottom] md:absolute md:right-0 md:bottom-0 md:left-0">
+          {/* Floats above the hand's stacked cards (they layer up to z-50),
+              so the pass action stays clickable over the card fan. */}
+          {canPass && (
+            <div className="absolute top-0 left-1/2 z-[60] -translate-x-1/2">
+              <PassTurnButton onPassClick={onPassClick} />
+            </div>
+          )}
+          <PlayerHand
+            cards={currentPlayer.cards}
+            onCardClick={onCardClick}
+            player={currentPlayer}
+          />
         </div>
       </div>
     </section>

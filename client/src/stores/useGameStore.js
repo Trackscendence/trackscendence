@@ -25,10 +25,10 @@ const useGameStore = create((set) => ({
   match: null,
   gameState: null,
   gameError: null,
-  // How the last game ended for this user: 'won' | 'lost' | 'abandoned',
-  // written by handleGameOver. The Game page navigates to /results when it
-  // appears; game_start and clearGame reset it so a stale outcome can never
-  // bounce a fresh game straight to the results screen.
+  // How the last game ended for this user: 'won' | 'lost' | 'end' (a player
+  // left), written by handleGameOver. The Game page navigates to /results
+  // when it appears; game_start and clearGame reset it so a stale outcome can
+  // never bounce a fresh game straight to the results screen.
   gameOutcome: null,
   // The players of the running game, written alongside `match` on game_start
   // but with a longer life: leaving the waiting room clears `match` (its
@@ -93,7 +93,7 @@ const useGameStore = create((set) => ({
         return {}
       }
       if (payload.reason === 'player_left') {
-        return { gameOutcome: 'abandoned' }
+        return { gameOutcome: 'end' }
       }
       const ownUserId = useAuthStore.getState().user?.id
       return {

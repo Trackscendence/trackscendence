@@ -39,7 +39,7 @@ const SIM_SPEED_OPTIONS = [
 const OUTCOME_OPTIONS = [
   { value: 'won', label: 'won' },
   { value: 'lost', label: 'lost' },
-  { value: 'abandoned', label: 'ended' },
+  { value: 'end', label: 'ended' },
 ]
 
 // Injects / withdraws a fake opponent so matchmaking advances without a second

@@ -4,6 +4,7 @@ name: no-ai-identifiers
 # Unlike the local Husky hooks, this runs on GitHub's runners and cannot be
 # skipped with `git commit --no-verify`. Make it a required status check on
 # dev/main (Settings → Branches / Rulesets) so a failing scan blocks the merge.
+# cspell:ignore elif
 
 on:
   pull_request:

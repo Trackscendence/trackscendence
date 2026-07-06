@@ -40,9 +40,9 @@ const baseState = {
   deckSize: 51,
   pendingDraw: 3,
   topCard: {
-    id: 'discard-wild-draw-3',
+    id: 'discard-wild-draw-4',
     color: 'wild',
-    type: 'wild_draw3',
+    type: 'wild_draw4',
     playable: false,
   },
 }

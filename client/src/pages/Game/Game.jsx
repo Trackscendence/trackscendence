@@ -34,6 +34,8 @@ const Game = () => {
   const gamePlayers = useGameStore((state) => state.gamePlayers)
   const gameOutcome = useGameStore((state) => state.gameOutcome)
 
+  const gameId = searchParams.get('gameId')
+
   // game_over ends the game here: hold the final table for a beat, then hand
   // over to the results screen, which reads the outcome from the store.
   useEffect(() => {
@@ -44,6 +46,19 @@ const Game = () => {
     )
     return () => clearTimeout(navigateTimer)
   }, [gameOutcome, navigate])
+
+  // Resync (#201): a page refresh or late mount holds a gameId in the URL
+  // but no state for it — the socket missed the last broadcast. Ask the
+  // server to replay it; the loader below holds until the snapshot lands.
+  // Dev-rigged game ids never reach the server (they exist only client-side).
+  useEffect(() => {
+    if (!gameId || gameOutcome) return
+    if (import.meta.env.DEV && gameId === DEV_GAME_ID) return
+    const { gameState: currentState, requestGameState } =
+      useGameStore.getState()
+    if (currentState && currentState.gameId === gameId) return
+    requestGameState(gameId)
+  }, [gameId, gameOutcome])
 
   // Mock table for design work, reachable only in dev builds through the
   // Rig's data-source switch (which adds ?source=mock). Vite erases this
@@ -62,9 +77,8 @@ const Game = () => {
 
   // The first game_state_update lands right after game_start; hold on a
   // loader until it does. A stale state from a previous game (mismatched
-  // gameId) also waits here. A mid-game refresh clears the state entirely
-  // until the resync request lands (#201).
-  const gameId = searchParams.get('gameId')
+  // gameId) also waits here, as does a mid-game refresh until the resync
+  // snapshot requested above arrives.
   const hasStateForThisGame =
     Boolean(user && gameState) && (!gameId || gameState.gameId === gameId)
   if (!hasStateForThisGame) {

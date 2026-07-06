@@ -1,9 +1,41 @@
 const logger = require('#utils/logger')
+const config = require('#utils/config')
 const lobbyStore = require('#modules/game/lobby.store')
 const gameStore = require('#modules/game/game.store')
 const matchmaking = require('#modules/game/matchmaking.service')
 const gameService = require('#modules/game/game.service')
 const roomService = require('#modules/room/room.service')
+
+// Grace timers for players who dropped mid-game, keyed by userId. Module
+// scoped on purpose: the timer must survive the socket that scheduled it and
+// be cancellable from the player's next connection.
+const pendingAbandons = new Map()
+
+/**
+ * Abandons whatever IN_PROGRESS game the player is in and notifies the
+ * survivors. Runs when the reconnect grace expires without the player coming
+ * back; a game that meanwhile completed is left alone (handlePlayerDisconnect
+ * re-checks the status).
+ */
+const abandonActiveGame = async (io, userId) => {
+  const abandonedGame = await matchmaking.handlePlayerDisconnect(userId)
+  if (!abandonedGame) return
+
+  io.to(`game:${abandonedGame.id}`).emit('game_over', {
+    gameId: abandonedGame.id,
+    winnerUserId: null,
+    reason: 'player_left',
+    abandonedBy: userId,
+  })
+
+  try {
+    if (await roomService.closeRoomsForGame(abandonedGame.id)) {
+      await broadcastRooms(io)
+    }
+  } catch (error) {
+    logger.error('Failed to close room for abandoned game', error)
+  }
+}
 
 /**
  * Emits the public game state to every player, injecting each player's own
@@ -50,6 +82,21 @@ const registerHandlers = (io, socket) => {
   socket.join(`user:${socket.user.id}`)
 
   logger.info('user connected')
+
+  // A returning player arrives on a brand-new socket (page refresh,
+  // transport reconnect): cancel their pending abandon and put the socket
+  // back into its game's room so game_over and in-game chat reach it again.
+  const pendingAbandon = pendingAbandons.get(socket.user.id)
+  if (pendingAbandon) {
+    clearTimeout(pendingAbandon)
+    pendingAbandons.delete(socket.user.id)
+  }
+  gameStore
+    .findActiveGameByUser(socket.user.id, { status: 'IN_PROGRESS' })
+    .then((game) => {
+      if (game) socket.join(`game:${game.id}`)
+    })
+    .catch((error) => logger.error('Failed to rejoin game room', error))
 
   socket.on('join_lobby', async () => {
     logger.info(`User ${socket.user.username} joined the lobby`)
@@ -168,27 +215,28 @@ const registerHandlers = (io, socket) => {
       logger.error('Failed to unseat disconnected player', error)
     }
 
-    // If the player dropped mid-game, abandon the game and free its engine so
-    // it does not leak, and let the remaining players know.
-    const abandonedGame = await matchmaking.handlePlayerDisconnect(
-      socket.user.id,
-    )
-    if (abandonedGame) {
-      io.to(`game:${abandonedGame.id}`).emit('game_over', {
-        gameId: abandonedGame.id,
-        winnerUserId: null,
-        reason: 'player_left',
-        abandonedBy: socket.user.id,
-      })
+    // If the player dropped mid-game, give them a grace window before the
+    // game is abandoned — a page refresh tears the socket down for a few
+    // seconds and used to end the game on the spot (#201). Another socket
+    // still in the user's room (a second tab) means they never really left.
+    const activeGame = await gameStore.findActiveGameByUser(socket.user.id, {
+      status: 'IN_PROGRESS',
+    })
+    if (!activeGame) return
+    const remainingSockets = await io
+      .in(`user:${socket.user.id}`)
+      .fetchSockets()
+    if (remainingSockets.length > 0) return
 
-      try {
-        if (await roomService.closeRoomsForGame(abandonedGame.id)) {
-          await broadcastRooms(io)
-        }
-      } catch (error) {
-        logger.error('Failed to close room for abandoned game', error)
-      }
-    }
+    const userId = socket.user.id
+    clearTimeout(pendingAbandons.get(userId))
+    const graceTimer = setTimeout(() => {
+      pendingAbandons.delete(userId)
+      abandonActiveGame(io, userId).catch((error) =>
+        logger.error(`Failed to abandon game for user ${userId}`, error),
+      )
+    }, config.GAME_RECONNECT_GRACE_MS)
+    pendingAbandons.set(userId, graceTimer)
   })
 
   socket.on('message', (data) => {
@@ -250,6 +298,33 @@ const registerHandlers = (io, socket) => {
       logger.error('Failed to close room for finished game', error)
     }
   }
+
+  // Resync (#201): a refreshed or late-mounting page holds a gameId but
+  // missed the last broadcast. Replay the match roster and the current state
+  // (with the caller's own hand) to this socket only, mirroring the original
+  // game_start sequence, and re-join the game's room so future game_over and
+  // chat emits reach it.
+  socket.on('game:state', async (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return
+    const { gameId } = data
+
+    const engine = gameStore.getEngine(gameId)
+    if (!engine) return socket.emit('game_error', { message: 'Game not found' })
+    if (!engine.getPlayerIds().includes(socket.user.id)) {
+      return socket.emit('game_error', { message: 'Not your game' })
+    }
+
+    socket.join(`game:${gameId}`)
+    const game = await gameStore.getGame(gameId)
+    if (game?.players) {
+      socket.emit('game_start', { gameId, players: game.players })
+    }
+    socket.emit('game_state_update', {
+      ...engine.getState(),
+      myHand: engine.getHand(socket.user.id),
+      gameId,
+    })
+  })
 
   socket.on('game:play_card', async (data) => {
     if (!data || typeof data !== 'object' || Array.isArray(data)) return

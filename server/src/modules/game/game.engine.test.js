@@ -434,3 +434,93 @@ test('UnoEngine Draw and Play / Pass Rules', async (t) => {
     assert.strictEqual(game.getState().currentPlayer, 'p2')
   })
 })
+
+test.describe('Scoring (#197)', () => {
+  test('cardPoints scores number cards at face value', () => {
+    const game = new UnoEngine(['p1', 'p2'])
+    assert.strictEqual(
+      game.cardPoints({
+        type: CARD_TYPES.NUMBER,
+        color: COLORS.RED,
+        value: VALUES.ZERO,
+      }),
+      0,
+    )
+    assert.strictEqual(
+      game.cardPoints({
+        type: CARD_TYPES.NUMBER,
+        color: COLORS.BLUE,
+        value: VALUES.SEVEN,
+      }),
+      7,
+    )
+    assert.strictEqual(
+      game.cardPoints({
+        type: CARD_TYPES.NUMBER,
+        color: COLORS.GREEN,
+        value: VALUES.NINE,
+      }),
+      9,
+    )
+  })
+
+  test('cardPoints scores action cards at 20', () => {
+    const game = new UnoEngine(['p1', 'p2'])
+    for (const value of [VALUES.SKIP, VALUES.REVERSE, VALUES.DRAW_TWO]) {
+      assert.strictEqual(
+        game.cardPoints({ type: CARD_TYPES.ACTION, color: COLORS.RED, value }),
+        20,
+      )
+    }
+  })
+
+  test('cardPoints scores wild cards at 50', () => {
+    const game = new UnoEngine(['p1', 'p2'])
+    for (const value of [VALUES.WILD, VALUES.WILD_DRAW_FOUR]) {
+      assert.strictEqual(
+        game.cardPoints({ type: CARD_TYPES.WILD, color: COLORS.WILD, value }),
+        50,
+      )
+    }
+  })
+
+  test('getScores is all zeros while no winner is set', () => {
+    const game = new UnoEngine(['p1', 'p2', 'p3'])
+    assert.deepStrictEqual(game.getScores(), { p1: 0, p2: 0, p3: 0 })
+  })
+
+  test('the winner collects the sum of every opponent hand', () => {
+    const game = new UnoEngine(['p1', 'p2', 'p3'])
+    game.winner = 'p1'
+    game.players['p1'] = []
+    // 5 + 20 (skip) = 25
+    game.players['p2'] = [
+      { type: CARD_TYPES.NUMBER, color: COLORS.RED, value: VALUES.FIVE },
+      { type: CARD_TYPES.ACTION, color: COLORS.BLUE, value: VALUES.SKIP },
+    ]
+    // 50 (wild draw four) + 3 = 53
+    game.players['p3'] = [
+      {
+        type: CARD_TYPES.WILD,
+        color: COLORS.WILD,
+        value: VALUES.WILD_DRAW_FOUR,
+      },
+      { type: CARD_TYPES.NUMBER, color: COLORS.GREEN, value: VALUES.THREE },
+    ]
+
+    const scores = game.getScores()
+    assert.strictEqual(scores.p1, 78)
+    assert.strictEqual(scores.p2, 0)
+    assert.strictEqual(scores.p3, 0)
+  })
+
+  test('getState exposes the scores map', () => {
+    const game = new UnoEngine(['p1', 'p2'])
+    game.winner = 'p1'
+    game.players['p1'] = []
+    game.players['p2'] = [
+      { type: CARD_TYPES.NUMBER, color: COLORS.YELLOW, value: VALUES.EIGHT },
+    ]
+    assert.deepStrictEqual(game.getState().scores, { p1: 8, p2: 0 })
+  })
+})

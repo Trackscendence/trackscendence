@@ -148,4 +148,20 @@ describe('buildGameResultPayload', () => {
 
     assert.ok(payload.players.every((player) => player.isWinner === false))
   })
+
+  it('carries the engine scores onto each player (#197)', () => {
+    const payload = buildGameResultPayload({
+      status: 'COMPLETED',
+      winner: 2,
+      scores: { 1: 0, 2: 42 },
+      players,
+      startedAt,
+      endedAt,
+    })
+
+    assert.deepStrictEqual(payload.players, [
+      { userId: 1, score: 0, isWinner: false },
+      { userId: 2, score: 42, isWinner: true },
+    ])
+  })
 })

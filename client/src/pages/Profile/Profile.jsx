@@ -5,12 +5,10 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import useProfileStore from '@/stores/useProfileStore'
 
 const Profile = () => {
-  const actionError = useProfileStore((state) => state.actionError)
   const currentProfile = useProfileStore((state) => state.currentProfile)
   const error = useProfileStore((state) => state.error)
   const friends = useProfileStore((state) => state.friends)
   const isLoading = useProfileStore((state) => state.isLoading)
-  const isSubmitting = useProfileStore((state) => state.isSubmitting)
   const leaderboard = useProfileStore((state) => state.leaderboard)
   const relationship = useProfileStore((state) => state.relationship)
 
@@ -49,15 +47,12 @@ const Profile = () => {
   return (
     <div className="space-y-6">
       <ProfileSurface
-        actionError={actionError}
         friends={friends}
         isOwnProfile
-        isSubmitting={isSubmitting}
         leaderboard={leaderboard}
         profile={currentProfile}
         relationship={relationship}
         onFriendRequest={useProfileStore.getState().sendFriendRequest}
-        onProfileUpdate={useProfileStore.getState().updateCurrentProfile}
       />
     </div>
   )

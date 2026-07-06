@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
-import createRoomIcon from '@/assets/lobby/create-room-icon.svg'
 import AccountMenu from './_components/AccountMenu'
 
 const LobbyNav = ({ user, canCreateRoom, onCreateRoom }) => {
@@ -23,8 +22,7 @@ const LobbyNav = ({ user, canCreateRoom, onCreateRoom }) => {
           }
           className="flex items-center gap-2 rounded-[14px] bg-[#E86D2F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#c95b24] disabled:cursor-not-allowed disabled:bg-[#dda37e]"
         >
-          <img src={createRoomIcon} alt="" className="h-[15px] w-[15px]" />
-          Create Room
+          + Room
         </button>
         <Link
           to="/users/me"

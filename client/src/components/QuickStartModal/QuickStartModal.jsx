@@ -4,7 +4,7 @@ import Modal from '@/components/Modal'
 // room's first-player-in case. Pure presenter: the caller decides what picking
 // a size does (open a room, then wait). Sizes mirror the server's allowed
 // capacities.
-const SIZES = [2, 3, 4, 6]
+const SIZES = [2, 3, 4]
 
 const QuickStartModal = ({ isOpen, onPick, onCancel }) => {
   return (
@@ -13,7 +13,7 @@ const QuickStartModal = ({ isOpen, onPick, onCancel }) => {
         No room is waiting yet. Choose how many players yours holds, and we will
         seat the others as they arrive.
       </p>
-      <div className="mt-6 grid grid-cols-4 gap-3">
+      <div className="mt-6 grid grid-cols-3 gap-3">
         {SIZES.map((size) => (
           <button
             key={size}

@@ -4,6 +4,7 @@ import {
   getActiveToken,
   loadCurrentProfileData,
   loadFriendContext,
+  loadLeaderboardContext,
   loadPublicProfileData,
   requestFriendship,
   saveAvatar,
@@ -25,6 +26,21 @@ const requireToken = (set) => {
 export const createProfileActions = (set, get) => ({
   clearActionError: () => set({ actionError: '' }),
 
+  // Load the leaderboard off the critical path. It only changes when games
+  // finish, so a non-empty result is cached for the session and back-and-forth
+  // navigation skips the expensive aggregation. Failures leave the panel empty.
+  loadLeaderboard: async () => {
+    if (get().leaderboard.length > 0) return
+
+    const token = getActiveToken()
+
+    if (!token) return
+
+    const { leaderboard } = await loadLeaderboardContext(token)
+
+    set({ leaderboard })
+  },
+
   loadCurrentProfile: async () => {
     const token = requireToken(set)
 
@@ -37,6 +53,7 @@ export const createProfileActions = (set, get) => ({
         ...(await loadCurrentProfileData(token)),
         isLoading: false,
       })
+      get().loadLeaderboard()
     } catch (error) {
       set({
         currentProfile: null,
@@ -59,10 +76,10 @@ export const createProfileActions = (set, get) => ({
         ...(await loadPublicProfileData({ token, username })),
         isLoading: false,
       })
+      get().loadLeaderboard()
     } catch (error) {
       set({
         error: error.message,
-        leaderboard: [],
         isLoading: false,
         publicProfile: null,
         relationship: null,

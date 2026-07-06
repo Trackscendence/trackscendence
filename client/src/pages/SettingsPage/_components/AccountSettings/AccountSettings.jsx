@@ -6,6 +6,9 @@ import AccountForm from './_components/AccountForm'
 import AvatarUploader from './_components/AvatarUploader'
 
 const AccountSettings = ({ user }) => {
+  // One in-flight flag for every account write. The form's Save and the avatar
+  // controls all read it, so while any write runs the others are disabled and
+  // the store guards against a second write starting. No concurrent writes.
   const isSubmitting = useProfileStore((state) => state.isSubmitting)
 
   const notify = (message, type) =>

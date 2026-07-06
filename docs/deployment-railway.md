@@ -66,6 +66,12 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 The server service must be named exactly `server`, because the private hostname
 `server.railway.internal` is derived from the service name.
 
+Leave `ENABLE_TLS` unset on the client. Railway terminates HTTPS at its own edge
+and forwards plain HTTP to the container, so the client's TLS toggle (#60) must
+stay off here; the entrypoint then serves plain HTTP on 8080 and never generates
+a certificate. `ENABLE_TLS=1` and `CLIENT_HTTPS_PORT` are set only in the local
+`compose.yaml`, where nginx does its own TLS termination.
+
 ## Going to production
 
 Production is deferred on purpose. You can start mirroring `dev` into `main`

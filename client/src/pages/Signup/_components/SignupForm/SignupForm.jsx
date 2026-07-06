@@ -3,12 +3,25 @@ import useAuthStore from '@/stores/useAuthStore'
 import Button from '@/components/Button'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
+import { validateSignupInput } from '@/services/auth.validations'
+import { normalizeSignupInput } from '@/services/auth.normalizations'
+import Modal from '@/components/Modal'
+import TermsOfService from '@/pages/TermsOfService/TermsOfService'
+import Privacy from '@/pages/Privacy/Privacy'
 
 const SignupForm = ({ onSuccess }) => {
   const [form, setForm] = useState({ username: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [validationDetails, setValidationDetails] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [showTerms, setShowTerms] = useState(false)
+  const [termsViewed, setTermsViewed] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+
+  const [showPrivacy, setShowPrivacy] = useState(false)
+  const [privacyViewed, setPrivacyViewed] = useState(false)
+  const [privacyAccepted, setPrivacyAccepted] = useState(false)
 
   const handleChange = (event) => {
     setError('')
@@ -23,10 +36,19 @@ const SignupForm = ({ onSuccess }) => {
     event.preventDefault()
     setError('')
     setValidationDetails([])
+
+    const normalizedForm = normalizeSignupInput(form)
+    const { isValid, errors } = validateSignupInput(normalizedForm)
+
+    if (!isValid) {
+      setValidationDetails(Object.values(errors))
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      await useAuthStore.getState().register(form)
+      await useAuthStore.getState().register(normalizedForm)
       onSuccess()
     } catch (requestError) {
       const details = Array.isArray(requestError.payload?.details)
@@ -82,6 +104,46 @@ const SignupForm = ({ onSuccess }) => {
         />
       </FormField>
 
+      <div className="space-y-2">
+        <button
+          type="button"
+          className="text-sm font-medium text-[#2f6f86] underline"
+          onClick={() => setShowTerms(true)}
+        >
+          Terms of Service
+        </button>
+
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={termsAccepted}
+            disabled={!termsViewed}
+            onChange={(event) => setTermsAccepted(event.target.checked)}
+          />
+          <span>I agree to the Terms of Service</span>
+        </label>
+      </div>
+
+      <div className="space-y-2">
+        <button
+          type="button"
+          className="text-sm font-medium text-[#2f6f86] underline"
+          onClick={() => setShowPrivacy(true)}
+        >
+          Privacy Policy
+        </button>
+
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={privacyAccepted}
+            disabled={!privacyViewed}
+            onChange={(event) => setPrivacyAccepted(event.target.checked)}
+          />
+          <span>I agree to the Privacy Policy</span>
+        </label>
+      </div>
+
       {validationDetails.length > 0 ? (
         <div className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
           {validationDetails.map((detail) => (
@@ -96,9 +158,65 @@ const SignupForm = ({ onSuccess }) => {
         </p>
       ) : null}
 
-      <Button type="submit" variant="blue" disabled={isSubmitting}>
-        {isSubmitting ? 'Creating account' : 'Create account'}
+      <Button
+        type="submit"
+        variant="blue"
+        disabled={isSubmitting || !termsAccepted || !privacyAccepted}
+      >
+        {isSubmitting ? 'Creating account...' : 'Create account'}
       </Button>
+
+      <Modal
+        isOpen={showTerms}
+        onClose={() => {
+          setTermsViewed(true)
+          setShowTerms(false)
+        }}
+        title="Terms of Service"
+      >
+        <div className="space-y-4 text-sm leading-6">
+          <TermsOfService />
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <Button
+            type="button"
+            variant="blue"
+            onClick={() => {
+              setTermsViewed(true)
+              setShowTerms(false)
+            }}
+          >
+            Close
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showPrivacy}
+        onClose={() => {
+          setPrivacyViewed(true)
+          setShowPrivacy(false)
+        }}
+        title="Privacy Policy"
+      >
+        <div className="space-y-4 text-sm leading-6">
+          <Privacy />
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <Button
+            type="button"
+            variant="blue"
+            onClick={() => {
+              setPrivacyViewed(true)
+              setShowPrivacy(false)
+            }}
+          >
+            Close
+          </Button>
+        </div>
+      </Modal>
     </form>
   )
 }

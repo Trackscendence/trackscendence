@@ -1,9 +1,20 @@
 import { create } from 'zustand'
 import { socket } from '@/services/socket'
+import { DEV_GAME_ID } from '@/dev/DevControls/constants'
 import useGameStore from './useGameStore'
 import useNotificationStore from './useNotificationStore'
 
-const handleConnect = () => useSocketStore.getState().setConnected(true)
+const handleConnect = () => {
+  useSocketStore.getState().setConnected(true)
+  // A reconnected socket missed every broadcast while it was down: replay
+  // the running game's state, if any. Dev-rigged games (the Rig's sim and
+  // mock ids) exist only in this client, so the server is never asked about
+  // them; the check erases from production builds with the dev import.
+  const { gameState, requestGameState } = useGameStore.getState()
+  if (!gameState?.gameId) return
+  if (import.meta.env.DEV && gameState.gameId === DEV_GAME_ID) return
+  requestGameState(gameState.gameId)
+}
 const handleDisconnect = () => useSocketStore.getState().setConnected(false)
 
 const handleLobbyUpdate = (data) =>

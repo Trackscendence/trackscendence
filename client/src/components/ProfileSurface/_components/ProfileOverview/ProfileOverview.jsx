@@ -33,7 +33,9 @@ const ProfileOverview = ({ friendsCount = 0, onShowGames, profile }) => {
           <h2 className="text-sm font-semibold tracking-wide text-[#3d1200] uppercase">
             Bio
           </h2>
-          <p className="mt-3 text-sm leading-6 text-[#7a3810]">{profile.bio}</p>
+          <p className="mt-3 text-sm leading-6 break-words whitespace-pre-line text-[#7a3810]">
+            {profile.bio}
+          </p>
         </section>
       )}
 

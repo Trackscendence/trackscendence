@@ -1,28 +1,13 @@
-import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
-import Button from '@/components/Button'
-import Panel from '@/components/Panel'
-import FormField from '@/components/FormField'
-import Input from '@/components/Input'
+import FortyTwoButton from '@/components/FortyTwoButton'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { validateLoginInput } from '@/services/auth.validations'
+import LoginForm from './_components/LoginForm'
 
 const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { completeTwoFactorLogin, isAuthenticated, isLoading, login } =
-    useAuthStore()
-  const [form, setForm] = useState({ identifier: '', password: '' })
-  const [twoFactorForm, setTwoFactorForm] = useState({
-    code: '',
-    recoveryCode: '',
-  })
-  const [twoFactorState, setTwoFactorState] = useState(null)
-  const [twoFactorMethod, setTwoFactorMethod] = useState('totp')
-  const [error, setError] = useState('')
-  const [validationDetails, setValidationDetails] = useState({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { isAuthenticated, isLoading, isFortyTwoLoginEnabled } = useAuthStore()
 
   const from = location.state?.from?.pathname || '/'
   const params = new URLSearchParams(location.search)
@@ -33,276 +18,61 @@ const Login = () => {
       ? 'Password updated successfully. Please log in again.'
       : '')
 
-  if (isLoading) {
-    return <LoadingSpinner message="Loading session" />
-  }
-
-  if (isAuthenticated && !isSubmitting) {
-    return <Navigate to={from} replace />
-  }
-
-  const handleChange = (event) => {
-    setError('')
-    setValidationDetails({})
-    setForm((current) => ({
-      ...current,
-      [event.target.name]: event.target.value,
-    }))
-  }
-
-  const handleTwoFactorChange = (event) => {
-    setTwoFactorForm((current) => ({
-      ...current,
-      [event.target.name]: event.target.value,
-    }))
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-    setError('')
-    setValidationDetails({})
-
-    const validations = validateLoginInput(form)
-
-    if (!validations.isValid) {
-      setValidationDetails(validations.errors)
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      const result = await login(validations.normalizedData)
-
-      if (result.requiresTwoFactor) {
-        setTwoFactorState(result)
-        setTwoFactorMethod('totp')
-        setTwoFactorForm({
-          code: '',
-          recoveryCode: '',
-        })
-        return
-      }
-
-      navigate(from, { replace: true })
-    } catch (requestError) {
-      setError(requestError.message)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleTwoFactorSubmit = async (event) => {
-    event.preventDefault()
-    setError('')
-    setIsSubmitting(true)
-
-    try {
-      await completeTwoFactorLogin({
-        challengeToken: twoFactorState.challengeToken,
-        ...(twoFactorMethod === 'recovery_code'
-          ? { recoveryCode: twoFactorForm.recoveryCode }
-          : { code: twoFactorForm.code }),
-      })
-      navigate(from, { replace: true })
-    } catch (requestError) {
-      setError(requestError.message)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const resetTwoFactorStep = () => {
-    setError('')
-    setTwoFactorState(null)
-    setTwoFactorMethod('totp')
-    setTwoFactorForm({
-      code: '',
-      recoveryCode: '',
-    })
-  }
-
-  const isTwoFactorStep = Boolean(twoFactorState)
+  if (isLoading) return <LoadingSpinner message="Loading session" />
+  if (isAuthenticated) return <Navigate to={from} replace />
 
   return (
-    <Panel>
-      <div className="mb-7">
-        <p className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase">
-          Trackscendence
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold">
-          {isTwoFactorStep ? 'Two-factor verification' : 'Log in'}
+    <div className="flex flex-1 items-center justify-center px-5 py-10">
+      <div className="w-full max-w-[414px]">
+        <h1 className="mb-8 text-center text-5xl font-semibold text-[#081934]">
+          LOG IN
         </h1>
-      </div>
 
-      {message ? (
-        <p className="mb-4 rounded-md border border-[#bbd2c3] bg-[#eef7f1] px-3 py-2 text-sm text-[#24563f]">
-          {message}
-        </p>
-      ) : null}
-
-      {isTwoFactorStep ? (
-        <div className="mb-4 rounded-md border border-[#dce5d6] bg-[#f8fbf7] px-3 py-2 text-sm text-[#3f5248]">
-          <p>
-            Finish signing in for <strong>{form.identifier}</strong> using your
-            authenticator app or a recovery code.
-          </p>
-          <p className="mt-2 text-[#50635a]">
-            Forgot your authenticator? You can use a recovery code after
-            entering your password.
-          </p>
-        </div>
-      ) : null}
-
-      <form
-        className="space-y-4"
-        onSubmit={isTwoFactorStep ? handleTwoFactorSubmit : handleSubmit}
-      >
-        {isTwoFactorStep ? (
-          <>
-            <div>
-              <p className="text-sm font-medium">Choose verification method</p>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={twoFactorMethod === 'totp' ? 'primary' : 'outline'}
-                  className="px-3 py-2"
-                  onClick={() => {
-                    setError('')
-                    setTwoFactorMethod('totp')
-                  }}
-                >
-                  Authenticator code
-                </Button>
-                <Button
-                  type="button"
-                  variant={
-                    twoFactorMethod === 'recovery_code' ? 'primary' : 'outline'
-                  }
-                  className="px-3 py-2"
-                  onClick={() => {
-                    setError('')
-                    setTwoFactorMethod('recovery_code')
-                  }}
-                >
-                  Recovery code
-                </Button>
-              </div>
-            </div>
-
-            {twoFactorMethod === 'recovery_code' ? (
-              <FormField label="Recovery code">
-                <Input
-                  className="tracking-[0.18em] uppercase"
-                  name="recoveryCode"
-                  type="text"
-                  autoComplete="one-time-code"
-                  value={twoFactorForm.recoveryCode}
-                  onChange={handleTwoFactorChange}
-                  required
-                />
-              </FormField>
-            ) : (
-              <FormField label="Authenticator code">
-                <Input
-                  className="tracking-[0.35em]"
-                  name="code"
-                  type="text"
-                  autoComplete="one-time-code"
-                  inputMode="numeric"
-                  value={twoFactorForm.code}
-                  onChange={handleTwoFactorChange}
-                  required
-                />
-              </FormField>
-            )}
-          </>
-        ) : (
-          <>
-            <FormField label="Email or username">
-              <Input
-                name="identifier"
-                type="text"
-                autoComplete="username"
-                value={form.identifier}
-                onChange={handleChange}
-                required
-              />
-
-              {validationDetails.identifier ? (
-                <p className="mt-1 text-sm text-[#8a321f]">
-                  {validationDetails.identifier}
-                </p>
-              ) : null}
-            </FormField>
-
-            <FormField label="Password">
-              <Input
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                value={form.password}
-                onChange={handleChange}
-                required
-              />
-
-              {validationDetails.password ? (
-                <p className="mt-1 text-sm text-[#8a321f]">
-                  {validationDetails.password}
-                </p>
-              ) : null}
-            </FormField>
-          </>
-        )}
-
-        {error ? (
-          <p className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
-            {error}
+        {message ? (
+          <p className="mb-4 rounded-md border border-[#bbd2c3] bg-[#eef7f1] px-3 py-2 text-sm text-[#24563f]">
+            {message}
           </p>
         ) : null}
 
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting
-            ? isTwoFactorStep
-              ? 'Verifying code'
-              : 'Logging in'
-            : isTwoFactorStep
-              ? 'Verify and continue'
-              : 'Log in'}
-        </Button>
-      </form>
+        <LoginForm
+          initialTwoFactorState={location.state?.twoFactorChallenge || null}
+          onSuccess={() => navigate(from, { replace: true })}
+        />
 
-      {isTwoFactorStep ? (
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-5"
-          onClick={resetTwoFactorStep}
-        >
-          Back to password step
-        </Button>
-      ) : (
-        <>
-          <p className="mt-5 text-center text-sm text-[#50635a]">
-            New player?{' '}
-            <Link
-              className="font-semibold text-[#2f6f86] hover:text-[#24586a]"
-              to="/signup"
-            >
-              Create an account
-            </Link>
-          </p>
-          <p className="mt-3 text-center text-sm text-[#50635a]">
-            <Link
-              className="font-semibold text-[#2f6f86] hover:text-[#24586a]"
-              to="/forgot-password"
-            >
-              Forgot your password?
-            </Link>
-          </p>
-        </>
-      )}
-    </Panel>
+        <div className="my-5 flex items-center gap-4">
+          <div className="h-px flex-1 bg-black" />
+          <span className="text-sm font-medium text-black">OR</span>
+          <div className="h-px flex-1 bg-black" />
+        </div>
+
+        <FortyTwoButton
+          comingSoon={!isFortyTwoLoginEnabled}
+          onClick={
+            isFortyTwoLoginEnabled
+              ? () => useAuthStore.getState().startFortyTwoLogin()
+              : undefined
+          }
+        />
+
+        <p className="mt-5 text-center text-sm text-[#081934]">
+          New player?{' '}
+          <Link
+            className="font-semibold text-[#0196FF] hover:text-[#0080e0]"
+            to="/signup"
+          >
+            Sign up
+          </Link>
+        </p>
+        <p className="mt-3 text-center text-sm text-[#081934]">
+          <Link
+            className="font-semibold text-[#0196FF] hover:text-[#0080e0]"
+            to="/forgot-password"
+          >
+            Forgot your password?
+          </Link>
+        </p>
+      </div>
+    </div>
   )
 }
 

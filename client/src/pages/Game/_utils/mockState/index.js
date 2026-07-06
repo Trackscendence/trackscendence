@@ -1,1 +1,1 @@
-export { default } from './mockState'
+export { default, getMockGameState } from './mockState'

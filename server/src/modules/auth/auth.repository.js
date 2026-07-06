@@ -4,7 +4,15 @@ const safeUserSelect = {
   id: true,
   email: true,
   username: true,
+  displayName: true,
+  bio: true,
+  avatarUrl: true,
+  gamesPlayed: true,
+  wins: true,
+  losses: true,
+  rank: true,
   role: true,
+  createdAt: true,
   twoFactorEnabled: true,
 }
 
@@ -64,6 +72,40 @@ const createUser = ({ email, username, passwordHash }) => {
       passwordHash,
     },
     select: registeredUserSelect,
+  })
+}
+
+const findByFortyTwoId = (fortyTwoId) => {
+  return prisma.user.findUnique({
+    where: { fortyTwoId },
+    select: authUserSelect,
+  })
+}
+
+const linkFortyTwoId = (id, fortyTwoId) => {
+  return prisma.user.update({
+    where: { id },
+    data: { fortyTwoId },
+    select: authUserSelect,
+  })
+}
+
+const createFortyTwoUser = ({
+  email,
+  username,
+  fortyTwoId,
+  displayName,
+  avatarUrl,
+}) => {
+  return prisma.user.create({
+    data: {
+      email,
+      username,
+      fortyTwoId,
+      displayName,
+      avatarUrl,
+    },
+    select: authUserSelect,
   })
 }
 
@@ -165,6 +207,9 @@ const withLockedPasswordResetToken = (tokenId, callback) => {
         "id",
         "email",
         "username",
+        "displayName",
+        "bio",
+        "createdAt",
         "role",
         "passwordHash",
         "passwordResetTokenHash",
@@ -363,15 +408,18 @@ module.exports = {
   consumeRecoveryCode,
   consumeRecoveryCodeAndChallenge,
   consumeTwoFactorChallenge,
+  createFortyTwoUser,
   createUser,
   findAuthById,
   findByEmail,
+  findByFortyTwoId,
   findByIdentifier,
   findByPasswordResetTokenId,
   findByUsername,
   findSafeById,
   findTokenUserById,
   issueTwoFactorChallenge,
+  linkFortyTwoId,
   replacePendingTwoFactorSetup,
   updatePasswordById,
   updatePasswordByIdInTransaction,

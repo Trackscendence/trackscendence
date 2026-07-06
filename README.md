@@ -25,7 +25,7 @@ _This project has been created as part of the 42 curriculum by smoore, srodrigo,
 2. [UNO Game Rules](#2-uno-game-rules)
 3. [Security & Authentication](#3-security--authentication)
 4. [System & Database Architecture](#4-system--database-architecture)
-5. [Target Modules (17 Points Target)](#5-target-modules-17-points-target)
+5. [Target Modules (19 Points Target)](#5-target-modules-19-points-target)
 6. [Getting Started](#6-getting-started)
 7. [Developer Documentation](#7-developer-documentation)
 8. [Team Information](#8-team-information)
@@ -72,6 +72,9 @@ Our platform enforces robust security mechanisms to protect user accounts and ga
 - **Password Reset**: Expiring password reset tokens delivered securely via Mailpit or configured SMTP server.
 - **Two-Factor Authentication (2FA)**: TOTP-based 2FA with backup recovery codes. Managed directly via the authenticated User Settings page.
 - **Account Protection**: Automated failed login lockout thresholds and session security features.
+- **42 OAuth Login**: "Continue with 42" signs users in through the 42 intra (authorization-code flow, `public` scope). A first login provisions an account from the intra profile; an intra email that matches an existing account links the 42 identity to it instead, still gated by 2FA when enabled. The server exchanges the code, issues the platform's own JWT, and never stores intra tokens.
+
+42 login is optional per environment: set `FORTYTWO_CLIENT_ID`, `FORTYTWO_CLIENT_SECRET`, and `FORTYTWO_REDIRECT_URI` (see `.env.example`) and register the redirect URI on the intra application. The login button enables itself wherever the server reports credentials via `GET /api/v1/auth/providers`; without them it stays a disabled "Soon" placeholder.
 
 For detailed configurations, endpoints, flowcharts, and Postman setups:
 
@@ -99,26 +102,27 @@ Our database relational schema is defined in Prisma and is automatically kept up
 
 _Note: Regenerate the ERD diagram inside the `/docs` folder with `npm run docs:erd --prefix server`._
 
-## 5. Target Modules (17 Points Target)
+## 5. Target Modules (19 Points Target)
 
-To exceed the mandatory 14 points required for evaluation, our roadmap implements the following modules (targeting a total of 17 points):
+To exceed the mandatory 14 points required for evaluation, our roadmap implements the following modules (targeting a total of 19 points):
 
 <details>
 <summary><strong>Click to expand target modules status</strong></summary>
 <br>
 
-| Category     | Module                         | Type         | Status         | Justification                                                                              |
-| ------------ | ------------------------------ | ------------ | -------------- | ------------------------------------------------------------------------------------------ |
-| **Web**      | Framework for Frontend/Backend | Major (2pts) | 🟢 Implemented | Used React for the frontend and Express for the backend.                                   |
-| **Web**      | WebSockets                     | Major (2pts) | 🟢 Implemented | Real-time updates, graceful disconnections, and efficient broadcasting via Socket.IO.      |
-| **Web**      | User Chat                      | Major (2pts) | 🟡 In Progress | Live room messaging active; friendships, profile page view, and group lobbies in progress. |
-| **Web**      | Public API                     | Major (2pts) | 🔴 Planned     | Secure API key validation, route rate-limiting, and RESTful query endpoints.               |
-| **Web**      | Use an ORM                     | Minor (1pt)  | 🟢 Implemented | Used Prisma for type-safe relational mapping and migrations.                               |
-| **Web**      | Search Functionality           | Minor (1pt)  | 🔴 Planned     | Search filters, sorting, and pagination logic.                                             |
-| **Web**      | File Upload                    | Minor (1pt)  | 🔴 Planned     | Profile avatar upload and asset management system.                                         |
-| **User Mgt** | Standard User Management       | Major (2pts) | 🟡 In Progress | User register, login, session security, and 2FA completed; user settings in progress.      |
-| **Gaming**   | Web-based Game                 | Major (2pts) | 🟡 In Progress | Real-time multiplayer UNO engine logic under development.                                  |
-| **Gaming**   | Multiplayer 3+                 | Major (2pts) | 🟡 In Progress | Extending the game room structures to support 3 or more concurrent players.                |
+| Category     | Module                         | Type         | Status         | Justification                                                                               |
+| ------------ | ------------------------------ | ------------ | -------------- | ------------------------------------------------------------------------------------------- |
+| **Web**      | Framework for Frontend/Backend | Major (2pts) | 🟢 Implemented | Used React for the frontend and Express for the backend.                                    |
+| **Web**      | WebSockets                     | Major (2pts) | 🟢 Implemented | Real-time updates, graceful disconnections, and efficient broadcasting via Socket.IO.       |
+| **Web**      | User Chat                      | Major (2pts) | 🟡 In Progress | Live room messaging active; friendships, profile page view, and group lobbies in progress.  |
+| **Web**      | Public API                     | Major (2pts) | 🟢 Implemented | API-key-secured `/api/v1/public` endpoints with per-key rate limiting and Swagger docs.     |
+| **Web**      | Use an ORM                     | Minor (1pt)  | 🟢 Implemented | Used Prisma for type-safe relational mapping and migrations.                                |
+| **Web**      | Search Functionality           | Minor (1pt)  | 🟢 Implemented | Leaderboard search, multi-criteria filters, sorting, pagination, and user directory search. |
+| **Web**      | File Upload                    | Minor (1pt)  | 🔴 Planned     | Profile avatar upload and asset management system.                                          |
+| **User Mgt** | Standard User Management       | Major (2pts) | 🟡 In Progress | User register, login, session security, and 2FA completed; user settings in progress.       |
+| **User Mgt** | Remote Authentication (42)     | Major (2pts) | 🟢 Implemented | "Continue with 42" OAuth login with account provisioning and email-based account linking.   |
+| **Gaming**   | Web-based Game                 | Major (2pts) | 🟡 In Progress | Real-time multiplayer UNO engine logic under development.                                   |
+| **Gaming**   | Multiplayer 3+                 | Major (2pts) | 🟡 In Progress | Extending the game room structures to support 3 or more concurrent players.                 |
 
 </details>
 
@@ -170,6 +174,8 @@ npm run compose:up
 ## 7. Developer Documentation
 
 For details on database migrations, project directory structures, lints/spelling tools, and git contribution workflows, please check out our dedicated **[Developer & Contribution Guide](docs/DEVELOPER_GUIDE.md)**.
+
+For how the app is deployed and how the CD pipeline ships to Railway, see the **[Deployment Runbook](docs/deployment-railway.md)**.
 
 ---
 

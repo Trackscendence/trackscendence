@@ -1,8 +1,11 @@
 import { create } from 'zustand'
 import {
   AUTH_TOKEN_KEY,
+  completeFortyTwoLogin as completeFortyTwoLoginRequest,
   completeTwoFactorLogin as completeTwoFactorLoginRequest,
+  fetchAuthProviders,
   fetchCurrentUser,
+  getFortyTwoLoginUrl,
   login as loginRequest,
   logout as logoutRequest,
   register as registerRequest,
@@ -24,8 +27,18 @@ const useAuthStore = create((set, get) => ({
   token: localStorage.getItem(AUTH_TOKEN_KEY),
   isAuthenticated: false,
   isLoading: Boolean(localStorage.getItem(AUTH_TOKEN_KEY)),
+  // The server reports which OAuth providers it has credentials for, so the
+  // 42 button enables itself exactly where the flow can actually work. It
+  // starts out (and stays, if the probe fails) in the "Soon" state.
+  isFortyTwoLoginEnabled: false,
 
   init: async () => {
+    fetchAuthProviders()
+      .then(({ providers }) =>
+        set({ isFortyTwoLoginEnabled: Boolean(providers?.fortyTwo) }),
+      )
+      .catch(() => {})
+
     const storedToken = localStorage.getItem(AUTH_TOKEN_KEY)
 
     if (!storedToken) {
@@ -56,6 +69,15 @@ const useAuthStore = create((set, get) => ({
     return applyAuthenticatedResult(set, result)
   },
 
+  startFortyTwoLogin: () => {
+    window.location.assign(getFortyTwoLoginUrl())
+  },
+
+  completeFortyTwoLogin: async (payload) => {
+    const result = await completeFortyTwoLoginRequest(payload)
+    return applyAuthenticatedResult(set, result)
+  },
+
   logout: async () => {
     const activeToken = get().token || localStorage.getItem(AUTH_TOKEN_KEY)
     localStorage.removeItem(AUTH_TOKEN_KEY)
@@ -74,6 +96,13 @@ const useAuthStore = create((set, get) => ({
     if (expiredToken && get().token !== expiredToken) return
     localStorage.removeItem(AUTH_TOKEN_KEY)
     set({ token: null, user: null, isAuthenticated: false })
+  },
+
+  updateUser: (user) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...user } : user,
+      isAuthenticated: Boolean(user || state.token),
+    }))
   },
 
   refreshUser: async () => {

@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
+import { isAdmin } from '@/utils/authorization'
 
 const Navbar = () => {
   const navigate = useNavigate()
@@ -15,7 +16,7 @@ const Navbar = () => {
 
   return (
     <header className="border-b border-[#d8dfd4] bg-white">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-5 py-4">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4">
         <Link
           to="/"
           className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase"
@@ -24,8 +25,21 @@ const Navbar = () => {
         </Link>
         <div className="flex flex-wrap items-center justify-end gap-3">
           {user && (
-            <span className="text-sm text-[#617267]">{user.username}</span>
+            <Link
+              to="/profile"
+              className="text-sm font-semibold text-[#617267] hover:text-[#1f2d28]"
+            >
+              {user.displayName || user.username}
+            </Link>
           )}
+          {isAdmin(user) ? (
+            <Link
+              to="/admin"
+              className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+            >
+              Admin
+            </Link>
+          ) : null}
           <Link
             to="/game"
             className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"

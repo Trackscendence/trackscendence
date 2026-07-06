@@ -74,6 +74,11 @@ const optionalConfigs = {
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
   RATE_LIMIT_WINDOW_MS: parseNumber('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
   RATE_LIMIT_LIMIT: parseNumber('RATE_LIMIT_LIMIT', 100),
+  PUBLIC_RATE_LIMIT_WINDOW_MS: parseNumber(
+    'PUBLIC_RATE_LIMIT_WINDOW_MS',
+    60 * 1000,
+  ),
+  PUBLIC_RATE_LIMIT_LIMIT: parseNumber('PUBLIC_RATE_LIMIT_LIMIT', 30),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   TWO_FACTOR_CHALLENGE_EXPIRES_IN:
     process.env.TWO_FACTOR_CHALLENGE_EXPIRES_IN || '5m',
@@ -90,6 +95,13 @@ const optionalConfigs = {
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
   SMTP_FROM: process.env.SMTP_FROM || '',
+  // 42 OAuth is optional like SMTP: the /auth/42 routes answer 404 until all
+  // three values are set. The redirect URI must exactly match one registered
+  // on the intra application.
+  FORTYTWO_CLIENT_ID: process.env.FORTYTWO_CLIENT_ID || '',
+  FORTYTWO_CLIENT_SECRET: process.env.FORTYTWO_CLIENT_SECRET || '',
+  FORTYTWO_REDIRECT_URI: process.env.FORTYTWO_REDIRECT_URI || '',
+  FORTYTWO_STATE_EXPIRES_IN: process.env.FORTYTWO_STATE_EXPIRES_IN || '10m',
 }
 
 const requiredConfigs = {

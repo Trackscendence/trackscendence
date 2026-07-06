@@ -3,8 +3,10 @@ const crypto = require('crypto')
 const { Prisma } = require('@prisma/client')
 const BadRequestException = require('#exceptions/bad-request.exception')
 const ConflictException = require('#exceptions/conflict.exception')
+const NotFoundException = require('#exceptions/not-found.exception')
 const UnauthorizedException = require('#exceptions/unauthorized.exception')
 const logger = require('#utils/logger')
+const authFortyTwo = require('#modules/auth/auth.forty-two')
 const authMailer = require('#modules/auth/auth.mailer')
 const authRepository = require('#modules/auth/auth.repository')
 const authToken = require('#modules/auth/auth.token')
@@ -47,7 +49,15 @@ const toSafeAuthUser = (user) => ({
   id: user.id,
   email: user.email,
   username: user.username,
+  displayName: user.displayName,
+  bio: user.bio,
+  avatarUrl: user.avatarUrl,
+  gamesPlayed: user.gamesPlayed,
+  wins: user.wins,
+  losses: user.losses,
+  rank: user.rank,
   role: user.role,
+  createdAt: user.createdAt,
   twoFactorEnabled: Boolean(user.twoFactorEnabled),
   twoFactorSetupPending: Boolean(user.twoFactorPendingSecretCiphertext),
 })
@@ -58,7 +68,35 @@ const getTokenVersionFromPayload = (payload) => {
   return Number.isInteger(tokenVersion) ? tokenVersion : null
 }
 
-//BACKEND PASSWORD VALIDATIONS FOR SIGNUP PAGE
+const getUsernameValidationMessages = (username) => {
+  const details = []
+
+  if (!username) {
+    details.push('Username is required')
+    return details
+  }
+
+  if (!USERNAME_REGEX.test(username)) {
+    details.push(
+      'Username must start with a letter and contain only lowercase letters and numbers',
+    )
+  }
+
+  if (username.length < USERNAME_MIN_LENGTH) {
+    details.push(
+      `Username must not be less than ${USERNAME_MIN_LENGTH} characters`,
+    )
+  }
+
+  if (username.length > USERNAME_MAX_LENGTH) {
+    details.push(
+      `Username must not be more than ${USERNAME_MAX_LENGTH} characters`,
+    )
+  }
+
+  return details
+}
+
 const getPasswordValidationMessages = (password) => {
   const details = []
 
@@ -384,6 +422,198 @@ const getTwoFactorChallengePayload = (challengeToken) => {
   }
 }
 
+const validateFortyTwoCallbackInput = ({ code, state } = {}) => {
+  const normalizedCode = typeof code === 'string' ? code.trim() : ''
+  const normalizedState = typeof state === 'string' ? state.trim() : ''
+  const details = []
+
+  if (!normalizedCode) {
+    details.push('Authorization code is required')
+  }
+
+  if (!normalizedState) {
+    details.push('State is required')
+  }
+
+  if (details.length > 0) {
+    throw new BadRequestException('Invalid request data', { details })
+  }
+
+  return {
+    code: normalizedCode,
+    state: normalizedState,
+  }
+}
+
+// Intra logins may be shorter than our signup minimum or contain characters
+// the signup regex rejects (hyphens). Profile lookups deliberately accept any
+// non-empty username, so a sanitized short login is safe everywhere except
+// the signup form, which OAuth users never touch.
+const sanitizeFortyTwoLogin = (login) => {
+  const normalized =
+    typeof login === 'string'
+      ? login
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '')
+          .replace(/^[0-9]+/, '')
+      : ''
+
+  // Leave room for a collision suffix within the username length cap.
+  return (normalized || 'player').slice(0, USERNAME_MAX_LENGTH - 4)
+}
+
+const resolveAvailableUsername = async (base, isTaken) => {
+  if (!(await isTaken(base))) {
+    return base
+  }
+
+  for (let suffix = 2; suffix <= 9999; suffix += 1) {
+    const candidate = `${base}${suffix}`
+
+    if (!(await isTaken(candidate))) {
+      return candidate
+    }
+  }
+
+  throw new ConflictException('Username is already taken')
+}
+
+const buildFortyTwoProfile = (rawProfile) => {
+  const fortyTwoId = Number(rawProfile?.id)
+  const email =
+    typeof rawProfile?.email === 'string'
+      ? normalizeEmail(rawProfile.email)
+      : ''
+  const login = typeof rawProfile?.login === 'string' ? rawProfile.login : ''
+
+  if (!Number.isInteger(fortyTwoId) || fortyTwoId <= 0 || !email || !login) {
+    throw new UnauthorizedException(FORTYTWO_LOGIN_FAILED_MESSAGE)
+  }
+
+  const displayName =
+    typeof rawProfile?.displayname === 'string' && rawProfile.displayname.trim()
+      ? rawProfile.displayname.trim()
+      : null
+  const avatarUrl =
+    typeof rawProfile?.image?.versions?.medium === 'string'
+      ? rawProfile.image.versions.medium
+      : typeof rawProfile?.image?.link === 'string'
+        ? rawProfile.image.link
+        : null
+
+  return { fortyTwoId, email, login, displayName, avatarUrl }
+}
+
+const ensureFortyTwoConfigured = () => {
+  if (!authFortyTwo.isConfigured()) {
+    throw new NotFoundException(FORTYTWO_NOT_AVAILABLE_MESSAGE)
+  }
+}
+
+const buildLoginResult = async (user) => {
+  if (user.twoFactorEnabled) {
+    const challenge = await authRepository.issueTwoFactorChallenge(user.id)
+
+    return {
+      requiresTwoFactor: true,
+      message: TWO_FACTOR_REQUIRED_MESSAGE,
+      challengeToken: authToken.signTwoFactorChallengeToken(
+        challenge,
+        challenge.twoFactorChallengeVersion,
+      ),
+      methods: ['totp', 'recovery_code'],
+    }
+  }
+
+  return {
+    token: authToken.signAccessToken(user),
+    user: toSafeAuthUser(user),
+  }
+}
+
+const getFortyTwoAuthorizeUrl = () => {
+  ensureFortyTwoConfigured()
+
+  return authFortyTwo.buildAuthorizeUrl(authToken.signOAuthStateToken())
+}
+
+// The client asks this instead of carrying its own build-time flag, so the
+// server env is the single source of truth for provider availability.
+const getAuthProviders = () => ({
+  fortyTwo: authFortyTwo.isConfigured(),
+})
+
+const provisionFortyTwoUser = async (profile) => {
+  const existingByEmail = await authRepository.findByEmail(profile.email)
+
+  // 42 verifies member emails, and a linked account with 2FA enabled still
+  // goes through the 2FA challenge, so auto-linking is safe here.
+  if (existingByEmail) {
+    return await authRepository.linkFortyTwoId(
+      existingByEmail.id,
+      profile.fortyTwoId,
+    )
+  }
+
+  const username = await resolveAvailableUsername(
+    sanitizeFortyTwoLogin(profile.login),
+    async (candidate) =>
+      Boolean(await authRepository.findByUsername(candidate)),
+  )
+
+  try {
+    return await authRepository.createFortyTwoUser({
+      email: profile.email,
+      username,
+      fortyTwoId: profile.fortyTwoId,
+      displayName: profile.displayName,
+      avatarUrl: profile.avatarUrl,
+    })
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new ConflictException(getUniqueConflictMessage(error))
+    }
+
+    throw error
+  }
+}
+
+const loginWithFortyTwo = async (payload) => {
+  ensureFortyTwoConfigured()
+
+  const { code, state } = validateFortyTwoCallbackInput(payload)
+
+  try {
+    authToken.verifyOAuthStateToken(state)
+  } catch (error) {
+    if (authToken.isTokenError(error)) {
+      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+    }
+
+    throw error
+  }
+
+  const accessToken = await authFortyTwo.exchangeCodeForAccessToken(code)
+
+  if (!accessToken) {
+    throw new UnauthorizedException(FORTYTWO_LOGIN_FAILED_MESSAGE)
+  }
+
+  const rawProfile = await authFortyTwo.fetchProfile(accessToken)
+
+  if (!rawProfile) {
+    throw new UnauthorizedException(FORTYTWO_LOGIN_FAILED_MESSAGE)
+  }
+
+  const profile = buildFortyTwoProfile(rawProfile)
+  const user =
+    (await authRepository.findByFortyTwoId(profile.fortyTwoId)) ||
+    (await provisionFortyTwoUser(profile))
+
+  return await buildLoginResult(user)
+}
+
 const register = async (payload) => {
   const normalizedPayload = normalizeRegistrationInput(payload)
 
@@ -430,6 +660,11 @@ const login = async (payload) => {
     throw new UnauthorizedException(GENERIC_ACCOUNT_LOCKED_MESSAGE)
   }
 
+  // 42-provisioned accounts have no password hash until a reset sets one.
+  if (!user.passwordHash) {
+    throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
+  }
+
   const isValidPassword = await bcrypt.compare(password, user.passwordHash)
 
   if (!isValidPassword) {
@@ -456,26 +691,7 @@ const login = async (payload) => {
     lockedOutUntil: null,
   })
 
-  if (user.twoFactorEnabled) {
-    const challenge = await authRepository.issueTwoFactorChallenge(user.id)
-
-    return {
-      requiresTwoFactor: true,
-      message: TWO_FACTOR_REQUIRED_MESSAGE,
-      challengeToken: authToken.signTwoFactorChallengeToken(
-        challenge,
-        challenge.twoFactorChallengeVersion,
-      ),
-      methods: ['totp', 'recovery_code'],
-    }
-  }
-
-  const token = authToken.signAccessToken(user)
-
-  return {
-    token,
-    user: toSafeAuthUser(user),
-  }
+  return await buildLoginResult(user)
 }
 
 const completeTwoFactorLogin = async (payload) => {
@@ -681,6 +897,10 @@ const changePassword = async (user, payload) => {
     throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
   }
 
+  if (!authUser.passwordHash) {
+    throw new BadRequestException(PASSWORD_LOGIN_NOT_ENABLED_MESSAGE)
+  }
+
   const isCurrentValid = await bcrypt.compare(
     currentPassword,
     authUser.passwordHash,
@@ -783,10 +1003,11 @@ const resetPassword = async (payload) => {
         throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
       }
 
-      const isSameAsCurrentPassword = await bcrypt.compare(
-        newPassword,
-        user.passwordHash,
-      )
+      // A null hash means a 42-provisioned account setting its first
+      // password, so there is no current password to differ from.
+      const isSameAsCurrentPassword = user.passwordHash
+        ? await bcrypt.compare(newPassword, user.passwordHash)
+        : false
 
       if (isSameAsCurrentPassword) {
         throw new BadRequestException(NEW_PASSWORD_MUST_DIFFER_MESSAGE)
@@ -806,17 +1027,25 @@ const resetPassword = async (payload) => {
 
 module.exports = {
   INVALID_CREDENTIALS_MESSAGE,
+  buildFortyTwoProfile,
+  getUsernameValidationMessages,
   changePassword,
   completeTwoFactorLogin,
   confirmTwoFactorSetup,
   disableTwoFactor,
   getAuthenticatedUser,
+  getAuthProviders,
+  getFortyTwoAuthorizeUrl,
   getUserFromToken,
   login,
+  loginWithFortyTwo,
   regenerateTwoFactor,
   register,
   requestPasswordReset,
   resetPassword,
+  resolveAvailableUsername,
+  sanitizeFortyTwoLogin,
   setupTwoFactor,
   toSafeAuthUser,
+  validateFortyTwoCallbackInput,
 }

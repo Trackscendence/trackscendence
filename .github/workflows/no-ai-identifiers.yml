@@ -1,0 +1,39 @@
+name: no-ai-identifiers
+
+# Server-side guard against AI-tooling references entering the codebase.
+# Unlike the local Husky hooks, this runs on GitHub's runners and cannot be
+# skipped with `git commit --no-verify`. Make it a required status check on
+# dev/main (Settings → Branches / Rulesets) so a failing scan blocks the merge.
+# cspell:ignore elif
+
+on:
+  pull_request:
+  push:
+    branches: [dev, main]
+
+jobs:
+  no-ai-identifiers:
+    name: no-ai-identifiers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan tree and commit range for AI-tooling references
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            RANGE="$PR_BASE..$PR_HEAD"
+          elif [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            # First push of a new branch: no meaningful "before", scan tree only.
+            RANGE=""
+          else
+            RANGE="$PUSH_BEFORE..$PUSH_AFTER"
+          fi
+          sh scripts/git-hooks/scan-repository.sh "$RANGE"

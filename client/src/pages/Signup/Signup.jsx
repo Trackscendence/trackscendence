@@ -1,261 +1,51 @@
-import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
-import Button from '@/components/Button'
-import Panel from '@/components/Panel'
-import FormField from '@/components/FormField'
-import Input from '@/components/Input'
-import { validateSignupInput } from '@/services/auth.validations'
-import { normalizeSignupInput } from '@/services/auth.normalizations'
-import Modal from '@/components/Modal'
+import FortyTwoButton from '@/components/FortyTwoButton'
+import SignupForm from './_components/SignupForm'
 
 const Signup = () => {
   const navigate = useNavigate()
-  const { register } = useAuthStore()
-  const [form, setForm] = useState({ email: '', username: '', password: '' })
-  const [error, setError] = useState('')
-  const [validationDetails, setValidationDetails] = useState({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const [showTerms, setShowTerms] = useState(false)
-  const [termsViewed, setTermsViewed] = useState(false)
-  const [termsAccepted, setTermsAccepted] = useState(false)
-
-  const [showPrivacy, setShowPrivacy] = useState(false)
-  const [privacyViewed, setPrivacyViewed] = useState(false)
-  const [privacyAccepted, setPrivacyAccepted] = useState(false)
-
-  const handleChange = (event) => {
-    setError('')
-    setValidationDetails({})
-    setForm((current) => ({
-      ...current,
-      [event.target.name]: event.target.value,
-    }))
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-
-    setError('')
-    setValidationDetails({})
-
-    const normalizedForm = normalizeSignupInput(form)
-    const { isValid, errors } = validateSignupInput(normalizedForm)
-
-    if (!isValid) {
-      setValidationDetails(errors)
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      await register(normalizedForm)
-
-      navigate('/login', {
-        replace: true,
-        state: { message: 'Account created. Sign in to continue.' },
-      })
-    } catch (requestError) {
-      const details = Array.isArray(requestError.payload?.details)
-        ? requestError.payload.details
-        : []
-
-      setValidationDetails(details)
-      setError(details.length > 0 ? '' : requestError.message)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  const isFortyTwoLoginEnabled = useAuthStore(
+    (state) => state.isFortyTwoLoginEnabled,
+  )
 
   return (
-    <Panel>
-      <div className="mb-7">
-        <p className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase">
-          Trackscendence
+    <div className="flex flex-1 items-center justify-center px-5 py-10">
+      <div className="w-full max-w-[414px]">
+        <h1 className="mb-8 text-center text-5xl font-semibold text-[#081934] uppercase">
+          Create your profile
+        </h1>
+
+        <SignupForm
+          onSuccess={() => navigate('/signup/success', { replace: true })}
+        />
+
+        <div className="my-5 flex items-center gap-4">
+          <div className="h-px flex-1 bg-black" />
+          <span className="text-sm font-medium text-black">OR</span>
+          <div className="h-px flex-1 bg-black" />
+        </div>
+
+        <FortyTwoButton
+          comingSoon={!isFortyTwoLoginEnabled}
+          onClick={
+            isFortyTwoLoginEnabled
+              ? () => useAuthStore.getState().startFortyTwoLogin()
+              : undefined
+          }
+        />
+
+        <p className="mt-5 text-center text-sm text-[#081934]">
+          Already have an account?{' '}
+          <Link
+            className="font-semibold text-[#0196FF] hover:text-[#0080e0]"
+            to="/login"
+          >
+            Log in
+          </Link>
         </p>
-        <h1 className="mt-2 text-2xl font-semibold">Create your account</h1>
       </div>
-
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <FormField label="Email">
-          <Input
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-
-          {validationDetails.email ? (
-            <p className="mt-1 text-sm text-[#8a321f]">
-              {validationDetails.email}
-            </p>
-          ) : null}
-        </FormField>
-
-        <FormField label="Username">
-          <Input
-            name="username"
-            type="text"
-            autoComplete="username"
-            value={form.username}
-            onChange={handleChange}
-            required
-          />
-
-          {validationDetails.username ? (
-            <p className="mt-1 text-sm text-[#8a321f]">
-              {validationDetails.username}
-            </p>
-          ) : null}
-        </FormField>
-
-        <FormField
-          label="Password"
-          hint="Use 8+ characters with upper/lowercase letters, a number, and a symbol."
-        >
-          <Input
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
-
-          {validationDetails.password ? (
-            <p className="mt-1 text-sm text-[#8a321f]">
-              {validationDetails.password}
-            </p>
-          ) : null}
-        </FormField>
-
-        <div className="space-y-2">
-          <button
-            type="button"
-            className="text-sm font-medium text-[#2f6f86] underline"
-            onClick={() => setShowTerms(true)}
-          >
-            Terms of Service
-          </button>
-
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={termsAccepted}
-              disabled={!termsViewed}
-              onChange={(event) => setTermsAccepted(event.target.checked)}
-            />
-            <span> I agree to the Terms of Service</span>
-          </label>
-        </div>
-
-        <div className="space-y-2">
-          <button
-            type="button"
-            className="text-sm font-medium text-[#2f6f86] underline"
-            onClick={() => setShowPrivacy(true)}
-          >
-            Privacy Policy
-          </button>
-
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={privacyAccepted}
-              disabled={!privacyViewed}
-              onChange={(event) => setPrivacyAccepted(event.target.checked)}
-            />
-            <span> I agree to the Privacy Policy</span>
-          </label>
-        </div>
-
-        {validationDetails.length > 0 ? (
-          <div className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
-            {validationDetails.map((detail) => (
-              <p key={detail}>{detail}</p>
-            ))}
-          </div>
-        ) : null}
-
-        {error ? (
-          <p className="rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
-            {error}
-          </p>
-        ) : null}
-
-        <Button
-          type="submit"
-          disabled={isSubmitting || !termsAccepted || !privacyAccepted}
-        >
-          {isSubmitting ? 'Creating account...' : 'Sign up'}
-        </Button>
-      </form>
-
-      <p className="mt-5 text-center text-sm text-[#50635a]">
-        Already registered?{' '}
-        <Link
-          className="font-semibold text-[#2f6f86] hover:text-[#24586a]"
-          to="/login"
-        >
-          Log in
-        </Link>
-      </p>
-
-      <Modal
-        isOpen={showTerms}
-        onClose={() => {
-          setTermsViewed(true)
-          setShowTerms(false)
-        }}
-        title="Terms of Service"
-      >
-        <div className="space-y-4 text-sm leading-6">
-          <p>Terms of Service go here!!</p>
-        </div>
-
-        <div className="mt-6 flex justify-end">
-          <Button
-            type="button"
-            onClick={() => {
-              setTermsViewed(true)
-              setShowTerms(false)
-            }}
-          >
-            Close
-          </Button>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={showPrivacy}
-        onClose={() => {
-          setPrivacyViewed(true)
-          setShowPrivacy(false)
-        }}
-        title="Privacy Policy"
-      >
-        <div className="space-y-4 text-sm leading-6">
-          <p>Privacy Policy go here!!</p>
-        </div>
-
-        <div className="mt-6 flex justify-end">
-          <Button
-            type="button"
-            onClick={() => {
-              setPrivacyViewed(true)
-              setShowPrivacy(false)
-            }}
-          >
-            Close
-          </Button>
-        </div>
-      </Modal>
-    </Panel>
+    </div>
   )
 }
 

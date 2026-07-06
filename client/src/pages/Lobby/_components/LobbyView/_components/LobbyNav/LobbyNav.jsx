@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
 import createRoomIcon from '@/assets/lobby/create-room-icon.svg'
+import AccountMenu from './_components/AccountMenu'
 
 const LobbyNav = ({ user, canCreateRoom, onCreateRoom }) => {
   return (
@@ -36,6 +37,7 @@ const LobbyNav = ({ user, canCreateRoom, onCreateRoom }) => {
             <span className="text-xs text-[#2E2D2D]">{user.email}</span>
           </span>
         </Link>
+        <AccountMenu />
       </div>
     </header>
   )

@@ -5,6 +5,7 @@ const gameStore = require('#modules/game/game.store')
 const matchmaking = require('#modules/game/matchmaking.service')
 const gameService = require('#modules/game/game.service')
 const roomService = require('#modules/room/room.service')
+const { buildGameStatePayload } = require('#modules/game/game.contract')
 
 // Grace timers for players who dropped mid-game, keyed by userId. Module
 // scoped on purpose: the timer must survive the socket that scheduled it and
@@ -39,18 +40,15 @@ const abandonActiveGame = async (io, userId) => {
 
 /**
  * Emits the public game state to every player, injecting each player's own
- * private hand. Reads only the engine's public interface (getPlayerIds/getHand)
- * so the engine's information-hiding stays intact.
+ * private hand. The payload shape lives in game.contract so it stays
+ * regression-tested against hand leaks (game.contract.test.js).
  */
 const broadcastGameState = (io, gameId, engine) => {
-  const publicState = engine.getState()
-
   engine.getPlayerIds().forEach((playerId) => {
-    io.to(`user:${playerId}`).emit('game_state_update', {
-      ...publicState,
-      myHand: engine.getHand(playerId),
-      gameId,
-    })
+    io.to(`user:${playerId}`).emit(
+      'game_state_update',
+      buildGameStatePayload({ engine, gameId, playerId }),
+    )
   })
 }
 

@@ -46,6 +46,19 @@ const createMatch = async (players) => {
 }
 
 /**
+ * Discards a match that was created but never started (the caller's follow-up
+ * step failed before any player heard about the game). Nothing reached the
+ * players and nothing is worth persisting, so the stored state and the engine
+ * are simply dropped.
+ *
+ * @param {string} gameId
+ */
+const abortMatch = async (gameId) => {
+  gameStore.deleteEngine(gameId)
+  await gameStore.deleteGame(gameId)
+}
+
+/**
  * Attempts to form and start a single match from the front of the lobby queue.
  *
  * @returns {Promise<{ gameId: string, players: Array<{userId: number, username: string}>, engine: UnoEngine } | null>}
@@ -114,6 +127,7 @@ const handlePlayerDisconnect = async (userId) => {
 module.exports = {
   REQUIRED_PLAYERS,
   createMatch,
+  abortMatch,
   tryStartMatch,
   handlePlayerDisconnect,
 }

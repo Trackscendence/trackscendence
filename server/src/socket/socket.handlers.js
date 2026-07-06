@@ -90,16 +90,22 @@ const registerHandlers = (io, socket) => {
         // start a match — two parallel games for the same players (#232).
         // The claim is a compare-and-set; only its winner starts the match.
         if (await roomService.claimRoomForGame(room.id)) {
+          let match
           try {
-            const match = await matchmaking.createMatch(room.players)
+            match = await matchmaking.createMatch(room.players)
             await roomService.markRoomInGame(room.id, match.gameId)
-            startMatch(io, match)
           } catch (error) {
-            // A failed start must not strand the room in IN_GAME with no
-            // game: reopen it so a member leaving or the next seat retries.
+            // Compensate in reverse order: a game that was created but never
+            // announced must not leak its engine, and a failed start must not
+            // strand the room in IN_GAME — reopen it so a member leaving or
+            // the next seat retries.
+            if (match) {
+              await matchmaking.abortMatch(match.gameId)
+            }
             await roomService.releaseRoomClaim(room.id)
             throw error
           }
+          startMatch(io, match)
         }
       }
 

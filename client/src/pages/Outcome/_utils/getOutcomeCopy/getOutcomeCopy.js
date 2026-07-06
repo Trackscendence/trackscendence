@@ -16,7 +16,7 @@ const OUTCOME_COPY = {
     celebrate: false,
     delta: -1,
   },
-  abandoned: {
+  end: {
     title: 'Game Over',
     subtitle: 'The match ended early. No result was recorded.',
     celebrate: false,

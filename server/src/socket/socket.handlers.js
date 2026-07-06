@@ -330,6 +330,12 @@ const registerHandlers = (io, socket) => {
       logger.error(`Failed to persist completed game ${gameId}`, error)
     }
 
+    // The game is flushed to PostgreSQL and its engine freed above, so drop its
+    // in-memory record too. Without this the state lingers in activeGames for
+    // the life of the process (an unbounded leak) and grows the
+    // findActiveGameByUser scan that runs on every connect/disconnect.
+    await gameStore.deleteGame(gameId)
+
     // Same payload shape as the abandon path below: winnerUserId carries the
     // outcome, reason says how the game ended.
     io.to(`game:${gameId}`).emit('game_over', {

@@ -135,6 +135,27 @@ const markRoomInGame = async (roomId, gameId) => {
 }
 
 /**
+ * Claims a full OPEN room for a match start (#232). Socket.io runs handlers
+ * concurrently, so two seats of the last free slot both observe a full OPEN
+ * room; the claim is a compare-and-set and exactly one caller wins it. The
+ * winner follows up with markRoomInGame once the engine exists, or
+ * releaseRoomClaim if the start failed.
+ *
+ * @param {number} roomId
+ * @returns {Promise<boolean>} true when this caller may start the match
+ */
+const claimRoomForGame = (roomId) => roomRepository.claimRoomForGame(roomId)
+
+/**
+ * Reopens a claimed room whose match start failed, so a member leaving or
+ * the next seat retries the start.
+ * @param {number} roomId
+ */
+const releaseRoomClaim = async (roomId) => {
+  await roomRepository.reopenClaimedRoom(roomId)
+}
+
+/**
  * Closes the room(s) attached to a finished or abandoned game.
  *
  * @param {string} gameId runtime game UUID
@@ -155,5 +176,7 @@ module.exports = {
   seatUser,
   leaveOpenRoom,
   markRoomInGame,
+  claimRoomForGame,
+  releaseRoomClaim,
   closeRoomsForGame,
 }

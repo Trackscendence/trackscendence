@@ -3,6 +3,7 @@ import Panel from '@/components/Panel'
 import ProfileSurface from '@/components/ProfileSurface'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import useProfileStore from '@/stores/useProfileStore'
+import PlayerSearch from './_components/PlayerSearch'
 
 const Profile = () => {
   const actionError = useProfileStore((state) => state.actionError)
@@ -47,17 +48,20 @@ const Profile = () => {
   }
 
   return (
-    <ProfileSurface
-      actionError={actionError}
-      friends={friends}
-      isOwnProfile
-      isSubmitting={isSubmitting}
-      leaderboard={leaderboard}
-      profile={currentProfile}
-      relationship={relationship}
-      onFriendRequest={useProfileStore.getState().sendFriendRequest}
-      onProfileUpdate={useProfileStore.getState().updateCurrentProfile}
-    />
+    <div className="space-y-6">
+      <PlayerSearch />
+      <ProfileSurface
+        actionError={actionError}
+        friends={friends}
+        isOwnProfile
+        isSubmitting={isSubmitting}
+        leaderboard={leaderboard}
+        profile={currentProfile}
+        relationship={relationship}
+        onFriendRequest={useProfileStore.getState().sendFriendRequest}
+        onProfileUpdate={useProfileStore.getState().updateCurrentProfile}
+      />
+    </div>
   )
 }
 

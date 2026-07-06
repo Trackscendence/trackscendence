@@ -9,6 +9,7 @@ const CARD_VARIANTS = [
   { id: 'red-draw2', color: 'red', type: 'draw2' },
   { id: 'wild', color: 'wild', type: 'wild' },
   { id: 'wild-draw3', color: 'wild', type: 'wild_draw3' },
+  { id: 'wild-draw4', color: 'wild', type: 'wild_draw4' },
   { id: 'selected', color: 'blue', type: 'number', value: 4, selected: true },
   {
     id: 'unplayable',
@@ -54,7 +55,15 @@ export const Playground = {
     },
     type: {
       control: 'select',
-      options: ['number', 'skip', 'reverse', 'draw2', 'wild', 'wild_draw3'],
+      options: [
+        'number',
+        'skip',
+        'reverse',
+        'draw2',
+        'wild',
+        'wild_draw3',
+        'wild_draw4',
+      ],
     },
   },
   render: (args) => (

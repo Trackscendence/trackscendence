@@ -4,14 +4,17 @@ const UnoEngine = require('./game.engine')
 const { COLORS, VALUES, CARD_TYPES, GAME_RULES } = require('./game.constants')
 
 test('UnoEngine Deck and Setup Tests', async (t) => {
-  await t.test('Deck is correctly initialized with 108 cards', () => {
-    const game = new UnoEngine(['p1', 'p2'])
-    let totalCards = game.drawPile.length + game.discardPile.length
-    Object.values(game.players).forEach((hand) => {
-      totalCards += hand.length
-    })
-    assert.strictEqual(totalCards, 108)
-  })
+  await t.test(
+    'Deck is initialized with 112 cards (108 + 4 Wild Draw Three)',
+    () => {
+      const game = new UnoEngine(['p1', 'p2'])
+      let totalCards = game.drawPile.length + game.discardPile.length
+      Object.values(game.players).forEach((hand) => {
+        totalCards += hand.length
+      })
+      assert.strictEqual(totalCards, 112)
+    },
+  )
 
   await t.test('Deck has the correct distribution of cards', () => {
     const game = new UnoEngine(['p1', 'p2'])
@@ -24,8 +27,12 @@ test('UnoEngine Deck and Setup Tests', async (t) => {
     const wildDrawFourCount = game.drawPile.filter(
       (c) => c.value === VALUES.WILD_DRAW_FOUR,
     ).length
+    const wildDrawThreeCount = game.drawPile.filter(
+      (c) => c.value === VALUES.WILD_DRAW_THREE,
+    ).length
     assert.strictEqual(wildCount, 4)
     assert.strictEqual(wildDrawFourCount, 4)
+    assert.strictEqual(wildDrawThreeCount, 4)
 
     const colors = [COLORS.RED, COLORS.YELLOW, COLORS.GREEN, COLORS.BLUE]
     colors.forEach((color) => {
@@ -303,6 +310,37 @@ test('UnoEngine Action Card Side Effects', async (t) => {
       assert.strictEqual(game.getState().currentPlayer, 'p3')
     },
   )
+
+  await t.test(
+    'Wild Draw Three shifts player turn, draws 3, skips, and sets color',
+    () => {
+      const game = new UnoEngine(['p1', 'p2', 'p3'])
+      game.currentPlayerIndex = 0
+      game.playDirection = 1
+      game.hasDrawnThisTurn = false
+      game.drawnCardThisTurn = null
+
+      const initialHandSizeP2 = game.players['p2'].length
+      // 2 cards to avoid winning
+      game.players['p1'] = [
+        {
+          type: CARD_TYPES.WILD,
+          color: COLORS.WILD,
+          value: VALUES.WILD_DRAW_THREE,
+        },
+        { type: CARD_TYPES.NUMBER, color: COLORS.BLUE, value: VALUES.TWO },
+      ]
+      game.discardPile = [
+        { type: CARD_TYPES.NUMBER, color: COLORS.RED, value: VALUES.THREE },
+      ]
+      game.currentColor = COLORS.RED
+
+      game.playCard('p1', 0, COLORS.YELLOW)
+      assert.strictEqual(game.players['p2'].length, initialHandSizeP2 + 3)
+      assert.strictEqual(game.getState().currentColor, COLORS.YELLOW)
+      assert.strictEqual(game.getState().currentPlayer, 'p3')
+    },
+  )
 })
 
 test('UnoEngine Draw and Play / Pass Rules', async (t) => {
@@ -476,7 +514,11 @@ test.describe('Scoring (#197)', () => {
 
   test('cardPoints scores wild cards at 50', () => {
     const game = new UnoEngine(['p1', 'p2'])
-    for (const value of [VALUES.WILD, VALUES.WILD_DRAW_FOUR]) {
+    for (const value of [
+      VALUES.WILD,
+      VALUES.WILD_DRAW_THREE,
+      VALUES.WILD_DRAW_FOUR,
+    ]) {
       assert.strictEqual(
         game.cardPoints({ type: CARD_TYPES.WILD, color: COLORS.WILD, value }),
         50,

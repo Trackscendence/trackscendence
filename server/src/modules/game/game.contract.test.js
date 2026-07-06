@@ -19,11 +19,15 @@ describe('buildGameStatePayload (no hand leak)', () => {
 
     // P1 sees exactly P1's real hand.
     assert.deepStrictEqual(payloadForP1.myHand, engine.getHand('p1'))
-    // Everyone's hand sizes are visible...
+    // Everyone's hand sizes are visible, and they mirror the engine's real
+    // counts. Sizes are read from the engine rather than hard-coded at 7: by
+    // official rules an opening Draw Two makes the first player draw two, so
+    // one starting hand is legitimately larger, and a fixed 7 flaked whenever
+    // the shuffled top card happened to be that action card.
     assert.deepStrictEqual(payloadForP1.playerHandsSizes, {
-      p1: 7,
-      p2: 7,
-      p3: 7,
+      p1: engine.getHand('p1').length,
+      p2: engine.getHand('p2').length,
+      p3: engine.getHand('p3').length,
     })
     // ...but no opponent's actual cards ride along anywhere in the payload.
     const serialized = JSON.stringify(payloadForP1)

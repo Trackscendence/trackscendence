@@ -1,15 +1,19 @@
 // The seats in the waiting room, one per capacity. A filled seat shows the
-// player's initials; an empty seat breathes while it waits. Two players sit
-// side by side; three or more fill column by column across two rows (slot 1
-// top-left, slot 2 bottom-left, slot 3 top-right, and so on).
+// player's initials; an empty seat breathes while it waits. Two or three
+// players sit in a single row; four fill a 2x2 grid. Anything larger falls
+// back to two rows filled column by column.
 const AVATAR_BASE =
   'flex h-[72px] w-[72px] items-center justify-center rounded-full text-base font-black tracking-[-0.03em] text-white shadow-[0_2px_12px_rgba(0,0,0,0.14)]'
 
+const LAYOUT_BY_COUNT = {
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-2',
+}
+
 const PlayerGrid = ({ slots }) => {
   const layout =
-    slots.length <= 2
-      ? 'grid-cols-2'
-      : 'grid-flow-col grid-rows-2 auto-cols-max'
+    LAYOUT_BY_COUNT[slots.length] ?? 'grid-flow-col grid-rows-2 auto-cols-max'
 
   return (
     <div className={`mb-11 grid gap-4 ${layout}`}>

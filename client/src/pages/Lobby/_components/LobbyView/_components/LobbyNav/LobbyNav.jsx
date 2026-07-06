@@ -31,9 +31,14 @@ const LobbyNav = ({ user, canCreateRoom, onCreateRoom }) => {
           aria-label="Your profile"
           className="flex items-center gap-3 rounded-full pr-2 transition hover:bg-black/5"
         >
-          <Avatar alt={user.username} initials={user.initials} size={46} />
+          <Avatar
+            alt={user.displayName}
+            initials={user.initials}
+            size={46}
+            src={user.avatarUrl || undefined}
+          />
           <span className="flex flex-col">
-            <span className="text-lg text-black">{user.username}</span>
+            <span className="text-lg text-black">{user.displayName}</span>
             <span className="text-xs text-[#2E2D2D]">{user.email}</span>
           </span>
         </Link>

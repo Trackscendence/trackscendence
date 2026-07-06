@@ -6,7 +6,16 @@ const roomInclude = {
   owner: { select: { id: true, username: true } },
   players: {
     orderBy: { createdAt: 'asc' },
-    include: { user: { select: { id: true, username: true } } },
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+        },
+      },
+    },
   },
 }
 

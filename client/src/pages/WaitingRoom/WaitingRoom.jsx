@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
-import getInitials from '@/utils/getInitials'
+import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import QuickStartModal from '@/components/QuickStartModal'
 import WaitingRoomView from './_components/WaitingRoomView'
@@ -150,20 +150,26 @@ const WaitingRoom = () => {
   const otherPlayers = myRoom.players.filter(
     (player) => player.userId !== user.id,
   )
+  const selfIdentity = getPlayerIdentity(user)
   const slots = [
     {
       key: `p-${user.id}`,
-      name: user.username,
-      initials: getInitials(user.username),
+      name: selfIdentity.name,
+      initials: selfIdentity.initials,
+      avatarUrl: selfIdentity.avatarUrl,
       colorClass: YOU_COLOR,
       isSelf: true,
     },
-    ...otherPlayers.map((player) => ({
-      key: `p-${player.userId}`,
-      name: player.username,
-      initials: getInitials(player.username),
-      colorClass: OTHER_COLOR,
-    })),
+    ...otherPlayers.map((player) => {
+      const identity = getPlayerIdentity(player)
+      return {
+        key: `p-${player.userId}`,
+        name: identity.name,
+        initials: identity.initials,
+        avatarUrl: identity.avatarUrl,
+        colorClass: OTHER_COLOR,
+      }
+    }),
   ]
   while (slots.length < myRoom.capacity) slots.push(null)
 

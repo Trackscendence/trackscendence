@@ -41,6 +41,10 @@ const useGameStore = create((set) => ({
   // it as room cards.
   rooms: [],
   roomError: null,
+  // Set by the `room:closed` event (#221) when an owner ends the room the
+  // player is seated in; the waiting room watches it and hands back to the
+  // lobby. Reset when the player re-enters the waiting room.
+  roomClosed: false,
 
   setMatchHistory: (matchHistory) => set({ matchHistory }),
   setLeaderboard: (leaderboard) => set({ leaderboard }),
@@ -98,6 +102,7 @@ const useGameStore = create((set) => ({
     }),
   setRooms: (rooms) => set({ rooms }),
   setRoomError: (roomError) => set({ roomError }),
+  setRoomClosed: (roomClosed) => set({ roomClosed }),
 
   joinLobby: () => socket.emit('join_lobby'),
   // Tells the server to drop us from the matchmaking queue and resets the
@@ -119,7 +124,28 @@ const useGameStore = create((set) => ({
   // Auto-seat: the server puts the player in the open room, creating one if
   // none exists (first in owns it), and starts the game once the room fills.
   seatRoom: () => socket.emit('room:seat'),
-  leaveRoom: () => socket.emit('room:leave'),
+  // Leaving unseats just this player; ending closes the whole room (owner
+  // only, enforced server-side). Both optimistically drop the player's own
+  // room from the local grid so the lobby never lingers on a room they just
+  // left while the authoritative rooms_update is in flight (#221).
+  leaveRoom: () => {
+    socket.emit('room:leave')
+    useGameStore.getState().dropOwnRoom()
+  },
+  endRoom: () => {
+    socket.emit('room:end')
+    useGameStore.getState().dropOwnRoom()
+  },
+  dropOwnRoom: () =>
+    set((state) => {
+      const ownUserId = useAuthStore.getState().user?.id
+      if (!ownUserId) return {}
+      return {
+        rooms: state.rooms.filter(
+          (room) => !room.players.some((player) => player.userId === ownUserId),
+        ),
+      }
+    }),
   listRooms: () => socket.emit('room:list'),
 
   playCard: (gameId, cardIndex, declaredColor) =>

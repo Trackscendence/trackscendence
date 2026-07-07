@@ -95,6 +95,9 @@ The platform is orchestrated using Docker Compose, decoupling services into dist
 - **Backend (Server)**: An Express API handling REST endpoints and real-time state synchronization via Socket.IO.
 - **Database**: PostgreSQL database managed through Prisma ORM migrations.
 
+For the system topology and dependency layer diagrams, see
+**[System Architecture](docs/architecture.md)**.
+
 ### Database Schema
 
 Our database relational schema is defined in Prisma and is automatically kept up-to-date. You can view the live entity-relationship diagram here:

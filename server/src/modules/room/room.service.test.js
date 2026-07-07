@@ -409,7 +409,11 @@ describe('reopenRoomForSurvivors', () => {
       async (roomId, removeIds) => {
         passedRemoveIds = removeIds
         return {
-          room: { ...gameRoom, status: 'OPEN', players: [humanPlayer(1, 'owner')] },
+          room: {
+            ...gameRoom,
+            status: 'OPEN',
+            players: [humanPlayer(1, 'owner')],
+          },
           reopened: true,
         }
       },
@@ -431,7 +435,11 @@ describe('reopenRoomForSurvivors', () => {
         humanPlayer(9, 'bot'),
       ],
     }
-    mock.method(roomRepository, 'findActiveRoomByGameId', async () => roomWithBot)
+    mock.method(
+      roomRepository,
+      'findActiveRoomByGameId',
+      async () => roomWithBot,
+    )
     mock.method(botPlayers, 'isBotUserId', (id) => id === 9)
     let passedRemoveIds
     mock.method(
@@ -440,7 +448,11 @@ describe('reopenRoomForSurvivors', () => {
       async (roomId, removeIds) => {
         passedRemoveIds = removeIds
         return {
-          room: { ...roomWithBot, status: 'OPEN', players: [humanPlayer(1, 'owner')] },
+          room: {
+            ...roomWithBot,
+            status: 'OPEN',
+            players: [humanPlayer(1, 'owner')],
+          },
           reopened: true,
         }
       },
@@ -458,7 +470,11 @@ describe('reopenRoomForSurvivors', () => {
       owner: { id: 2, username: 'leaver' },
       players: [humanPlayer(2, 'leaver'), humanPlayer(9, 'bot')],
     }
-    mock.method(roomRepository, 'findActiveRoomByGameId', async () => botOnlyRoom)
+    mock.method(
+      roomRepository,
+      'findActiveRoomByGameId',
+      async () => botOnlyRoom,
+    )
     mock.method(botPlayers, 'isBotUserId', (id) => id === 9)
     mock.method(roomRepository, 'reopenRoomForRematch', async () => ({
       room: { ...botOnlyRoom, status: 'CLOSED', players: [] },

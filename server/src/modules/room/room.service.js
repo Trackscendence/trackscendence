@@ -3,8 +3,10 @@
  *
  * A room is the durable record of "who is gathering to play": it has an owner,
  * a capacity, seated players, and a status (OPEN -> IN_GAME -> CLOSED). The
- * entry point is `seatUser`, the auto-seat behind the waiting room: whoever
- * arrives first creates the room and owns it, everyone after that joins.
+ * `seatUser` is the quick-start path behind the waiting room: join a visible
+ * open room when one exists, otherwise create the default room. `createRoom`
+ * is the explicit lobby action: always open a room owned by the caller instead
+ * of falling through to another player's room.
  * The service owns the seating policy; the socket layer decides when a full
  * room becomes a running match. See docs/erm/room.md for the data model.
  */
@@ -65,6 +67,28 @@ const validateCapacity = (capacity) => {
   }
 }
 
+const openRoomForOwner = async (owner, { capacity, name } = {}) => {
+  for (let attempt = 0; attempt < SEAT_ATTEMPTS; attempt += 1) {
+    const { room, error } = await roomRepository.createRoomIfUnderLimit({
+      name: name ?? `${owner.username}'s room`,
+      capacity: capacity ?? DEFAULT_CAPACITY,
+      ownerId: owner.id,
+      maxOpenRooms: MAX_OPEN_ROOMS,
+    })
+    if (room) return toRoomDto(room)
+    if (error === roomRepository.ROOM_ERRORS.CONFLICT) {
+      await backoffBeforeRetry(attempt)
+      continue
+    }
+    if (error === roomRepository.ROOM_ERRORS.LIMIT_REACHED) {
+      throw new ConflictException('The room limit has been reached')
+    }
+    throw new ConflictException('Could not open the room, try again')
+  }
+
+  throw new ConflictException('Could not open the room, try again')
+}
+
 /**
  * Rooms the lobby page shows: OPEN and IN_GAME, oldest first.
  * @returns {Promise<Array<Object>>} room DTOs
@@ -75,14 +99,13 @@ const listRooms = async () => {
 }
 
 /**
- * Seats a user in the single shared room. Idempotent: re-uses the open or
+ * Seats a user through quick start. Idempotent: re-uses the open or
  * in-game room they are already in (so a double-mounted effect or a refresh
  * mid-game never opens a second room for the same player).
  *
- * There is at most one open room at a time. If it exists, everyone joins it,
- * whatever its size — the creator's capacity choice stands. If none exists, the
- * caller opens it: with an explicit `capacity` (the lobby's "create a room for
- * N") at that size, otherwise the default two-player quick game (#156).
+ * If a joinable open room exists, quick start joins it, whatever its size. If
+ * none exists, the caller opens one: with an explicit `capacity` when supplied,
+ * otherwise the default two-player room (#156).
  *
  * @param {{ id: number, username: string }} user
  * @param {{ capacity?: number }} [options]
@@ -106,8 +129,7 @@ const seatUser = async (user, { capacity } = {}) => {
       return toRoomDto(currentRoom)
     }
 
-    // Join the open room if there is one, whatever its size — a single shared
-    // room means everyone gathers in the same place.
+    // Quick start joins an existing open room if one is available.
     const joinableRooms = visibleRooms.filter(
       (room) => room.status === 'OPEN' && room.players.length < room.capacity,
     )
@@ -142,6 +164,32 @@ const seatUser = async (user, { capacity } = {}) => {
 }
 
 /**
+ * Opens a room owned by the caller without joining another open room first.
+ * This is the lobby "+ Room" intent; quick start still goes through `seatUser`.
+ *
+ * @param {{ id: number, username: string }} user
+ * @param {{ capacity?: number }} [options]
+ * @returns {Promise<Object>} the opened room DTO
+ */
+const createRoom = async (user, { capacity } = {}) => {
+  validateCapacity(capacity)
+
+  const currentRoom = await roomRepository.findActiveRoomByUserId(user.id)
+  if (currentRoom) {
+    const dto = toRoomDto(currentRoom)
+    if (dto.status === 'OPEN' && currentRoom.ownerId === user.id) return dto
+    if (dto.status === 'OPEN') {
+      throw new ConflictException(
+        'Leave your current room before opening a new one',
+      )
+    }
+    throw new ConflictException('You are already in a game room')
+  }
+
+  return openRoomForOwner(user, { capacity })
+}
+
+/**
  * Opens a new room for a specific owner without falling through to another
  * open room. Used by development tools that need a seeded owner in the lobby
  * grid while keeping the real join path intact.
@@ -156,26 +204,16 @@ const createRoomForOwner = async (owner, { capacity, name } = {}) => {
   const currentRoom = await roomRepository.findActiveRoomByUserId(owner.id)
   if (currentRoom) {
     const dto = toRoomDto(currentRoom)
-    if (dto.status === 'OPEN') return dto
+    if (dto.status === 'OPEN' && currentRoom.ownerId === owner.id) return dto
+    if (dto.status === 'OPEN') {
+      throw new ConflictException(
+        'Leave the current room before opening a new one',
+      )
+    }
     throw new ConflictException('That owner is already in a game room')
   }
 
-  for (let attempt = 0; attempt < SEAT_ATTEMPTS; attempt += 1) {
-    const { room, error } = await roomRepository.createRoomIfUnderLimit({
-      name: name ?? `${owner.username}'s room`,
-      capacity: capacity ?? DEFAULT_CAPACITY,
-      ownerId: owner.id,
-      maxOpenRooms: MAX_OPEN_ROOMS,
-    })
-    if (room) return toRoomDto(room)
-    if (error === roomRepository.ROOM_ERRORS.CONFLICT) {
-      await backoffBeforeRetry(attempt)
-      continue
-    }
-    throw new ConflictException('A room is already open')
-  }
-
-  throw new ConflictException('Could not open the room, try again')
+  return openRoomForOwner(owner, { capacity, name })
 }
 
 /**
@@ -326,6 +364,7 @@ module.exports = {
   isRoomFull,
   listRooms,
   seatUser,
+  createRoom,
   createRoomForOwner,
   joinRoom,
   leaveOpenRoom,

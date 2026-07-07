@@ -314,28 +314,48 @@ const registerHandlers = (io, socket) => {
     io.to('lobby').emit('lobby_update', { count: lobbyStore.getLobbyCount() })
   })
 
-  // Auto-seat: called by the waiting room on mount. Whoever arrives first
-  // creates the room (and owns it), everyone after that fills a seat. When the
-  // last seat fills, the match starts for exactly the room's players.
+  const finishRoomSeat = async (room) => {
+    const filledRoom = await fillDevRunRoom(room)
+    const match = await startMatchIfRoomFull(io, filledRoom)
+    maybeStartDevRun(filledRoom.id, match)
+    await broadcastRooms(io)
+  }
+
+  // Quick-start auto-seat: called by the waiting room on direct entry. It joins
+  // a joinable open room when one exists, otherwise it opens a default room.
   socket.on('room:seat', async (data) => {
     try {
-      // An explicit capacity (the lobby's "create a room for N") opens a room
-      // of that size; no capacity keeps the quick two-player auto-seat.
       const rawCapacity =
         data && typeof data === 'object' ? data.capacity : undefined
       const capacity = rawCapacity == null ? undefined : Number(rawCapacity)
 
-      let room = await roomService.seatUser(socket.user, { capacity })
+      const room = await roomService.seatUser(socket.user, { capacity })
       logger.info(`User ${socket.user.username} seated in room ${room.id}`)
-
-      room = await fillDevRunRoom(room)
-      const match = await startMatchIfRoomFull(io, room)
-      maybeStartDevRun(room.id, match)
-      await broadcastRooms(io)
+      await finishRoomSeat(room)
     } catch (error) {
       logger.error('Failed to seat player', error)
       socket.emit('room_error', {
         message: error.message || 'Unable to join a room',
+      })
+    }
+  })
+
+  // Explicit create from the lobby "+ Room" button. This never falls through
+  // to someone else's open room; the caller either reuses their own open room
+  // or opens a new one at the requested capacity.
+  socket.on('room:create', async (data) => {
+    try {
+      const rawCapacity =
+        data && typeof data === 'object' ? data.capacity : undefined
+      const capacity = rawCapacity == null ? undefined : Number(rawCapacity)
+
+      const room = await roomService.createRoom(socket.user, { capacity })
+      logger.info(`User ${socket.user.username} opened room ${room.id}`)
+      await finishRoomSeat(room)
+    } catch (error) {
+      logger.error('Failed to open room', error)
+      socket.emit('room_error', {
+        message: error.message || 'Unable to open a room',
       })
     }
   })
@@ -345,13 +365,9 @@ const registerHandlers = (io, socket) => {
   socket.on('room:join', async (data) => {
     if (!data || typeof data !== 'object' || Array.isArray(data)) return
     try {
-      let room = await roomService.joinRoom(socket.user, Number(data.roomId))
+      const room = await roomService.joinRoom(socket.user, Number(data.roomId))
       logger.info(`User ${socket.user.username} joined room ${room.id}`)
-
-      room = await fillDevRunRoom(room)
-      const match = await startMatchIfRoomFull(io, room)
-      maybeStartDevRun(room.id, match)
-      await broadcastRooms(io)
+      await finishRoomSeat(room)
     } catch (error) {
       logger.error('Failed to join room', error)
       socket.emit('room_error', {

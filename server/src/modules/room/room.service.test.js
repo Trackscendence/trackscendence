@@ -7,6 +7,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 
 const roomService = require('#modules/room/room.service')
 const roomRepository = require('#modules/room/room.repository')
+const { MAX_OPEN_ROOMS } = require('#modules/room/room.constants')
 
 // The capacity guard runs before any database access, so it can be exercised
 // without a live database (#156).
@@ -104,6 +105,7 @@ describe('createRoomForOwner', () => {
     name: "bot's room",
     capacity: 2,
     status: 'OPEN',
+    ownerId: 11,
     owner: { id: 11, username: 'dev-bot' },
     players: [{ user: { id: 11, username: 'dev-bot' } }],
   }
@@ -117,7 +119,7 @@ describe('createRoomForOwner', () => {
         name: "bot's room",
         capacity: 2,
         ownerId: 11,
-        maxOpenRooms: 1,
+        maxOpenRooms: MAX_OPEN_ROOMS,
       })
       return { room: openedRoom }
     })
@@ -161,7 +163,87 @@ describe('createRoomForOwner', () => {
 
     await assert.rejects(
       () => roomService.createRoomForOwner(owner, { capacity: 2 }),
-      /A room is already open/,
+      /room limit/,
+    )
+  })
+})
+
+describe('createRoom', () => {
+  const user = { id: 31, username: 'creator' }
+  const openedRoom = {
+    id: 44,
+    name: "creator's room",
+    capacity: 4,
+    status: 'OPEN',
+    ownerId: 31,
+    owner: { id: 31, username: 'creator' },
+    players: [{ user: { id: 31, username: 'creator' } }],
+  }
+
+  afterEach(() => mock.restoreAll())
+
+  it('opens a new owned room instead of joining another open room', async () => {
+    mock.method(roomRepository, 'findActiveRoomByUserId', async () => null)
+    const joinMock = mock.method(
+      roomRepository,
+      'addPlayerToRoom',
+      async () => {
+        assert.fail('createRoom must not join an existing room')
+      },
+    )
+    mock.method(roomRepository, 'createRoomIfUnderLimit', async (data) => {
+      assert.deepStrictEqual(data, {
+        name: "creator's room",
+        capacity: 4,
+        ownerId: 31,
+        maxOpenRooms: MAX_OPEN_ROOMS,
+      })
+      return { room: openedRoom }
+    })
+
+    const dto = await roomService.createRoom(user, { capacity: 4 })
+
+    assert.strictEqual(dto.id, 44)
+    assert.strictEqual(dto.capacity, 4)
+    assert.strictEqual(dto.owner.userId, 31)
+    assert.strictEqual(joinMock.mock.callCount(), 0)
+  })
+
+  it('reuses the caller owned open room on a duplicate create', async () => {
+    mock.method(
+      roomRepository,
+      'findActiveRoomByUserId',
+      async () => openedRoom,
+    )
+    const createMock = mock.method(
+      roomRepository,
+      'createRoomIfUnderLimit',
+      async () => ({ room: null }),
+    )
+
+    const dto = await roomService.createRoom(user, { capacity: 4 })
+
+    assert.strictEqual(dto.id, 44)
+    assert.strictEqual(createMock.mock.callCount(), 0)
+  })
+
+  it('rejects when the caller is already seated in another open room', async () => {
+    mock.method(roomRepository, 'findActiveRoomByUserId', async () => ({
+      id: 55,
+      name: "owner's room",
+      capacity: 2,
+      status: 'OPEN',
+      ownerId: 99,
+      owner: { id: 99, username: 'owner' },
+      players: [
+        { user: { id: 99, username: 'owner' } },
+        { user: { id: 31, username: 'creator' } },
+      ],
+    }))
+
+    await assert.rejects(
+      () => roomService.createRoom(user, { capacity: 2 }),
+      /Leave your current room/,
     )
   })
 })

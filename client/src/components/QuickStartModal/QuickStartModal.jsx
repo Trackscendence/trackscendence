@@ -6,13 +6,16 @@ import Modal from '@/components/Modal'
 // capacities.
 const SIZES = [2, 3, 4, 6]
 
-const QuickStartModal = ({ isOpen, onPick, onCancel }) => {
+const QuickStartModal = ({
+  isOpen,
+  onPick,
+  onCancel,
+  title = 'Quick Start',
+  description = 'No room is waiting yet. Choose how many players yours holds, and we will seat the others as they arrive.',
+}) => {
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title="Quick Start">
-      <p className="text-sm text-[#50635a]">
-        No room is waiting yet. Choose how many players yours holds, and we will
-        seat the others as they arrive.
-      </p>
+    <Modal isOpen={isOpen} onClose={onCancel} title={title}>
+      <p className="text-sm text-[#50635a]">{description}</p>
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {SIZES.map((size) => (
           <button

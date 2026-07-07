@@ -11,6 +11,12 @@
 # just as resilient as the normal dev boot.
 services:
   server:
+    # Debug mode turns on the verbose, structured server logs too (socket
+    # events, game-store mutations with live map sizes), so the debugger and
+    # the logs tell the same story. Set LOG_LEVEL=debug on the normal dev stack
+    # to get the logs without the inspector.
+    environment:
+      LOG_LEVEL: debug
     command: >-
       sh -c "npm install --prefer-offline --no-audit --no-fund
       || (sleep 3 && npm install --prefer-offline --no-audit --no-fund)

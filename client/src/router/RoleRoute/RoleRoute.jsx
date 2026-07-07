@@ -4,7 +4,9 @@ import useAuthStore from '@/stores/useAuthStore'
 import { hasRequiredRole } from '@/utils/authorization'
 
 const RoleRoute = ({ allowedRoles, redirectTo = '/' }) => {
-  const { isAuthenticated, isLoading, user } = useAuthStore()
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isLoading = useAuthStore((state) => state.isLoading)
+  const user = useAuthStore((state) => state.user)
   const location = useLocation()
 
   if (isLoading) {

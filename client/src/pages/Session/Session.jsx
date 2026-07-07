@@ -4,7 +4,7 @@ import BasicChat from './_components/BasicChat'
 // The socket is connected at the app level (App.jsx) for the whole session,
 // so this page no longer opens or closes its own connection.
 const Session = () => {
-  const { user } = useAuthStore()
+  const user = useAuthStore((state) => state.user)
   const accountLabel = user.isGuest ? 'Guest session' : user.email
 
   return (

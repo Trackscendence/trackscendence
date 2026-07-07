@@ -425,6 +425,41 @@ const endOwnedRoom = async (userId) => {
 }
 
 /**
+ * Reopens the room behind a game for the players left behind when one leaves
+ * the match (an intentional forfeit or an expired reconnect). The leaver and
+ * any bots are unseated; a human survivor keeps the room, which flips back to
+ * OPEN so it refills for a fresh game, while a room with no humans left closes.
+ *
+ * Idempotent against a game that already ended: the reopen is guarded on the
+ * room still being IN_GAME, and a missing room returns null.
+ *
+ * @param {string} gameId runtime game UUID
+ * @param {number} leaverUserId the player who left
+ * @returns {Promise<{ room: Object, reopened: boolean } | null>} the room DTO
+ *   and whether survivors kept it open, or null when there was nothing to reopen
+ */
+const reopenRoomForSurvivors = async (gameId, leaverUserId) => {
+  if (!gameId) return null
+
+  const room = await roomRepository.findActiveRoomByGameId(gameId)
+  if (!room) return null
+
+  // Bots never wait in the lobby, so they leave with the departing player; the
+  // room reopens for its human survivors only (and closes if none remain).
+  const removeUserIds = room.players
+    .map((player) => player.user.id)
+    .filter(
+      (userId) => userId === leaverUserId || botPlayers.isBotUserId(userId),
+    )
+
+  const { room: updatedRoom, reopened } =
+    await roomRepository.reopenRoomForRematch(room.id, removeUserIds)
+  if (!updatedRoom) return null
+
+  return { room: toRoomDto(updatedRoom), reopened }
+}
+
+/**
  * Closes the room(s) attached to a finished or abandoned game.
  *
  * @param {string} gameId runtime game UUID
@@ -469,5 +504,6 @@ module.exports = {
   releaseRoomClaim,
   endOwnedRoom,
   closeRoomsForGame,
+  reopenRoomForSurvivors,
   closeOpenRoomById,
 }

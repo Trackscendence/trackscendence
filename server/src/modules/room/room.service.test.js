@@ -371,3 +371,103 @@ describe('fillOpenRoomWithBots', () => {
     assert.strictEqual(addMock.mock.callCount(), 1)
   })
 })
+
+// When a player leaves a running game (a forfeit or an expired reconnect), the
+// survivors keep their room: it reopens for a fresh game instead of stranding
+// them. The service picks who to unseat (the leaver plus any bots, since bots
+// never wait in the lobby) and delegates the flip to the repository.
+describe('reopenRoomForSurvivors', () => {
+  afterEach(() => mock.restoreAll())
+
+  const humanPlayer = (id, username) => ({
+    user: { id, username, displayName: null, avatarUrl: null },
+  })
+
+  const gameRoom = {
+    id: 42,
+    name: "owner's room",
+    capacity: 4,
+    status: 'IN_GAME',
+    gameId: 'game-uuid',
+    owner: { id: 1, username: 'owner' },
+    players: [humanPlayer(1, 'owner'), humanPlayer(2, 'rival')],
+  }
+
+  it('does nothing when no active room is tied to the game', async () => {
+    mock.method(roomRepository, 'findActiveRoomByGameId', async () => null)
+    const result = await roomService.reopenRoomForSurvivors('missing', 2)
+    assert.strictEqual(result, null)
+  })
+
+  it('unseats only the leaver when the game has no bots', async () => {
+    mock.method(roomRepository, 'findActiveRoomByGameId', async () => gameRoom)
+    mock.method(botPlayers, 'isBotUserId', () => false)
+    let passedRemoveIds
+    mock.method(
+      roomRepository,
+      'reopenRoomForRematch',
+      async (roomId, removeIds) => {
+        passedRemoveIds = removeIds
+        return {
+          room: { ...gameRoom, status: 'OPEN', players: [humanPlayer(1, 'owner')] },
+          reopened: true,
+        }
+      },
+    )
+
+    const result = await roomService.reopenRoomForSurvivors('game-uuid', 2)
+
+    assert.deepStrictEqual(passedRemoveIds, [2])
+    assert.strictEqual(result.reopened, true)
+    assert.strictEqual(result.room.status, 'OPEN')
+  })
+
+  it('unseats the leaver and every bot so only humans wait', async () => {
+    const roomWithBot = {
+      ...gameRoom,
+      players: [
+        humanPlayer(1, 'owner'),
+        humanPlayer(2, 'leaver'),
+        humanPlayer(9, 'bot'),
+      ],
+    }
+    mock.method(roomRepository, 'findActiveRoomByGameId', async () => roomWithBot)
+    mock.method(botPlayers, 'isBotUserId', (id) => id === 9)
+    let passedRemoveIds
+    mock.method(
+      roomRepository,
+      'reopenRoomForRematch',
+      async (roomId, removeIds) => {
+        passedRemoveIds = removeIds
+        return {
+          room: { ...roomWithBot, status: 'OPEN', players: [humanPlayer(1, 'owner')] },
+          reopened: true,
+        }
+      },
+    )
+
+    const result = await roomService.reopenRoomForSurvivors('game-uuid', 2)
+
+    assert.deepStrictEqual(passedRemoveIds, [2, 9])
+    assert.strictEqual(result.reopened, true)
+  })
+
+  it('reports the room closed when no human survivors remain', async () => {
+    const botOnlyRoom = {
+      ...gameRoom,
+      owner: { id: 2, username: 'leaver' },
+      players: [humanPlayer(2, 'leaver'), humanPlayer(9, 'bot')],
+    }
+    mock.method(roomRepository, 'findActiveRoomByGameId', async () => botOnlyRoom)
+    mock.method(botPlayers, 'isBotUserId', (id) => id === 9)
+    mock.method(roomRepository, 'reopenRoomForRematch', async () => ({
+      room: { ...botOnlyRoom, status: 'CLOSED', players: [] },
+      reopened: false,
+    }))
+
+    const result = await roomService.reopenRoomForSurvivors('game-uuid', 2)
+
+    assert.strictEqual(result.reopened, false)
+    assert.strictEqual(result.room.status, 'CLOSED')
+  })
+})

@@ -68,7 +68,32 @@ const validateCapacity = (capacity) => {
   }
 }
 
-const openRoomForOwner = async (owner, { capacity, name } = {}) => {
+const resolveActiveOwnerRoom = (
+  currentRoom,
+  ownerId,
+  { openRoomMessage, inGameMessage },
+) => {
+  if (!currentRoom) return null
+
+  const dto = toRoomDto(currentRoom)
+  if (dto.status === 'OPEN' && currentRoom.ownerId === ownerId) return dto
+  if (dto.status === 'OPEN') {
+    throw new ConflictException(openRoomMessage)
+  }
+  throw new ConflictException(inGameMessage)
+}
+
+const findActiveOwnerRoom = async (ownerId, messages) => {
+  const currentRoom = await roomRepository.findActiveRoomByUserId(ownerId)
+  return resolveActiveOwnerRoom(currentRoom, ownerId, messages)
+}
+
+const openRoomForOwner = async (
+  owner,
+  { capacity, name, openRoomMessage, inGameMessage } = {},
+) => {
+  const messages = { openRoomMessage, inGameMessage }
+
   for (let attempt = 0; attempt < SEAT_ATTEMPTS; attempt += 1) {
     const { room, error } = await roomRepository.createRoomIfUnderLimit({
       name: name ?? `${owner.username}'s room`,
@@ -78,15 +103,21 @@ const openRoomForOwner = async (owner, { capacity, name } = {}) => {
     })
     if (room) return toRoomDto(room)
     if (error === roomRepository.ROOM_ERRORS.CONFLICT) {
+      const currentRoom = await findActiveOwnerRoom(owner.id, messages)
+      if (currentRoom) return currentRoom
       await backoffBeforeRetry(attempt)
       continue
     }
     if (error === roomRepository.ROOM_ERRORS.LIMIT_REACHED) {
+      const currentRoom = await findActiveOwnerRoom(owner.id, messages)
+      if (currentRoom) return currentRoom
       throw new ConflictException('The room limit has been reached')
     }
     throw new ConflictException('Could not open the room, try again')
   }
 
+  const currentRoom = await findActiveOwnerRoom(owner.id, messages)
+  if (currentRoom) return currentRoom
   throw new ConflictException('Could not open the room, try again')
 }
 
@@ -175,19 +206,19 @@ const seatUser = async (user, { capacity } = {}) => {
 const createRoom = async (user, { capacity } = {}) => {
   validateCapacity(capacity)
 
-  const currentRoom = await roomRepository.findActiveRoomByUserId(user.id)
+  const currentRoom = await findActiveOwnerRoom(user.id, {
+    openRoomMessage: 'Leave your current room before opening a new one',
+    inGameMessage: 'You are already in a game room',
+  })
   if (currentRoom) {
-    const dto = toRoomDto(currentRoom)
-    if (dto.status === 'OPEN' && currentRoom.ownerId === user.id) return dto
-    if (dto.status === 'OPEN') {
-      throw new ConflictException(
-        'Leave your current room before opening a new one',
-      )
-    }
-    throw new ConflictException('You are already in a game room')
+    return currentRoom
   }
 
-  return openRoomForOwner(user, { capacity })
+  return openRoomForOwner(user, {
+    capacity,
+    openRoomMessage: 'Leave your current room before opening a new one',
+    inGameMessage: 'You are already in a game room',
+  })
 }
 
 /**
@@ -202,19 +233,20 @@ const createRoom = async (user, { capacity } = {}) => {
 const createRoomForOwner = async (owner, { capacity, name } = {}) => {
   validateCapacity(capacity)
 
-  const currentRoom = await roomRepository.findActiveRoomByUserId(owner.id)
+  const currentRoom = await findActiveOwnerRoom(owner.id, {
+    openRoomMessage: 'Leave the current room before opening a new one',
+    inGameMessage: 'That owner is already in a game room',
+  })
   if (currentRoom) {
-    const dto = toRoomDto(currentRoom)
-    if (dto.status === 'OPEN' && currentRoom.ownerId === owner.id) return dto
-    if (dto.status === 'OPEN') {
-      throw new ConflictException(
-        'Leave the current room before opening a new one',
-      )
-    }
-    throw new ConflictException('That owner is already in a game room')
+    return currentRoom
   }
 
-  return openRoomForOwner(owner, { capacity, name })
+  return openRoomForOwner(owner, {
+    capacity,
+    name,
+    openRoomMessage: 'Leave the current room before opening a new one',
+    inGameMessage: 'That owner is already in a game room',
+  })
 }
 
 /**

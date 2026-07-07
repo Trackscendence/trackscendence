@@ -1,9 +1,15 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useNotificationStore from '@/stores/useNotificationStore'
 import useSocketStore from '@/stores/useSocketStore'
+import { checkApiHealth } from '@/services/system'
+import {
+  getBootRetryDelay,
+  isBootConnectionError,
+} from '@/utils/bootConnectivity'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import LoadingSpinner from '@/components/LoadingSpinner'
 import ProtectedRoute from '@/router/ProtectedRoute'
 import AppLayout from '@/layouts/AppLayout'
 import AuthLayout from '@/layouts/AuthLayout'
@@ -42,20 +48,59 @@ const App = () => {
   const notifications = useNotificationStore((state) => state.notifications)
   const dismissNotification = useNotificationStore((state) => state.dismiss)
   const token = useAuthStore((state) => state.token)
+  const [bootStatus, setBootStatus] = useState('checking')
+  const [bootError, setBootError] = useState(null)
+  const isBootReady = bootStatus === 'ready'
 
   useEffect(() => {
-    useAuthStore.getState().init()
+    let isCancelled = false
+    let retryTimer = null
+
+    const probe = async (attempt = 0) => {
+      try {
+        await checkApiHealth()
+        if (!isCancelled) {
+          setBootStatus('ready')
+          setBootError(null)
+        }
+      } catch (error) {
+        if (isCancelled) return
+
+        if (!isBootConnectionError(error)) {
+          setBootStatus('error')
+          setBootError(error)
+          return
+        }
+
+        retryTimer = setTimeout(
+          () => probe(attempt + 1),
+          getBootRetryDelay(attempt),
+        )
+      }
+    }
+
+    probe()
+
+    return () => {
+      isCancelled = true
+      if (retryTimer) clearTimeout(retryTimer)
+    }
   }, [])
+
+  useEffect(() => {
+    if (!isBootReady) return
+    useAuthStore.getState().init()
+  }, [isBootReady])
 
   // The app session owns the socket: connect once per login, disconnect when
   // the token clears (logout or expiry). Pages must only add and remove their
   // own listeners — a page-level disconnect during the waiting room -> game
   // navigation made the server abandon the game it had just started (#188).
   useEffect(() => {
-    if (!token) return undefined
+    if (!isBootReady || !token) return undefined
     useSocketStore.getState().connect(token)
     return () => useSocketStore.getState().disconnect()
-  }, [token])
+  }, [isBootReady, token])
 
   useEffect(() => {
     const handler = (e) =>
@@ -64,6 +109,31 @@ const App = () => {
     return () =>
       window.removeEventListener('trackscendence:session-expired', handler)
   }, [])
+
+  if (bootStatus === 'checking') {
+    return (
+      <LoadingSpinner
+        className="bg-surface-warm text-[#2A1A08]"
+        heading="Starting up"
+        message="Waking the table..."
+        showProgress
+      />
+    )
+  }
+
+  if (bootStatus === 'error') {
+    return (
+      <div
+        role="alert"
+        className="bg-surface-warm flex min-h-screen flex-col items-center justify-center px-6 text-center text-[#2A1A08]"
+      >
+        <h1 className="text-3xl font-black uppercase">Server error</h1>
+        <p className="mt-3 max-w-md text-sm font-semibold text-[#2A1A08]/70">
+          {bootError?.message || 'The server is not ready.'}
+        </p>
+      </div>
+    )
+  }
 
   return (
     <ErrorBoundary>

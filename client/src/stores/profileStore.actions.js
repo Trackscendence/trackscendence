@@ -10,7 +10,9 @@ import {
   saveAvatar,
   saveCurrentProfile,
 } from './profileStore.helpers'
+import { createCurrentProfileLoader } from './profileStore.currentProfileLoader'
 import { createPublicProfileLoader } from './profileStore.publicProfileLoader'
+import useAuthStore from './useAuthStore'
 import useNotificationStore from './useNotificationStore'
 
 const requireToken = (set) => {
@@ -42,28 +44,14 @@ export const createProfileActions = (set, get) => ({
     set({ leaderboard })
   },
 
-  loadCurrentProfile: async () => {
-    const token = requireToken(set)
-
-    if (!token) return
-
-    set({ error: '', isLoading: true })
-
-    try {
-      set({
-        ...(await loadCurrentProfileData(token)),
-        isLoading: false,
-      })
-      get().loadLeaderboard()
-    } catch (error) {
-      set({
-        currentProfile: null,
-        error: error.message,
-        isLoading: false,
-        ...emptyFriendContext,
-      })
-    }
-  },
+  loadCurrentProfile: createCurrentProfileLoader({
+    emptyFriendContext,
+    get,
+    getAuthUserId: () => useAuthStore.getState().user?.id,
+    loadCurrentProfileData,
+    requireToken,
+    set,
+  }),
 
   loadPublicProfile: createPublicProfileLoader({
     get,

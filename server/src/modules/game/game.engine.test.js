@@ -473,6 +473,87 @@ test('UnoEngine Draw and Play / Pass Rules', async (t) => {
   })
 })
 
+test('UnoEngine Turn Timeout (#352)', async (t) => {
+  const seat = () => {
+    const game = new UnoEngine(['p1', 'p2'])
+    game.currentPlayerIndex = 0
+    game.playDirection = 1
+    game.hasDrawnThisTurn = false
+    game.drawnCardThisTurn = null
+    game.players['p1'] = [
+      { type: CARD_TYPES.NUMBER, color: COLORS.RED, value: VALUES.FIVE },
+    ]
+    // Red so that a drawn card is playable and drawCard does not auto-advance
+    // the turn (that is what lets us test a timeout after an explicit draw).
+    game.drawPile = [
+      { type: CARD_TYPES.NUMBER, color: COLORS.RED, value: VALUES.SIX },
+    ]
+    game.discardPile = [
+      { type: CARD_TYPES.NUMBER, color: COLORS.RED, value: VALUES.THREE },
+    ]
+    game.currentColor = COLORS.RED
+    return game
+  }
+
+  await t.test('Timeout with no draw yet: draws 1 and passes', () => {
+    const game = seat()
+    const before = game.players['p1'].length
+    game.applyTurnTimeout('p1')
+    assert.strictEqual(game.players['p1'].length, before + 1)
+    assert.strictEqual(game.getState().currentPlayer, 'p2')
+  })
+
+  await t.test(
+    'Timeout after already drawing: passes with no extra card',
+    () => {
+      const game = seat()
+      game.drawCard('p1')
+      const after = game.players['p1'].length
+      game.applyTurnTimeout('p1')
+      assert.strictEqual(game.players['p1'].length, after)
+      assert.strictEqual(game.getState().currentPlayer, 'p2')
+    },
+  )
+
+  await t.test('Timeout never sets a winner', () => {
+    const game = seat()
+    game.applyTurnTimeout('p1')
+    assert.strictEqual(game.getState().winner, null)
+  })
+
+  await t.test('Timeout rejects the wrong player or a finished game', () => {
+    const game = seat()
+    assert.throws(() => game.applyTurnTimeout('p2'), /Not your turn/)
+    game.winner = 'p1'
+    assert.throws(() => game.applyTurnTimeout('p1'), /already over/)
+  })
+
+  await t.test('turnNonce advances on every turn change', () => {
+    const game = seat()
+    const start = game.turnNonce
+    game.applyTurnTimeout('p1')
+    assert.strictEqual(game.turnNonce, start + 1)
+    // A normal play from p2 bumps it again. The top card is still red (p1's
+    // timeout only drew and passed), so p2's red card is a legal play.
+    game.players['p2'] = [
+      { type: CARD_TYPES.NUMBER, color: COLORS.RED, value: VALUES.SEVEN },
+      { type: CARD_TYPES.NUMBER, color: COLORS.GREEN, value: VALUES.ONE },
+    ]
+    game.playCard('p2', 0)
+    assert.strictEqual(game.turnNonce, start + 2)
+  })
+
+  await t.test(
+    'getState exposes turnExpiresAt (socket layer stamps it)',
+    () => {
+      const game = seat()
+      assert.strictEqual(game.getState().turnExpiresAt, null)
+      game.turnExpiresAt = 1234567890
+      assert.strictEqual(game.getState().turnExpiresAt, 1234567890)
+    },
+  )
+})
+
 test.describe('Scoring (#197)', () => {
   test('cardPoints scores number cards at face value', () => {
     const game = new UnoEngine(['p1', 'p2'])

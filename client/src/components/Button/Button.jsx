@@ -7,6 +7,7 @@ const VARIANTS = {
   orange: 'bg-[#e86d2f] text-white hover:bg-[#c95b24] disabled:bg-[#dda37e]',
   orangeOutline:
     'border border-[#e86d2f] bg-white text-[#e86d2f] hover:bg-[#fff8f2]',
+  danger: 'bg-[#b6523b] text-white hover:bg-[#9d4531] disabled:bg-[#d3a597]',
 }
 
 const Button = ({

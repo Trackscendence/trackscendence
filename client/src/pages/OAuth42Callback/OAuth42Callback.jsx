@@ -70,7 +70,7 @@ const OAuth42Callback = () => {
     )
   }
 
-  return <LoadingSpinner message="Signing in with 42" />
+  return <LoadingSpinner heading="Signing in" message="Connecting with 42…" />
 }
 
 export default OAuth42Callback

@@ -36,6 +36,10 @@ const getManualChunk = (id) => {
 export default defineConfig({
   plugins: [react(), tailwindcss(), svgr()],
   build: {
+    // Emit .vite/manifest.json so the bundle-size benchmark (benchmarks/e1)
+    // can follow the real static-import graph. Harmless metadata; index.html
+    // still references the hashed files directly.
+    manifest: true,
     rollupOptions: {
       output: {
         manualChunks: getManualChunk,

@@ -7,7 +7,7 @@ const SIDE_LAYOUTS = {
 }
 
 const OpponentSlot = ({ isActive = false, orientation = 'top', player }) => {
-  const isTop = orientation === 'top'
+  const isTop = orientation.startsWith('top')
   const layoutClass = isTop
     ? 'flex-col items-center'
     : SIDE_LAYOUTS[orientation]

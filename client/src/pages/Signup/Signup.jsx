@@ -6,9 +6,7 @@ import SignupForm from './_components/SignupForm'
 
 const Signup = () => {
   const navigate = useNavigate()
-  const isFortyTwoLoginEnabled = useAuthStore(
-    (state) => state.isFortyTwoLoginEnabled,
-  )
+  const { isFortyTwoLoginEnabled, isAuthProvidersLoading } = useAuthStore()
 
   // Re-check provider availability on mount so the 42 button recovers if the
   // startup probe missed.
@@ -34,7 +32,8 @@ const Signup = () => {
         </div>
 
         <FortyTwoButton
-          comingSoon={!isFortyTwoLoginEnabled}
+          comingSoon={!isAuthProvidersLoading && !isFortyTwoLoginEnabled}
+          isChecking={isAuthProvidersLoading && !isFortyTwoLoginEnabled}
           onClick={
             isFortyTwoLoginEnabled
               ? () => useAuthStore.getState().startFortyTwoLogin()

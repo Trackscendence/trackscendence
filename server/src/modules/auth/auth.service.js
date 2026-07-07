@@ -708,6 +708,10 @@ const login = async (payload) => {
     throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
   }
 
+  if (user.isBot) {
+    throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
+  }
+
   if (user.lockedOutUntil && new Date(user.lockedOutUntil) > new Date()) {
     throw new UnauthorizedException(GENERIC_ACCOUNT_LOCKED_MESSAGE)
   }
@@ -1030,7 +1034,7 @@ const requestPasswordReset = async (payload) => {
   const { email } = validateForgotPasswordInput(payload)
   const user = await authRepository.findByEmail(email)
 
-  if (!user) {
+  if (!user || user.isBot) {
     return {
       message: PASSWORD_RESET_REQUEST_MESSAGE,
     }
@@ -1099,7 +1103,8 @@ const resetPassword = async (payload) => {
         !user ||
         !user.passwordResetTokenExpiry ||
         new Date(user.passwordResetTokenExpiry) < new Date() ||
-        !user.passwordResetTokenHash
+        !user.passwordResetTokenHash ||
+        user.isBot
       ) {
         throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
       }

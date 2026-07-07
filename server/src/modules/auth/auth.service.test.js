@@ -16,7 +16,9 @@ const {
   buildGuestIdentity,
   getAuthProviders,
   getFortyTwoAuthorizeUrl,
+  login,
   loginAsGuest,
+  requestPasswordReset,
   resolveAvailableUsername,
   sanitizeFortyTwoLogin,
   upgradeGuestAccount,
@@ -54,6 +56,7 @@ const buildAuthUser = (overrides = {}) => ({
   losses: 0,
   rank: null,
   isGuest: true,
+  isBot: false,
   role: 'USER',
   createdAt: new Date('2026-07-07T00:00:00.000Z'),
   termsAcceptedAt: null,
@@ -62,6 +65,9 @@ const buildAuthUser = (overrides = {}) => ({
   twoFactorChallengeVersion: 0,
   twoFactorEnabled: false,
   twoFactorPendingSecretCiphertext: null,
+  failedLoginCount: 0,
+  lockedOutUntil: null,
+  passwordHash: null,
   ...overrides,
 })
 
@@ -301,6 +307,69 @@ describe('validateLoginInput', () => {
           'Password is required',
         ])
         return true
+      },
+    )
+  })
+})
+
+describe('login', () => {
+  it('rejects bot accounts through the normal invalid-credentials path', async () => {
+    let loginAttemptUpdates = 0
+
+    await withRepositoryStubs(
+      {
+        findByIdentifier: async () =>
+          buildAuthUser({
+            id: 501,
+            email: 'bot-uno@trackscendence.local',
+            username: 'bot-uno',
+            isBot: true,
+            passwordHash: 'not-used',
+          }),
+        updateUserLoginAttempts: async () => {
+          loginAttemptUpdates += 1
+        },
+      },
+      async () => {
+        await assert.rejects(
+          () =>
+            login({
+              identifier: 'bot-uno',
+              password: 'StrongPass1!',
+            }),
+          { statusCode: 401 },
+        )
+
+        assert.strictEqual(loginAttemptUpdates, 0)
+      },
+    )
+  })
+})
+
+describe('requestPasswordReset', () => {
+  it('does not create reset tokens for bot accounts', async () => {
+    let resetTokenUpdates = 0
+
+    await withRepositoryStubs(
+      {
+        findByEmail: async () =>
+          buildAuthUser({
+            id: 501,
+            email: 'bot-uno@trackscendence.local',
+            username: 'bot-uno',
+            isBot: true,
+          }),
+        updatePasswordResetToken: async () => {
+          resetTokenUpdates += 1
+        },
+      },
+      async () => {
+        const result = await requestPasswordReset({
+          email: 'bot-uno@trackscendence.local',
+        })
+
+        assert.match(result.message, /If that email is registered/)
+        assert.strictEqual(resetTokenUpdates, 0)
       },
     )
   })

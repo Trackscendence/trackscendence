@@ -49,6 +49,7 @@ const lockoutFields = {
 
 const authUserSelect = {
   ...tokenUserSelect,
+  isBot: true,
   passwordHash: true,
   ...twoFactorFields,
   ...lockoutFields,
@@ -235,6 +236,7 @@ const withLockedPasswordResetToken = (tokenId, callback) => {
         "username",
         "displayName",
         "bio",
+        "isBot",
         "createdAt",
         "role",
         "passwordHash",

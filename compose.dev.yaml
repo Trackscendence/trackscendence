@@ -34,6 +34,20 @@ services:
       - server_uploads:/app/uploads
     ports:
       - '${SERVER_PORT}:3001'
+    # Gate the Vite client on this so it does not proxy /api before the server
+    # binds :3001. The long cold-start chain above (install, prisma generate,
+    # migrate deploy, seed) can take a while, so start_period is generous:
+    # failures inside it never mark the container unhealthy, they just keep the
+    # client waiting. /api/v1/health also checks the DB, so "healthy" means the
+    # proxy target is genuinely ready. busybox wget ships in node:22-alpine.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://localhost:3001/api/v1/health || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 120s
   client:
     build: !reset null
     image: node:22-alpine
@@ -55,6 +69,12 @@ services:
       - client_node_modules:/app/node_modules
     ports: !override
       - '${CLIENT_DEV_PORT}:5173'
+    # Override the base compose's plain `depends_on: [server]` (service_started)
+    # with a health gate: Vite must not start until the server passes its
+    # healthcheck, otherwise the first /api proxy hits a closed :3001.
+    depends_on:
+      server:
+        condition: service_healthy
 
   adminer:
     image: adminer

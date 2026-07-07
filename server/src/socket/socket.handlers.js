@@ -7,6 +7,7 @@ const gameService = require('#modules/game/game.service')
 const roomService = require('#modules/room/room.service')
 const devRunner = require('#modules/game/dev-runner.service')
 const { buildGameStatePayload } = require('#modules/game/game.contract')
+const { registerChatHandlers } = require('./chat.handlers')
 
 // Grace timers for players who dropped mid-game, keyed by userId. Module
 // scoped on purpose: the timer must survive the socket that scheduled it and
@@ -174,6 +175,7 @@ const startMatchIfRoomFull = async (io, room) => {
 const registerHandlers = (io, socket) => {
   socket.join('channel:#general')
   socket.join(`user:${socket.user.id}`)
+  registerChatHandlers(io, socket)
 
   logger.info('user connected')
 
@@ -505,20 +507,6 @@ const registerHandlers = (io, socket) => {
       )
     }, config.GAME_RECONNECT_GRACE_MS)
     pendingAbandons.set(userId, graceTimer)
-  })
-
-  socket.on('message', (data) => {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-      return
-    }
-
-    const room = typeof data.room === 'string' ? data.room : ''
-    if (!room || !socket.rooms.has(room)) {
-      return
-    }
-
-    const payload = { ...data, user: socket.user }
-    io.to(room).emit('message', payload)
   })
 
   // Resync (#201): a refreshed or late-mounting page holds a gameId but

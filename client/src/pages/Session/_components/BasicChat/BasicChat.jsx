@@ -1,54 +1,54 @@
-import { useEffect, useRef, useState } from 'react'
-import { socket } from '@/services/socket'
+import { useEffect } from 'react'
+import useAuthStore from '@/stores/useAuthStore'
+import useChatStore, { GENERAL_CHAT_ROOM_ID } from '@/stores/useChatStore'
+import useProfileStore from '@/stores/useProfileStore'
+import useSocketStore from '@/stores/useSocketStore'
+import Room from '../Room'
+import Sidebar from '../Sidebar'
 
 const BasicChat = () => {
-  const messageRef = useRef()
-  const [messages, setMessages] = useState([])
+  const user = useAuthStore((state) => state.user)
+  const token = useAuthStore((state) => state.token)
+  const friends = useProfileStore((state) => state.friends)
+  const refreshFriendContext = useProfileStore(
+    (state) => state.refreshFriendContext,
+  )
+  const roomsById = useChatStore((state) => state.rooms)
+  const messagesByRoom = useChatStore((state) => state.messages)
+  const activeRoomId = useChatStore((state) => state.activeRoom)
+  const setActiveRoom = useChatStore((state) => state.setActiveRoom)
+  const syncFriendRooms = useChatStore((state) => state.syncFriendRooms)
+  const sendChatMessage = useSocketStore((state) => state.sendChatMessage)
 
-  const handler = (data) => {
-    setMessages((previous) => [
-      ...previous,
-      { id: previous.length, message: data.message, user: data.user },
-    ])
-  }
+  const activeRoom = roomsById[activeRoomId] || roomsById[GENERAL_CHAT_ROOM_ID]
+  const messages = messagesByRoom[activeRoom?.id] || []
 
   useEffect(() => {
-    socket.on('message', handler)
-    return () => {
-      socket.off('message', handler)
-    }
-  }, [])
+    if (!token) return undefined
 
-  const sendMessage = () => {
-    socket.emit('message', {
-      message: messageRef.current.value,
-      room: 'channel:#general',
-    })
-  }
+    refreshFriendContext().catch(() => undefined)
+
+    return undefined
+  }, [refreshFriendContext, token])
+
+  useEffect(() => {
+    syncFriendRooms(friends)
+  }, [friends, syncFriendRooms])
 
   return (
-    <div className="mt-6 rounded-lg border border-[#d8dfd4] bg-white p-6 shadow-sm">
-      <ul className="rounded-t-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
-        {messages.map((m) => (
-          <li key={m.id}>
-            {m.user.username}: {m.message}
-          </li>
-        ))}
-      </ul>
-      <div className="rounded-b-md border border-t-0 border-[#e1e6de] bg-[#fbfcfa] p-4">
-        <input
-          className="mt-2 w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-base transition outline-none focus:border-[#2f7d61] focus:ring-2 focus:ring-[#2f7d61]/20"
-          id="message"
-          placeholder="Message..."
-          ref={messageRef}
+    <div className="mt-6 rounded-lg border border-[#d8dfd4] bg-white p-4 shadow-sm sm:p-6">
+      <div className="grid overflow-hidden rounded-md border border-[#e1e6de] bg-[#fbfcfa] lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <Sidebar
+          activeRoomId={activeRoom?.id}
+          onSelectRoom={setActiveRoom}
+          rooms={Object.values(roomsById)}
         />
-        <button
-          className="mt-2 w-full rounded-md bg-[#2f7d61] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#276a52]"
-          onClick={sendMessage}
-          type="button"
-        >
-          Send message
-        </button>
+        <Room
+          currentUserId={user?.id}
+          messages={messages}
+          onSendMessage={(message) => sendChatMessage(message, activeRoom?.id)}
+          room={activeRoom}
+        />
       </div>
     </div>
   )

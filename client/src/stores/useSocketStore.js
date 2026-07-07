@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { socket } from '@/services/socket'
 import { DEV_GAME_ID } from '@/dev/DevControls/constants'
+import useAuthStore from './useAuthStore'
+import useChatStore, { isPrivateRoomId } from './useChatStore'
 import useGameStore from './useGameStore'
 import useNotificationStore from './useNotificationStore'
 import {
@@ -47,6 +49,12 @@ const handleRoomError = (data) =>
 // The owner ended the room this player was seated in (#221); the waiting room
 // watches roomClosed and returns to the lobby.
 const handleRoomClosed = () => useGameStore.getState().setRoomClosed(true)
+const handleChatMessage = (data) =>
+  useChatStore.getState().receiveRoomMessage(data)
+const handlePrivateChatMessage = (data) =>
+  useChatStore
+    .getState()
+    .receivePrivateMessage(data, useAuthStore.getState().user?.id)
 
 const socketSessionHandlers = {
   connect: handleConnect,
@@ -59,6 +67,8 @@ const socketSessionHandlers = {
   rooms_update: handleRoomsUpdate,
   room_error: handleRoomError,
   'room:closed': handleRoomClosed,
+  'chat:message': handleChatMessage,
+  'chat:private_message': handlePrivateChatMessage,
 }
 
 const useSocketStore = create((set) => ({
@@ -81,6 +91,22 @@ const useSocketStore = create((set) => ({
     socket.disconnect()
     socket.auth = {}
     set({ isConnected: false })
+  },
+
+  sendChatMessage: (message, recipient) => {
+    const text = message.trim()
+    if (!text) return false
+
+    const event = isPrivateRoomId(recipient)
+      ? 'chat:private_message'
+      : 'chat:message'
+
+    socket.emit(event, {
+      message: text,
+      recipient,
+    })
+
+    return true
   },
 }))
 

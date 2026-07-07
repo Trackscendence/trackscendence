@@ -103,9 +103,10 @@ const optionalConfigs = {
   FORTYTWO_REDIRECT_URI: process.env.FORTYTWO_REDIRECT_URI || '',
   FORTYTWO_STATE_EXPIRES_IN: process.env.FORTYTWO_STATE_EXPIRES_IN || '10m',
   // How long a mid-game player may stay fully disconnected (no socket at all)
-  // before their game is abandoned. Long enough for a page refresh, short
-  // enough that an opponent is not left staring at a dead table.
-  GAME_RECONNECT_GRACE_MS: parseNumber('GAME_RECONNECT_GRACE_MS', 10 * 1000),
+  // before their game is abandoned. The game pauses for the other players and
+  // shows them a countdown for this long, enough to reopen a closed tab or ride
+  // out a brief network drop, then ends if the player never comes back.
+  GAME_RECONNECT_GRACE_MS: parseNumber('GAME_RECONNECT_GRACE_MS', 90 * 1000),
 }
 
 const requiredConfigs = {

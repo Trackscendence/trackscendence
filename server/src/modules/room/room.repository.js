@@ -227,6 +227,80 @@ const removePlayerFromRoom = (roomId, userId) => {
 }
 
 /**
+ * The room currently tied to a runtime game id, if it is still active. Used to
+ * reopen a room for the survivors when one player leaves the game.
+ * @param {string} gameId runtime game UUID
+ */
+const findActiveRoomByGameId = (gameId) => {
+  return prisma.room.findFirst({
+    where: { gameId, status: { in: ['OPEN', 'IN_GAME'] } },
+    include: roomInclude,
+  })
+}
+
+/**
+ * Reopens an in-game room for the players left behind after some leave the
+ * match. The departing memberships (the leaver and any bots) are removed; if a
+ * human survivor remains the room flips IN_GAME back to OPEN with its game id
+ * cleared, so it reappears in the lobby as a joinable room and refills for a
+ * fresh game. If nobody is left to wait, the room closes instead. Ownership
+ * passes to the earliest-joined survivor when the owner is one of the leavers.
+ *
+ * The whole thing is one serializable transaction and is guarded on the room
+ * still being IN_GAME, so a game that meanwhile ended by another path (a
+ * concurrent completion or a second teardown) is left untouched.
+ *
+ * @param {number} roomId
+ * @param {number[]} removeUserIds ids to unseat (leaver plus bots)
+ * @returns {Promise<{ room?: Object, reopened?: boolean, error?: string }>}
+ *   `reopened` is true when survivors kept the room open, false when it closed
+ */
+const reopenRoomForRematch = (roomId, removeUserIds = []) => {
+  const removeSet = new Set(removeUserIds)
+  return runSerializable(async (tx) => {
+    const room = await tx.room.findUnique({
+      where: { id: roomId },
+      include: { players: { orderBy: { createdAt: 'asc' } } },
+    })
+    if (!room) return { error: ROOM_ERRORS.NOT_FOUND }
+    if (room.status !== 'IN_GAME') return { error: ROOM_ERRORS.NOT_OPEN }
+
+    const departed = room.players.filter((player) =>
+      removeSet.has(player.userId),
+    )
+    if (departed.length > 0) {
+      await tx.roomPlayer.deleteMany({
+        where: { id: { in: departed.map((player) => player.id) } },
+      })
+    }
+
+    const survivors = room.players.filter(
+      (player) => !removeSet.has(player.userId),
+    )
+    if (survivors.length === 0) {
+      const closed = await tx.room.update({
+        where: { id: roomId },
+        data: { status: 'CLOSED' },
+        include: roomInclude,
+      })
+      return { room: closed, reopened: false }
+    }
+
+    const ownerLeft = removeSet.has(room.ownerId)
+    const reopened = await tx.room.update({
+      where: { id: roomId },
+      data: {
+        status: 'OPEN',
+        gameId: null,
+        ...(ownerLeft ? { ownerId: survivors[0].userId } : {}),
+      },
+      include: roomInclude,
+    })
+    return { room: reopened, reopened: true }
+  })
+}
+
+/**
  * Marks a full room as playing and records the runtime game id so the room
  * can be closed when that game ends.
  */
@@ -302,6 +376,8 @@ module.exports = {
   findOpenRoomByUserId,
   addPlayerToRoom,
   removePlayerFromRoom,
+  findActiveRoomByGameId,
+  reopenRoomForRematch,
   setRoomInGame,
   claimRoomForGame,
   reopenClaimedRoom,

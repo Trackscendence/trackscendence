@@ -27,12 +27,20 @@ const Game = () => {
 
   const gameId = searchParams.get('gameId')
 
-  // game_over ends the game here: hold the final table for a beat, then hand
-  // over to the results screen, which reads the outcome from the store.
+  // game_over ends the game here: hold the final table for a beat, then route
+  // on the outcome. A forfeit sends the leaver to the lobby and the survivors
+  // to their reopened room to wait; every other ending goes to the results
+  // screen, which reads the outcome from the store.
   useEffect(() => {
     if (!gameOutcome) return undefined
+    const destination =
+      gameOutcome === 'left'
+        ? '/lobby'
+        : gameOutcome === 'rematch'
+          ? '/'
+          : '/results'
     const navigateTimer = setTimeout(
-      () => navigate('/results'),
+      () => navigate(destination),
       GAME_OVER_NAVIGATE_DELAY_MS,
     )
     return () => clearTimeout(navigateTimer)

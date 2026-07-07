@@ -85,10 +85,17 @@ const scheduleDevGameRun = ({ io, gameId, delayMs, checkGameEnd }) => {
 }
 
 /**
- * Abandons whatever IN_PROGRESS game the player is in and notifies the
- * survivors. Runs when the reconnect grace expires without the player coming
- * back; a game that meanwhile completed is left alone (handlePlayerDisconnect
- * re-checks the status).
+ * Ends whatever IN_PROGRESS game the player is in because they left, then hands
+ * the room back to the players left behind. Shared by both leave paths: an
+ * intentional forfeit (`game:leave`) and an expired reconnect grace. A game
+ * that meanwhile completed is left alone (handlePlayerDisconnect re-checks the
+ * status).
+ *
+ * The room reopens for its human survivors (`reopenRoomForSurvivors`) instead of
+ * closing, so they wait together for a fresh game rather than being scattered to
+ * the lobby. The `game_over` carries `rematch: true` when a survivor kept the
+ * room open, which tells their client to head for the waiting room; the leaver
+ * (`abandonedBy`) heads for the lobby.
  */
 const abandonActiveGame = async (io, userId) => {
   const abandonedGame = await matchmaking.handlePlayerDisconnect(userId)
@@ -96,20 +103,27 @@ const abandonActiveGame = async (io, userId) => {
   stopDevGameRun(abandonedGame.id)
   botTurns.clearBotTurnTimer(abandonedGame.id)
 
+  let rematch = false
+  try {
+    const outcome = await roomService.reopenRoomForSurvivors(
+      abandonedGame.id,
+      userId,
+    )
+    if (outcome) {
+      rematch = outcome.reopened
+      await broadcastRooms(io)
+    }
+  } catch (error) {
+    logger.error('Failed to reopen room for abandoned game', error)
+  }
+
   io.to(`game:${abandonedGame.id}`).emit('game_over', {
     gameId: abandonedGame.id,
     winnerUserId: null,
     reason: 'player_left',
     abandonedBy: userId,
+    rematch,
   })
-
-  try {
-    if (await roomService.closeRoomsForGame(abandonedGame.id)) {
-      await broadcastRooms(io)
-    }
-  } catch (error) {
-    logger.error('Failed to close room for abandoned game', error)
-  }
 }
 
 /**
@@ -582,6 +596,24 @@ const registerHandlers = (io, socket) => {
       myHand: engine.getHand(socket.user.id),
       gameId,
     })
+  })
+
+  // Intentional forfeit (Situation 1): the player pressed the in-game exit and
+  // confirmed. Ending the game for everyone reuses the same teardown as an
+  // expired reconnect, so the survivors get their room reopened and the leaver
+  // is sent to the lobby. A no-op if the caller is not in an active game.
+  socket.on('game:leave', async () => {
+    try {
+      const pending = pendingAbandons.get(socket.user.id)
+      if (pending) {
+        clearTimeout(pending)
+        pendingAbandons.delete(socket.user.id)
+      }
+      await abandonActiveGame(io, socket.user.id)
+    } catch (error) {
+      logger.error('Failed to leave game', error)
+      socket.emit('game_error', { message: 'Unable to leave the game' })
+    }
   })
 
   socket.on('game:play_card', async (data) => {

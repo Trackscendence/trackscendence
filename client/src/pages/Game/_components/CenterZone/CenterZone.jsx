@@ -3,6 +3,12 @@ import DiscardPile from './_components/DiscardPile'
 import DrawPile from './_components/DrawPile'
 import Uno from './_components/Uno'
 
+// One card-width per flanker keeps the draw pile and direction markers
+// symmetric, so the discard pile — the focal point — lands on the exact center
+// line. The gap and 0.8 scale are the tuned table values (see GameTable, which
+// scales the hand and opponents to match).
+const FLANKER = 'flex w-[154px] shrink-0'
+
 const CenterZone = ({
   canDraw,
   deckSize,
@@ -15,13 +21,8 @@ const CenterZone = ({
   topCard,
 }) => {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-5">
-      {/* The draw pile is a full card (w-[154px]) but the direction markers are
-          narrower, so centering all three as a group left the discard pile —
-          the focal point — off the center line. Reserve one card-width per
-          flanker and hug each inward, so the discard pile lands on the exact
-          center line with symmetric gaps. */}
-      <div className="flex w-[154px] shrink-0 justify-end">
+    <div className="flex scale-[0.8] flex-wrap items-center justify-center gap-[14px]">
+      <div className={`${FLANKER} justify-end`}>
         <DrawPile
           canDraw={canDraw}
           deckSize={deckSize}
@@ -29,7 +30,7 @@ const CenterZone = ({
         />
       </div>
       <DiscardPile pendingDraw={pendingDraw} topCard={topCard} />
-      <div className="flex w-[154px] shrink-0 justify-start">
+      <div className={`${FLANKER} justify-start`}>
         <DirectionIndicator
           bottomOverlay={isOwnUno ? <Uno onUnoClick={onUnoClick} /> : null}
           direction={direction}

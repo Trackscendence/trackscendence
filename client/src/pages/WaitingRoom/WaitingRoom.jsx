@@ -164,7 +164,8 @@ const WaitingRoom = () => {
         ) : (
           <LoadingSpinner
             className="bg-surface-waiting text-[#3d1200]"
-            message="Finding a room"
+            heading="Finding a room"
+            message="Dealing you in…"
           />
         )}
       </div>

@@ -12,6 +12,18 @@ const login = async (req, res) => {
   res.json(result)
 }
 
+const loginAsGuest = async (req, res) => {
+  const result = await authService.loginAsGuest()
+
+  res.status(201).json(result)
+}
+
+const upgradeGuestAccount = async (req, res) => {
+  const result = await authService.upgradeGuestAccount(req.user, req.body)
+
+  res.json(result)
+}
+
 const completeTwoFactorLogin = async (req, res) => {
   const result = await authService.completeTwoFactorLogin(req.body)
 
@@ -88,6 +100,8 @@ module.exports = {
   completeTwoFactorLogin,
   confirmTwoFactorSetup,
   register,
+  loginAsGuest,
+  upgradeGuestAccount,
   startFortyTwoLogin,
   disableTwoFactor,
   login,

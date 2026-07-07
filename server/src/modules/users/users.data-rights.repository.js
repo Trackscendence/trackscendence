@@ -92,6 +92,7 @@ const accountExportSelect = {
   avatarUrl: true,
   fortyTwoId: true,
   role: true,
+  isGuest: true,
   createdAt: true,
   updatedAt: true,
   termsAcceptedAt: true,

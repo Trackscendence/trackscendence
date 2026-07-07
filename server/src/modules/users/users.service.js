@@ -208,6 +208,7 @@ const getProfileData = async (user, options = {}) => {
     avatarUrl: user.avatarUrl,
     createdAt: user.createdAt,
     ...(options.includeEmail ? { email: user.email } : {}),
+    isGuest: Boolean(user.isGuest),
     stats: toProfileStats(user),
     recentMatches: recentMatches.map((match) => toRecentMatch(match, user.id)),
     friends: friends.map((friendship) => toProfileFriend(friendship, user.id)),

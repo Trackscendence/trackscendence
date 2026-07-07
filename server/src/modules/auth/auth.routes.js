@@ -108,6 +108,9 @@ router.post('/register', authController.register)
  */
 router.post('/login', authController.login)
 
+router.post('/guest', authController.loginAsGuest)
+router.post('/guest/upgrade', requireAuth, authController.upgradeGuestAccount)
+
 /**
  * @swagger
  * /auth/forgot-password:

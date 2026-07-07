@@ -15,6 +15,7 @@ const publicProfileSelect = {
   wins: true,
   losses: true,
   rank: true,
+  isGuest: true,
 }
 const selfProfileSelect = {
   ...publicProfileSelect,

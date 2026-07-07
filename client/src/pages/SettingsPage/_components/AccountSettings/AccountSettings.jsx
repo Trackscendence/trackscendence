@@ -4,6 +4,7 @@ import useProfileStore from '@/stores/useProfileStore'
 import SettingsCard from '../SettingsCard'
 import AccountForm from './_components/AccountForm'
 import AvatarUploader from './_components/AvatarUploader'
+import GuestUpgradeForm from './_components/GuestUpgradeForm'
 
 const AccountSettings = ({ user }) => {
   // One in-flight flag for every account write. The form's Save and the avatar
@@ -51,6 +52,12 @@ const AccountSettings = ({ user }) => {
 
   return (
     <>
+      {user.isGuest ? (
+        <SettingsCard title="Save progress">
+          <GuestUpgradeForm initialUsername={user.username} />
+        </SettingsCard>
+      ) : null}
+
       <SettingsCard title="Profile photo">
         <AvatarUploader
           avatarUrl={user.avatarUrl}
@@ -67,6 +74,7 @@ const AccountSettings = ({ user }) => {
           email={user.email}
           initialBio={user.bio}
           initialDisplayName={user.displayName}
+          isGuest={user.isGuest}
           isSubmitting={isSubmitting}
           username={user.username}
           onSave={handleSave}

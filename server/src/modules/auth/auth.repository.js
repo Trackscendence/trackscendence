@@ -13,6 +13,8 @@ const safeUserSelect = {
   rank: true,
   role: true,
   createdAt: true,
+  termsAcceptedAt: true,
+  privacyAcceptedAt: true,
   twoFactorEnabled: true,
 }
 
@@ -64,12 +66,20 @@ const passwordUpdateData = (passwordHash) => ({
   tokenVersion: { increment: 1 },
 })
 
-const createUser = ({ email, username, passwordHash }) => {
+const createUser = ({
+  email,
+  username,
+  passwordHash,
+  privacyAcceptedAt,
+  termsAcceptedAt,
+}) => {
   return prisma.user.create({
     data: {
       email,
       username,
       passwordHash,
+      privacyAcceptedAt,
+      termsAcceptedAt,
     },
     select: registeredUserSelect,
   })
@@ -196,7 +206,10 @@ const clearPasswordResetToken = (id) => {
 const findTokenUserById = (id) => {
   return prisma.user.findUnique({
     where: { id },
-    select: tokenUserSelect,
+    select: {
+      ...tokenUserSelect,
+      deletedAt: true,
+    },
   })
 }
 

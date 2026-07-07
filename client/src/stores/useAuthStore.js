@@ -115,6 +115,11 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  clearSession: () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY)
+    set({ token: null, user: null, isAuthenticated: false, isLoading: false })
+  },
+
   handleSessionExpired: (expiredToken) => {
     if (expiredToken && get().token !== expiredToken) return
     localStorage.removeItem(AUTH_TOKEN_KEY)

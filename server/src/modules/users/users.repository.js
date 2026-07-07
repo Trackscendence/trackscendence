@@ -20,6 +20,8 @@ const selfProfileSelect = {
   ...publicProfileSelect,
   email: true,
   role: true,
+  termsAcceptedAt: true,
+  privacyAcceptedAt: true,
   twoFactorEnabled: true,
   twoFactorPendingSecretCiphertext: true,
 }
@@ -63,8 +65,8 @@ const findSelfProfileById = (id) => {
   })
 }
 const findPublicProfileByUsername = (username) => {
-  return prisma.user.findUnique({
-    where: { username },
+  return prisma.user.findFirst({
+    where: { username, deletedAt: null },
     select: publicProfileSelect,
   })
 }
@@ -112,6 +114,7 @@ const escapeLikePattern = (value) => value.replace(/[\\%_]/g, '\\$&')
 const searchUsersByName = async ({ query, limit, offset }) => {
   const escapedQuery = escapeLikePattern(query)
   const where = {
+    deletedAt: null,
     OR: [
       { username: { contains: escapedQuery, mode: 'insensitive' } },
       { displayName: { contains: escapedQuery, mode: 'insensitive' } },

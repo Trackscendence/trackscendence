@@ -46,6 +46,7 @@ const WaitingRoom = lazy(() => import('@/pages/WaitingRoom'))
 const DevControls = import.meta.env.DEV
   ? lazy(() => import('@/dev/DevControls'))
   : null
+const DevHud = import.meta.env.DEV ? lazy(() => import('@/dev/DevHud')) : null
 
 const App = () => {
   const notifications = useNotificationStore((state) => state.notifications)
@@ -252,6 +253,11 @@ const App = () => {
       {DevControls ? (
         <Suspense fallback={null}>
           <DevControls />
+        </Suspense>
+      ) : null}
+      {DevHud ? (
+        <Suspense fallback={null}>
+          <DevHud />
         </Suspense>
       ) : null}
     </ErrorBoundary>

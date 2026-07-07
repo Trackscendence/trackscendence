@@ -217,6 +217,25 @@ describe('createRoom', () => {
     assert.strictEqual(joinMock.mock.callCount(), 0)
   })
 
+  it('reuses the room opened by a concurrent duplicate create', async () => {
+    let activeReads = 0
+    mock.method(roomRepository, 'findActiveRoomByUserId', async () => {
+      activeReads += 1
+      return activeReads === 1 ? null : openedRoom
+    })
+    const createMock = mock.method(
+      roomRepository,
+      'createRoomIfUnderLimit',
+      async () => ({ error: roomRepository.ROOM_ERRORS.CONFLICT }),
+    )
+
+    const dto = await roomService.createRoom(user, { capacity: 4 })
+
+    assert.strictEqual(dto.id, 44)
+    assert.strictEqual(dto.owner.userId, 31)
+    assert.strictEqual(createMock.mock.callCount(), 1)
+  })
+
   it('reuses the caller owned open room on a duplicate create', async () => {
     mock.method(
       roomRepository,

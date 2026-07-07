@@ -16,6 +16,10 @@ export const createPublicProfileLoader = ({
 
     set({ error: '', isLoading: true, publicProfile: null })
 
+    // Fetch the leaderboard alongside the public profile rather than after it
+    // resolves, so the sidebar does not waterfall in behind the profile.
+    get().loadLeaderboard()
+
     try {
       const profileData = await loadPublicProfileData({ token, username })
       if (requestId !== publicProfileRequestId) return
@@ -24,7 +28,6 @@ export const createPublicProfileLoader = ({
         ...profileData,
         isLoading: false,
       })
-      get().loadLeaderboard()
     } catch (error) {
       if (requestId !== publicProfileRequestId) return
 

@@ -6,6 +6,7 @@ import useSocketStore from '@/stores/useSocketStore'
 import { checkApiHealth } from '@/services/system'
 import {
   getBootRetryDelay,
+  hasExhaustedBootRetries,
   isBootConnectionError,
 } from '@/utils/bootConnectivity'
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -45,6 +46,7 @@ const WaitingRoom = lazy(() => import('@/pages/WaitingRoom'))
 const DevControls = import.meta.env.DEV
   ? lazy(() => import('@/dev/DevControls'))
   : null
+const DevHud = import.meta.env.DEV ? lazy(() => import('@/dev/DevHud')) : null
 
 const App = () => {
   const notifications = useNotificationStore((state) => state.notifications)
@@ -52,6 +54,10 @@ const App = () => {
   const token = useAuthStore((state) => state.token)
   const [bootStatus, setBootStatus] = useState('checking')
   const [bootError, setBootError] = useState(null)
+  const [bootAttempt, setBootAttempt] = useState(1)
+  // Bumping this re-runs the probe effect from scratch — the "Retry" button on
+  // the unreachable screen increments it.
+  const [bootRetryNonce, setBootRetryNonce] = useState(0)
   const isBootReady = bootStatus === 'ready'
 
   useEffect(() => {
@@ -59,6 +65,7 @@ const App = () => {
     let retryTimer = null
 
     const probe = async (attempt = 0) => {
+      if (!isCancelled) setBootAttempt(attempt + 1)
       try {
         await checkApiHealth()
         if (!isCancelled) {
@@ -70,6 +77,16 @@ const App = () => {
 
         if (!isBootConnectionError(error)) {
           setBootStatus('error')
+          setBootError(error)
+          return
+        }
+
+        // Connection error: the API isn't answering yet. Retry with backoff
+        // while it might still be starting, but stop once we've exhausted the
+        // attempts and tell the user the server is unreachable — a spinner that
+        // never resolves hid exactly this failure during local dev.
+        if (hasExhaustedBootRetries(attempt)) {
+          setBootStatus('unreachable')
           setBootError(error)
           return
         }
@@ -87,7 +104,14 @@ const App = () => {
       isCancelled = true
       if (retryTimer) clearTimeout(retryTimer)
     }
-  }, [])
+  }, [bootRetryNonce])
+
+  const retryBoot = () => {
+    setBootStatus('checking')
+    setBootError(null)
+    setBootAttempt(1)
+    setBootRetryNonce((nonce) => nonce + 1)
+  }
 
   useEffect(() => {
     if (!isBootReady) return
@@ -113,11 +137,17 @@ const App = () => {
   }, [])
 
   if (bootStatus === 'checking') {
+    // Stay quiet for the first tries (the API is legitimately starting), then
+    // start showing the attempt count so a slow boot doesn't look like a hang.
+    const message =
+      bootAttempt > 3
+        ? `Waking the table... (attempt ${bootAttempt})`
+        : 'Waking the table...'
     return (
       <LoadingSpinner
         className="bg-surface-warm text-[#2A1A08]"
         heading="Starting up"
-        message="Waking the table..."
+        message={message}
         showProgress
       />
     )
@@ -133,6 +163,35 @@ const App = () => {
         <p className="mt-3 max-w-md text-sm font-semibold text-[#2A1A08]/70">
           {bootError?.message || 'The server is not ready.'}
         </p>
+      </div>
+    )
+  }
+
+  if (bootStatus === 'unreachable') {
+    return (
+      <div
+        role="alert"
+        className="bg-surface-warm flex min-h-screen flex-col items-center justify-center px-6 text-center text-[#2A1A08]"
+      >
+        <h1 className="text-3xl font-black uppercase">
+          Cannot reach the server
+        </h1>
+        <p className="mt-3 max-w-md text-sm font-semibold text-[#2A1A08]/70">
+          The app could not connect after {bootAttempt} attempts. The API is
+          likely still starting or has stopped.
+        </p>
+        {bootError?.message ? (
+          <p className="mt-2 max-w-md font-mono text-xs text-[#2A1A08]/50">
+            {bootError.message}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          onClick={retryBoot}
+          className="text-surface-warm focus-visible:ring-offset-surface-warm mt-6 rounded-lg bg-[#2A1A08] px-6 py-2.5 text-sm font-bold transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2A1A08] focus-visible:ring-offset-2"
+        >
+          Retry
+        </button>
       </div>
     )
   }
@@ -194,6 +253,11 @@ const App = () => {
       {DevControls ? (
         <Suspense fallback={null}>
           <DevControls />
+        </Suspense>
+      ) : null}
+      {DevHud ? (
+        <Suspense fallback={null}>
+          <DevHud />
         </Suspense>
       ) : null}
     </ErrorBoundary>

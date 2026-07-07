@@ -21,7 +21,7 @@ jobs:
           echo "PR source branch: ${{ github.head_ref }}"
           if [ "${{ github.head_ref }}" != "dev" ]; then
             echo "::error::Direct PRs to 'main' from branch '${{ github.head_ref }}' are prohibited."
-            echo "::error::Please retarget your PR to 'dev', or merge into 'dev' first."
+            echo "::error::Please change the PR target to 'dev', or merge into 'dev' first."
             exit 1
           fi
           echo "Branch targeting is valid."
@@ -97,6 +97,12 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
+
+      - name: Run Tests
+        run: npm test
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          JWT_SECRET: ci-jwt-secret
 
   docker-check:
     name: Validate Docker Build

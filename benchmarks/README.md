@@ -15,6 +15,7 @@ at volume, so seed with `bench:seed` first.
 ## Layout
 
 - `benchmarks/e1-bundle.mjs` — client bundle sizing (Node, uses the Vite manifest).
+- `server/benchmarks/e2-leaderboard.js` — leaderboard query cost (needs a seeded DB).
 - `server/benchmarks/e3-game-store-memory.js` — in-memory game-store cost.
 - `server/prisma/seed.bench.js` — scale seed (users, and optionally games).
 - `benchmarks/results/` — JSON output written by the experiments.
@@ -25,7 +26,8 @@ Run from the repo root:
 npm run bench           # E1 + E3 (the two that need no database)
 npm run bench:e1        # bundle size; builds the client, then measures
 npm run bench:e3        # game-store memory/scan
-SEED_SCALE=10000 SEED_GAMES=250000 npm run bench:seed   # volume for E2/E5/E6
+SEED_SCALE=10000 SEED_GAMES=200000 npm run bench:seed   # volume for E2/E5/E6
+npm run bench:e2        # leaderboard aggregation vs denormalized (after seeding)
 ```
 
 ## Experiments and status
@@ -34,7 +36,7 @@ SEED_SCALE=10000 SEED_GAMES=250000 npm run bench:seed   # volume for E2/E5/E6
 | --- | ------- | ----------------------------------------------------------- | -------------------- |
 | E1  | F1, F2  | Initial-route JS (gzip), per-chunk sizes, budget gate       | Done. Shows the win. |
 | E3  | B1      | activeGames size, scan latency, RSS over N games            | Done. Shows the win. |
-| E2  | B3, I6  | Leaderboard plan + p95 latency, aggregation vs denormalized | Planned (baseline).  |
+| E2  | B3, I6  | Leaderboard plan + p95 latency, aggregation vs denormalized | Done. Shows target.  |
 | E4  | B5      | rooms_update payload bytes + fan-out (recipients)           | Done; B5 shipped.    |
 | E5  | B4      | Prisma pool acquire-wait + timeout rate under load          | Done; B4 shipped.    |
 | E6  | F3      | Profile load request count                                  | Done; F3 shipped.    |
@@ -46,8 +48,27 @@ Honest reading: E1, E3, and E8 measure or guard work that already merged
 were baselines that B5 and B4 now realize: B5 scopes the room broadcast to lobby
 watchers (the watchers-only fan-out E4 modelled), and B4 tunes the pool as the
 app default (the large-pool condition E5 measured). E6 and E7 are measured
-before/after for the F3 and F5 fixes (see below). E2 remains the open baseline
-until B3 ships the denormalized leaderboard endpoint.
+before/after for the F3 and F5 fixes (see below). E2 measures B3's target query
+directly; the denormalized leaderboard endpoint is not shipped yet, so it shows
+how much is on the table.
+
+## E2 — leaderboard aggregation vs denormalized
+
+`bench:e2` needs a seeded database (`SEED_SCALE=10000 SEED_GAMES=200000
+npm run bench:seed`). It `EXPLAIN ANALYZE`s the current endpoint query (JOIN
+GamePlayer + GROUP BY, sorted by a computed aggregate) against B3's proposed read
+straight from the denormalized `User` columns, plus the two count queries, and
+reports median execution time and the plan's top node.
+
+At 10k users / 400k game-player rows: the page query drops from ~31 ms to ~1.2 ms
+(about 26x) and the pagination count from ~52 ms to ~0.7 ms (about 78x). The
+endpoint runs both per request, so the denormalized read removes almost all of
+the current per-request database cost.
+
+Caveat: the denormalized columns cover `wins`, `gamesPlayed`, and `rank` (the
+default board sort). The `totalScore` and `winRate` sort modes are not
+denormalized, so shipping B3 in full either denormalizes those too or keeps the
+aggregation for just those sorts. E2 measures the common default sort.
 
 ## E1 — initial-route JS
 

@@ -45,7 +45,7 @@ const getCardIds = (playerId, cardCount) => {
 }
 
 const OpponentCardStack = ({ orientation, player }) => {
-  const isTop = orientation === 'top'
+  const isTop = orientation.startsWith('top')
   const offsets = isTop ? HORIZONTAL_OFFSETS : VERTICAL_OFFSETS
   const cardIds = getCardIds(player.id, player.cardCount)
   const sizeIndex = Math.max(cardIds.length - 1, 0)

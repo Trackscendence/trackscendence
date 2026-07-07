@@ -1,4 +1,5 @@
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
+import { getOpponentSeats } from './opponentSeats'
 
 // Maps the server's game_state_update payload (engine public state + myHand)
 // onto the props GameTable was designed around. Pure: no store reads, no side
@@ -48,13 +49,6 @@ const isCardPlayable = (serverCard, index, state, isMyTurn, handSize) =>
   (!state.hasDrawnThisTurn || index === handSize - 1) &&
   matchesTopCard(serverCard, state)
 
-// Seat layout mirrors the mock's arrangement per opponent count.
-const OPPONENT_SEATS = {
-  1: ['top'],
-  2: ['left', 'right'],
-  3: ['top', 'left', 'right'],
-}
-
 /**
  * @param {Object} state game_state_update payload
  * @param {Array<{userId: number, username: string, displayName?: string, avatarUrl?: string}>} matchPlayers from game_start
@@ -84,7 +78,7 @@ const mapServerGameState = ({
   const opponentIds = Object.keys(state.playerHandsSizes ?? {})
     .map(Number)
     .filter((userId) => userId !== ownUserId)
-  const seats = OPPONENT_SEATS[opponentIds.length] ?? OPPONENT_SEATS[3]
+  const seats = getOpponentSeats(opponentIds.length)
   const opponents = opponentIds.map((userId, index) => {
     const known = playersById.get(userId)
     const identity = getPlayerIdentity(known)

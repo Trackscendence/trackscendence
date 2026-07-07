@@ -18,6 +18,7 @@ const AccountForm = ({
   email,
   initialBio,
   initialDisplayName,
+  isGuest,
   isSubmitting,
   onSave,
   username,
@@ -43,7 +44,7 @@ const AccountForm = ({
     <form className="space-y-5" onSubmit={handleSubmit}>
       <div className="grid gap-3 sm:grid-cols-2">
         <ReadOnlyRow label="Username" value={username} />
-        <ReadOnlyRow label="Email" value={email} />
+        <ReadOnlyRow label="Email" value={isGuest ? 'Guest session' : email} />
       </div>
 
       <label className="block">

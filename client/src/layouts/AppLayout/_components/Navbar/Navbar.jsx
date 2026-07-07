@@ -52,12 +52,21 @@ const Navbar = () => {
           >
             Settings
           </Link>
-          <Link
-            to="/change-password"
-            className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
-          >
-            Change password
-          </Link>
+          {user?.isGuest ? (
+            <Link
+              to="/settings"
+              className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+            >
+              Save progress
+            </Link>
+          ) : (
+            <Link
+              to="/change-password"
+              className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+            >
+              Change password
+            </Link>
+          )}
           <button
             className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
             type="button"

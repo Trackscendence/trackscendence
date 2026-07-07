@@ -5,6 +5,7 @@ import BasicChat from './_components/BasicChat'
 // so this page no longer opens or closes its own connection.
 const Session = () => {
   const { user } = useAuthStore()
+  const accountLabel = user.isGuest ? 'Guest session' : user.email
 
   return (
     <div>
@@ -19,7 +20,7 @@ const Session = () => {
           </div>
           <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
             <p className="text-sm font-medium text-[#617267]">Email</p>
-            <p className="mt-1 text-base font-semibold">{user.email}</p>
+            <p className="mt-1 text-base font-semibold">{accountLabel}</p>
           </div>
           <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
             <p className="text-sm font-medium text-[#617267]">Username</p>

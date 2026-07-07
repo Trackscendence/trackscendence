@@ -4,6 +4,9 @@ import Logo from '@/components/Logo'
 import AccountMenu from './_components/AccountMenu'
 
 const LobbyNav = ({ user, onCreateRoom }) => {
+  const displayName = user.displayName || user.username
+  const accountLabel = user.isGuest ? 'Guest session' : user.email
+
   return (
     <header className="flex items-center justify-between border-b border-black/10 bg-white px-8 py-3">
       <Logo />
@@ -21,14 +24,14 @@ const LobbyNav = ({ user, onCreateRoom }) => {
           className="flex items-center gap-3 rounded-full pr-2 transition hover:bg-black/5"
         >
           <Avatar
-            alt={user.displayName}
+            alt={displayName}
             initials={user.initials}
             size={46}
             src={user.avatarUrl || undefined}
           />
           <span className="flex flex-col">
-            <span className="text-lg text-black">{user.displayName}</span>
-            <span className="text-xs text-[#2E2D2D]">{user.email}</span>
+            <span className="text-lg text-black">{displayName}</span>
+            <span className="text-xs text-[#2E2D2D]">{accountLabel}</span>
           </span>
         </Link>
         <AccountMenu />

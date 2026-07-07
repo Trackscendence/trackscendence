@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import FortyTwoButton from '@/components/FortyTwoButton'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import GuestLoginButton from './_components/GuestLoginButton'
 import LoginForm from './_components/LoginForm'
 
 const Login = () => {
@@ -57,15 +58,19 @@ const Login = () => {
           <div className="h-px flex-1 bg-black" />
         </div>
 
-        <FortyTwoButton
-          comingSoon={!isAuthProvidersLoading && !isFortyTwoLoginEnabled}
-          isChecking={isAuthProvidersLoading && !isFortyTwoLoginEnabled}
-          onClick={
-            isFortyTwoLoginEnabled
-              ? () => useAuthStore.getState().startFortyTwoLogin()
-              : undefined
-          }
-        />
+        <GuestLoginButton onSuccess={() => navigate(from, { replace: true })} />
+
+        <div className="mt-3">
+          <FortyTwoButton
+            comingSoon={!isAuthProvidersLoading && !isFortyTwoLoginEnabled}
+            isChecking={isAuthProvidersLoading && !isFortyTwoLoginEnabled}
+            onClick={
+              isFortyTwoLoginEnabled
+                ? () => useAuthStore.getState().startFortyTwoLogin()
+                : undefined
+            }
+          />
+        </div>
 
         <p className="mt-5 text-center text-sm text-[#081934]">
           New player?{' '}

@@ -17,6 +17,7 @@ const {
   resolveAvailableUsername,
   sanitizeFortyTwoLogin,
   validateFortyTwoCallbackInput,
+  validateLoginInput,
   validateRegistrationInput,
 } = require('#modules/auth/auth.service')
 
@@ -131,6 +132,42 @@ describe('validateFortyTwoCallbackInput', () => {
     assert.throws(() => validateFortyTwoCallbackInput({ code: 'abc' }), {
       statusCode: 400,
     })
+  })
+})
+
+describe('validateLoginInput', () => {
+  it('accepts and normalizes email identifiers', () => {
+    assert.deepStrictEqual(
+      validateLoginInput({
+        identifier: ' USER@Example.COM ',
+        password: 'StrongPass1!',
+      }),
+      { identifier: 'user@example.com', password: 'StrongPass1!' },
+    )
+  })
+
+  it('accepts and normalizes username identifiers', () => {
+    assert.deepStrictEqual(
+      validateLoginInput({
+        identifier: ' Player ',
+        password: 'StrongPass1!',
+      }),
+      { identifier: 'player', password: 'StrongPass1!' },
+    )
+  })
+
+  it('requires an identifier and password', () => {
+    assert.throws(
+      () => validateLoginInput({ identifier: ' ', password: '' }),
+      (error) => {
+        assert.equal(error.statusCode, 400)
+        assert.deepEqual(error.payload.details, [
+          'Email or username is required',
+          'Password is required',
+        ])
+        return true
+      },
+    )
   })
 })
 

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import AccountSettings from './_components/AccountSettings'
+import DataExportSettings from './_components/DataExportSettings'
+import DeleteAccountSettings from './_components/DeleteAccountSettings'
 import SettingsCard from './_components/SettingsCard'
 import SettingsSidebar from './_components/SettingsSidebar'
 import TwoFactorSettings from './_components/TwoFactorSettings'
@@ -31,7 +33,7 @@ const NAV_ITEMS = [
     key: 'privacy',
     label: 'Privacy',
     description: 'Visibility & data',
-    enabled: false,
+    enabled: true,
   },
   {
     key: 'preferences',
@@ -43,7 +45,7 @@ const NAV_ITEMS = [
     key: 'danger',
     label: 'Danger Zone',
     description: 'Delete account',
-    enabled: false,
+    enabled: true,
     danger: true,
   },
 ]
@@ -57,6 +59,45 @@ const SECTION_COPY = {
     title: 'Security',
     description: 'Keep your account safe with a strong password and 2FA.',
   },
+  privacy: {
+    title: 'Privacy',
+    description: 'Review consent records and export your account data.',
+  },
+  danger: {
+    title: 'Danger Zone',
+    description: 'Delete your account and anonymize stored personal details.',
+  },
+}
+
+const renderSettingsSection = ({ activeKey, navigate, user }) => {
+  if (activeKey === 'account') {
+    return <AccountSettings user={user} />
+  }
+
+  if (activeKey === 'privacy') {
+    return <DataExportSettings user={user} />
+  }
+
+  if (activeKey === 'danger') {
+    return <DeleteAccountSettings user={user} />
+  }
+
+  return (
+    <>
+      <SettingsCard title="Password">
+        <button
+          className="rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none"
+          type="button"
+          onClick={() => navigate('/change-password')}
+        >
+          Change password
+        </button>
+      </SettingsCard>
+      <SettingsCard title="Two-factor authentication">
+        <TwoFactorSettings />
+      </SettingsCard>
+    </>
+  )
 }
 
 const SettingsPage = () => {
@@ -98,24 +139,7 @@ const SettingsPage = () => {
             <p className="mt-1 text-sm text-[#8a6845]">{section.description}</p>
           </div>
 
-          {activeKey === 'account' ? (
-            <AccountSettings user={user} />
-          ) : (
-            <>
-              <SettingsCard title="Password">
-                <button
-                  className="rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none"
-                  type="button"
-                  onClick={() => navigate('/change-password')}
-                >
-                  Change password
-                </button>
-              </SettingsCard>
-              <SettingsCard title="Two-factor authentication">
-                <TwoFactorSettings />
-              </SettingsCard>
-            </>
-          )}
+          {renderSettingsSection({ activeKey, navigate, user })}
         </div>
       </div>
     </div>

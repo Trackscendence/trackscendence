@@ -36,11 +36,15 @@ CLOSED CLOSED
     String displayName "❓"
     String bio "❓"
     String avatarUrl "❓"
-    String passwordHash
+    String passwordHash "❓"
+    Int fortyTwoId "❓"
     String passwordResetTokenId "❓"
     String passwordResetTokenHash "❓"
     DateTime passwordResetTokenExpiry "❓"
     Int tokenVersion
+    DateTime termsAcceptedAt "❓"
+    DateTime privacyAcceptedAt "❓"
+    DateTime deletedAt "❓"
     Int gamesPlayed
     Int wins
     Int losses

@@ -61,6 +61,8 @@ const toSafeAuthUser = (user) => ({
   rank: user.rank,
   role: user.role,
   createdAt: user.createdAt,
+  termsAcceptedAt: user.termsAcceptedAt,
+  privacyAcceptedAt: user.privacyAcceptedAt,
   twoFactorEnabled: Boolean(user.twoFactorEnabled),
   twoFactorSetupPending: Boolean(user.twoFactorPendingSecretCiphertext),
 })
@@ -140,7 +142,13 @@ const getPasswordValidationMessages = (password) => {
 }
 
 // BACKEND VALIDATIONS FOR SIGNUP PAGE
-const validateRegistrationInput = ({ email, username, password } = {}) => {
+const validateRegistrationInput = ({
+  email,
+  username,
+  password,
+  privacyAccepted,
+  termsAccepted,
+} = {}) => {
   const details = []
 
   if (!email) {
@@ -168,6 +176,14 @@ const validateRegistrationInput = ({ email, username, password } = {}) => {
   }
 
   details.push(...getPasswordValidationMessages(password))
+
+  if (!termsAccepted) {
+    details.push('Terms of Service acceptance is required')
+  }
+
+  if (!privacyAccepted) {
+    details.push('Privacy Policy acceptance is required')
+  }
 
   if (details.length > 0) {
     throw new BadRequestException('Invalid request data', { details })
@@ -623,6 +639,7 @@ const register = async (payload) => {
   validateRegistrationInput(normalizedPayload)
 
   const { email, username, password } = normalizedPayload
+  const acceptedAt = new Date()
 
   const existingEmail = await authRepository.findByEmail(email)
   if (existingEmail) {
@@ -641,6 +658,8 @@ const register = async (payload) => {
       email,
       username,
       passwordHash,
+      privacyAcceptedAt: acceptedAt,
+      termsAcceptedAt: acceptedAt,
     })
   } catch (error) {
     if (isUniqueConstraintError(error)) {
@@ -782,7 +801,7 @@ const getUserFromToken = async (token) => {
 
   const user = await authRepository.findTokenUserById(userId)
 
-  if (!user || user.tokenVersion !== tokenVersion) {
+  if (!user || user.deletedAt || user.tokenVersion !== tokenVersion) {
     throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
   }
 
@@ -1051,4 +1070,5 @@ module.exports = {
   setupTwoFactor,
   toSafeAuthUser,
   validateFortyTwoCallbackInput,
+  validateRegistrationInput,
 }

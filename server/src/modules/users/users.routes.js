@@ -9,6 +9,8 @@ const router = Router()
 
 router.get('/me', requireAuth, usersController.getCurrentProfile)
 router.patch('/me', requireAuth, usersController.updateCurrentUserProfile)
+router.get('/me/export', requireAuth, usersController.exportCurrentUserData)
+router.delete('/me', requireAuth, usersController.deleteCurrentUserAccount)
 router.post(
   '/me/avatar',
   requireAuth,

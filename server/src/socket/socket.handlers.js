@@ -227,6 +227,10 @@ const registerHandlers = (io, socket) => {
     .then((game) => {
       if (!game) return
       socket.join(`game:${game.id}`)
+      // Tell a freshly-landed client (a reopened tab, a new session) that it has
+      // a game in flight, so it can route back to it instead of stranding the
+      // player in the lobby while their reconnect window burns down.
+      socket.emit('active_game', { gameId: game.id })
       // Coming back within the grace window lifts the pause this player's drop
       // raised; the game resumes once the last missing player is back.
       resumeGameForUser(game.id, socket.user.id)

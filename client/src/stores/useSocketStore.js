@@ -43,6 +43,18 @@ const handleGameOver = (data) => useGameStore.getState().handleGameOver(data)
 // Game page covers the table with a countdown while the pause is set.
 const handleGamePaused = (data) => useGameStore.getState().setPausedGame(data)
 const handleGameResumed = () => useGameStore.getState().setPausedGame(null)
+// On connect the server reports any game still in progress for this user. Relay
+// it as an app-level event so App can route a freshly-landed client back into
+// the game instead of leaving it stranded in the lobby (mirrors how the request
+// utility signals session expiry).
+const handleActiveGame = (data) => {
+  if (!data?.gameId) return
+  window.dispatchEvent(
+    new CustomEvent('trackscendence:active-game', {
+      detail: { gameId: data.gameId },
+    }),
+  )
+}
 // A rejected move (out of turn, illegal card, missing game). The next
 // game_state_update reconciles the table, so a toast is all the user needs.
 const handleGameError = (data) => {
@@ -82,6 +94,7 @@ const socketSessionHandlers = {
   game_over: handleGameOver,
   game_paused: handleGamePaused,
   game_resumed: handleGameResumed,
+  active_game: handleActiveGame,
   game_error: handleGameError,
   rooms_update: handleRoomsUpdate,
   room_error: handleRoomError,

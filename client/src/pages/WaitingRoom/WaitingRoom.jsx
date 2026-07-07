@@ -11,6 +11,10 @@ import {
   cancelDeferredRoomExit,
   scheduleDeferredRoomExit,
 } from './_utils/deferredRoomExit'
+import {
+  getRoomClosedAction,
+  ROOM_CLOSED_ACTIONS,
+} from './_utils/roomClosedAction'
 import { claimSeatIntent, getSeatIntentKey } from './_utils/seatIntent'
 
 // Once a match forms, hold on "All players here", reveal the overlay after a
@@ -38,9 +42,15 @@ const WaitingRoom = () => {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false)
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
   const leaveTimerRef = useRef(null)
+  const seatIntentKey = getSeatIntentKey(seatIntent)
   // 'deciding' while the room list loads, then 'choosing' (Quick Start) when no
   // room is open. Once seated, the room itself drives the view.
   const [phase, setPhase] = useState('deciding')
+  const myRoom = user
+    ? rooms.find((room) =>
+        room.players.some((player) => player.userId === user.id),
+      )
+    : null
 
   // The room flow (#154/#273). Two ways in: with a seat intent from the
   // lobby's Create/Join, we seat the player straight away; on a direct arrival
@@ -61,7 +71,7 @@ const WaitingRoom = () => {
       joinRoomById,
     } = useGameStore.getState()
     cancelDeferredRoomExit({ timerRef: leaveTimerRef })
-    setRoomClosed(false)
+    setRoomClosed(null)
     watchRooms()
     listRooms()
     // Arriving from the lobby with an explicit intent: emit the seat here so
@@ -69,7 +79,7 @@ const WaitingRoom = () => {
     // cleanup's room:leave would otherwise undo a seat emitted by the lobby.
     // The reactive `rooms` then renders the room once the server confirms it,
     // so there is no decide timer and Quick Start never shows.
-    const hasSeatIntent = Boolean(getSeatIntentKey(seatIntent))
+    const hasSeatIntent = Boolean(seatIntentKey)
     if (hasSeatIntent && claimSeatIntent(seatIntent, location.key)) {
       if (seatIntent.type === 'join') joinRoomById(seatIntent.roomId)
       else createRoom(seatIntent.capacity)
@@ -108,15 +118,24 @@ const WaitingRoom = () => {
         leaveLobby,
       })
     }
-  }, [token, seatIntent, location.key])
+  }, [token, seatIntent, seatIntentKey, location.key])
 
   // The owner ended the room out from under this player (#221): hand back to
   // the lobby. The owner who pressed End is already navigating there.
   useEffect(() => {
     if (!roomClosed) return
-    useGameStore.getState().setRoomClosed(false)
-    navigate('/lobby')
-  }, [roomClosed, navigate])
+    const action = getRoomClosedAction({
+      closedRoomId: roomClosed,
+      currentRoomId: myRoom?.id,
+      seatIntent,
+    })
+    if (action === ROOM_CLOSED_ACTIONS.ignore) return
+
+    useGameStore.getState().setRoomClosed(null)
+    if (action === ROOM_CLOSED_ACTIONS.navigate) {
+      navigate('/lobby')
+    }
+  }, [roomClosed, myRoom?.id, seatIntent, navigate])
 
   // Match found: reveal the start overlay, then navigate to the game table.
   useEffect(() => {
@@ -137,9 +156,6 @@ const WaitingRoom = () => {
 
   if (!user) return null
 
-  const myRoom = rooms.find((room) =>
-    room.players.some((player) => player.userId === user.id),
-  )
   // Owning the room unlocks the leave/end choice; everyone else just leaves.
   // Once a match starts the room is IN_GAME and the leave button is moot, so
   // the modal only ever matters while the room is still OPEN.

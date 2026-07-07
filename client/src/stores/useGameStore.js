@@ -2,6 +2,11 @@ import { create } from 'zustand'
 import { socket } from '@/services/socket'
 import { getLeaderboard } from '@/services/game'
 import useAuthStore from '@/stores/useAuthStore'
+import {
+  getOwnRoomIds,
+  rememberClosedRoomIds,
+  resolveVisibleRooms,
+} from './roomVisibility'
 
 // Monotonic id for leaderboard loads so a slow, older request cannot
 // overwrite the result of a newer one.
@@ -55,11 +60,14 @@ const useGameStore = create((set) => ({
   // re-show it (order-independent; still correct once multiple concurrent
   // rooms exist — it only ever hides the player's OWN room).
   suppressOwnRoom: false,
+  // Closed rooms are hidden by id as well as by ownership. This keeps an older
+  // room-list response from showing a room the owner already ended.
+  suppressedClosedRoomIds: [],
   roomError: null,
-  // Set by the `room:closed` event (#221) when an owner ends the room the
-  // player is seated in; the waiting room watches it and hands back to the
-  // lobby. Reset when the player re-enters the waiting room.
-  roomClosed: false,
+  // Set by the `room:closed` event (#221) to the closed room id when an owner
+  // ends a room. The waiting room compares it with the current room so a late
+  // close from the previous room cannot bounce a fresh create flow.
+  roomClosed: null,
 
   setLeaderboard: (leaderboard) => set({ leaderboard }),
 
@@ -131,25 +139,28 @@ const useGameStore = create((set) => ({
     }),
   setRooms: (rooms) =>
     set((state) => {
-      if (!state.suppressOwnRoom) return { rooms }
       const ownUserId = useAuthStore.getState().user?.id
-      const stillSeated =
-        !!ownUserId &&
-        rooms.some((room) =>
-          room.players.some((player) => player.userId === ownUserId),
-        )
-      // An update that already lacks our room is the server confirming the
-      // leave — stop suppressing and accept it as-is.
-      if (!stillSeated) return { rooms, suppressOwnRoom: false }
-      // Otherwise this is a stale in-flight broadcast: keep our own room hidden.
+      return resolveVisibleRooms({
+        rooms,
+        ownUserId,
+        suppressOwnRoom: state.suppressOwnRoom,
+        suppressedClosedRoomIds: state.suppressedClosedRoomIds,
+      })
+    }),
+  setRoomError: (roomError) => set({ roomError }),
+  setRoomClosed: (roomClosed) =>
+    set((state) => {
+      const roomId = Number(roomClosed)
+      if (!Number.isFinite(roomId)) return { roomClosed }
+
       return {
-        rooms: rooms.filter(
-          (room) => !room.players.some((player) => player.userId === ownUserId),
+        roomClosed: roomId,
+        suppressedClosedRoomIds: rememberClosedRoomIds(
+          state.suppressedClosedRoomIds,
+          [roomId],
         ),
       }
     }),
-  setRoomError: (roomError) => set({ roomError }),
-  setRoomClosed: (roomClosed) => set({ roomClosed }),
 
   joinLobby: () => socket.emit('join_lobby'),
   // Tells the server to drop us from the matchmaking queue and resets the
@@ -198,7 +209,16 @@ const useGameStore = create((set) => ({
   },
   endRoom: () => {
     socket.emit('room:end')
-    set({ suppressOwnRoom: true })
+    set((state) => {
+      const ownUserId = useAuthStore.getState().user?.id
+      return {
+        suppressOwnRoom: true,
+        suppressedClosedRoomIds: rememberClosedRoomIds(
+          state.suppressedClosedRoomIds,
+          getOwnRoomIds(state.rooms, ownUserId),
+        ),
+      }
+    })
     useGameStore.getState().dropOwnRoom()
   },
   dropOwnRoom: () =>

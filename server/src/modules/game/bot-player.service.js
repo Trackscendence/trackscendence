@@ -340,12 +340,43 @@ const playNextAction = (engine) => {
   })
 }
 
+// Bots always call UNO on themselves the instant they drop to one card, so a
+// bot is never penalized for forgetting. Returns true if a call was made.
+const callUnoIfNeeded = (engine, playerId) => {
+  const { unoState } = engine.getState()
+  if (!unoState || unoState.playerId !== playerId || unoState.called) {
+    return false
+  }
+  engine.callUno(playerId)
+  return true
+}
+
+// Chance a bot catches a human who reached one card without calling UNO. Below
+// 1 so forgetting is not punished the very instant a bot is about to move every
+// single time.
+const CATCH_PROBABILITY = 0.7
+
+// A bot may catch a forgetful *human* on one card (never another bot, which
+// always self-calls anyway). Returns the caught player's id, or null. `random`
+// is injectable so tests are deterministic.
+const maybeCatchUno = (engine, random = Math.random) => {
+  const { unoState } = engine.getState()
+  if (!unoState || unoState.called || isBotUserId(unoState.playerId)) {
+    return null
+  }
+  if (random() > CATCH_PROBABILITY) return null
+  engine.catchUno(unoState.playerId)
+  return unoState.playerId
+}
+
 module.exports = {
   BOT_STRATEGIES,
+  callUnoIfNeeded,
   ensureBotPlayers,
   getBotPoolSize,
   getBotStrategyForUserId,
   isBotUserId,
+  maybeCatchUno,
   pickDeclaredColor,
   playNextAction,
   rememberBotUsers,

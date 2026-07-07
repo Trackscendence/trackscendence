@@ -53,7 +53,20 @@ const scheduleBotTurn = ({
     if (!botPlayers.isBotUserId(livePlayer)) return
 
     try {
+      // Before moving, the bot may catch a human still on one card who never
+      // called UNO. If it does, surface it and push the penalty before playing.
+      const caughtId = botPlayers.maybeCatchUno(liveEngine)
+      if (caughtId != null) {
+        io.to(`game:${gameId}`).emit('uno_caught', {
+          gameId,
+          targetUserId: caughtId,
+          byUserId: livePlayer,
+        })
+        broadcastGameState(io, gameId, liveEngine)
+      }
       botPlayers.playNextAction(liveEngine)
+      // A bot always calls UNO on itself the moment it reaches one card.
+      botPlayers.callUnoIfNeeded(liveEngine, livePlayer)
       broadcastGameState(io, gameId, liveEngine)
       await checkGameEnd(gameId, liveEngine)
     } catch (error) {

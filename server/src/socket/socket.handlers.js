@@ -843,6 +843,58 @@ const registerHandlers = (io, socket) => {
       socket.emit('game_error', { message: err.message })
     }
   })
+
+  // Call UNO on yourself. Neither call nor catch changes the turn, so they only
+  // rebroadcast state (no syncTurn) and can never end the game.
+  socket.on('game:call_uno', (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return
+    const { gameId } = data
+
+    const engine = gameStore.getEngine(gameId)
+    if (!engine) return socket.emit('game_error', { message: 'Game not found' })
+    if (isGamePaused(gameId)) {
+      return socket.emit('game_error', {
+        message: 'Waiting for a player to reconnect',
+      })
+    }
+
+    try {
+      engine.callUno(socket.user.id)
+      broadcastGameState(io, gameId, engine)
+    } catch (err) {
+      socket.emit('game_error', { message: err.message })
+    }
+  })
+
+  // Catch an opponent who reached one card without calling UNO.
+  socket.on('game:catch_uno', (data) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return
+    const { gameId } = data
+    const targetUserId = Number(data.targetUserId)
+
+    const engine = gameStore.getEngine(gameId)
+    if (!engine) return socket.emit('game_error', { message: 'Game not found' })
+    if (isGamePaused(gameId)) {
+      return socket.emit('game_error', {
+        message: 'Waiting for a player to reconnect',
+      })
+    }
+    // Only a player in this game may catch, and never themselves.
+    if (!engine.getPlayerIds().includes(socket.user.id)) return
+    if (targetUserId === socket.user.id) return
+
+    try {
+      engine.catchUno(targetUserId)
+      io.to(`game:${gameId}`).emit('uno_caught', {
+        gameId,
+        targetUserId,
+        byUserId: socket.user.id,
+      })
+      broadcastGameState(io, gameId, engine)
+    } catch (err) {
+      socket.emit('game_error', { message: err.message })
+    }
+  })
 }
 
 module.exports = registerHandlers

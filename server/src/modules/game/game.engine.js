@@ -60,6 +60,14 @@ class UnoEngine {
     this.turnNonce = 0
     this.turnExpiresAt = null
 
+    // The open UNO window, or null. Set when a play drops a player to one card:
+    // { playerId, called }. `called` flips true when that player calls UNO in
+    // time (safe); otherwise an opponent's next play (or a catch) penalizes them.
+    // Only one window is ever open at a time: opening a new one coincides with
+    // resolving the previous, since reaching one card requires a play, and that
+    // same play resolves any window left pending by the player before.
+    this.unoState = null
+
     this.initDeck()
     this.shuffleDeck()
     this.dealCards()
@@ -299,6 +307,11 @@ class UnoEngine {
       }
     }
 
+    // A valid play by anyone other than the player who owns the open UNO window
+    // is that window's deadline ("the opponent's next play"): settle it first,
+    // penalizing them if they never called.
+    this._resolvePendingUno(playerId)
+
     // Move card from hand to discard pile
     playerHand.splice(cardIndex, 1)
     this.discardPile.push(cardToPlay)
@@ -308,8 +321,14 @@ class UnoEngine {
 
     // Check win condition
     if (playerHand.length === 0) {
+      this.unoState = null
       this.winner = playerId
       return
+    }
+
+    // Dropping to a single card opens this player's UNO window.
+    if (playerHand.length === 1) {
+      this.openUnoWindow(playerId)
     }
 
     // Handle action cards
@@ -372,6 +391,11 @@ class UnoEngine {
     this.players[playerId].push(card)
     this.hasDrawnThisTurn = true
     this.drawnCardThisTurn = card
+
+    // Drawing back above one card closes this player's own UNO window.
+    if (this.unoState && this.unoState.playerId === playerId) {
+      this.unoState = null
+    }
 
     // Standard rules: If drawn card can be played, player can choose to play it.
     // Otherwise, turn auto-skips.
@@ -447,6 +471,70 @@ class UnoEngine {
     }
 
     this.nextTurn()
+  }
+
+  /**
+   * Opens the UNO window for a player who just dropped to one card.
+   * @param {string} playerId
+   */
+  openUnoWindow(playerId) {
+    this.unoState = { playerId, called: false }
+  }
+
+  /**
+   * Marks the open UNO window called, making its owner safe. Only that owner
+   * may call it.
+   * @param {string} playerId
+   * @throws {Error} If there is no open window for that player.
+   */
+  callUno(playerId) {
+    if (!this.unoState || this.unoState.playerId !== playerId) {
+      throw new Error('No UNO to call')
+    }
+    this.unoState.called = true
+  }
+
+  /**
+   * Catches a player who reached one card without calling UNO, drawing them the
+   * penalty. Fails if they already called (safe) or there is nothing to catch.
+   * @param {string} targetId - the player being caught
+   * @returns {{ penalizedId: string, cards: number }}
+   * @throws {Error} If there is no open window to catch for that player.
+   */
+  catchUno(targetId) {
+    if (!this.unoState || this.unoState.playerId !== targetId) {
+      throw new Error('No UNO to catch')
+    }
+    if (this.unoState.called) {
+      throw new Error('Player already called UNO')
+    }
+    this._penalizeUno(targetId)
+    this.unoState = null
+    return { penalizedId: targetId, cards: GAME_RULES.UNO_PENALTY_CARDS }
+  }
+
+  /**
+   * Settles an open window when a different player takes their next play: if the
+   * owner never called, they draw the penalty. A no-op when the window belongs
+   * to the acting player (a 2-player skip that handed the turn back to them).
+   * @param {string} nextPlayerId - the player about to play
+   */
+  _resolvePendingUno(nextPlayerId) {
+    if (!this.unoState || this.unoState.playerId === nextPlayerId) return
+    if (!this.unoState.called) {
+      this._penalizeUno(this.unoState.playerId)
+    }
+    this.unoState = null
+  }
+
+  /**
+   * Draws the UNO penalty into a player's hand.
+   * @param {string} playerId
+   */
+  _penalizeUno(playerId) {
+    for (let index = 0; index < GAME_RULES.UNO_PENALTY_CARDS; index += 1) {
+      this.players[playerId].push(this._drawOne())
+    }
   }
 
   /**
@@ -531,6 +619,11 @@ class UnoEngine {
       currentPlayer: this.playerOrder[this.currentPlayerIndex],
       playDirection: this.playDirection,
       turnExpiresAt: this.turnExpiresAt,
+      // The open UNO window (who is on one card and whether they called), or
+      // null. Drives the client's call button and the opponent catch badge.
+      unoState: this.unoState
+        ? { playerId: this.unoState.playerId, called: this.unoState.called }
+        : null,
       winner: this.winner,
       scores: this.getScores(),
       deckSize: this.drawPile.length,

@@ -96,3 +96,72 @@ describe('seatUser survives repeated seat contention', () => {
     )
   })
 })
+
+describe('createRoomForOwner', () => {
+  const owner = { id: 11, username: 'dev-bot' }
+  const openedRoom = {
+    id: 22,
+    name: "bot's room",
+    capacity: 2,
+    status: 'OPEN',
+    owner: { id: 11, username: 'dev-bot' },
+    players: [{ user: { id: 11, username: 'dev-bot' } }],
+  }
+
+  afterEach(() => mock.restoreAll())
+
+  it('opens a new room for the owner instead of joining another room', async () => {
+    mock.method(roomRepository, 'findActiveRoomByUserId', async () => null)
+    mock.method(roomRepository, 'createRoomIfUnderLimit', async (data) => {
+      assert.deepStrictEqual(data, {
+        name: "bot's room",
+        capacity: 2,
+        ownerId: 11,
+        maxOpenRooms: 1,
+      })
+      return { room: openedRoom }
+    })
+
+    const dto = await roomService.createRoomForOwner(owner, {
+      capacity: 2,
+      name: "bot's room",
+    })
+
+    assert.strictEqual(dto.id, 22)
+    assert.strictEqual(dto.owner.userId, 11)
+    assert.deepStrictEqual(
+      dto.players.map((player) => player.userId),
+      [11],
+    )
+  })
+
+  it('reuses the owner seat when that owner already has an open room', async () => {
+    mock.method(
+      roomRepository,
+      'findActiveRoomByUserId',
+      async () => openedRoom,
+    )
+    const createMock = mock.method(
+      roomRepository,
+      'createRoomIfUnderLimit',
+      async () => ({ room: null }),
+    )
+
+    const dto = await roomService.createRoomForOwner(owner, { capacity: 2 })
+
+    assert.strictEqual(dto.id, 22)
+    assert.strictEqual(createMock.mock.callCount(), 0)
+  })
+
+  it('rejects when the open-room limit is already reached', async () => {
+    mock.method(roomRepository, 'findActiveRoomByUserId', async () => null)
+    mock.method(roomRepository, 'createRoomIfUnderLimit', async () => ({
+      error: roomRepository.ROOM_ERRORS.LIMIT_REACHED,
+    }))
+
+    await assert.rejects(
+      () => roomService.createRoomForOwner(owner, { capacity: 2 }),
+      /A room is already open/,
+    )
+  })
+})

@@ -1,4 +1,5 @@
 const friendsRepository = require('#modules/friends/friends.repository')
+const chatRoomService = require('#modules/chat/chat-room.service')
 const logger = require('#utils/logger')
 
 const PRIVATE_ROOM_PREFIX = 'user:'
@@ -53,22 +54,49 @@ const assertCanSendPrivateMessage = async ({
 const registerChatHandlers = (
   io,
   socket,
-  { repository = friendsRepository } = {},
+  { repository = friendsRepository, chatRooms = chatRoomService } = {},
 ) => {
-  const handleRoomMessage = (data) => {
+  chatRooms
+    .listActiveSocketRoomsForUser(socket.user.id)
+    .then((rooms) => {
+      rooms.forEach((room) => socket.join(room))
+    })
+    .catch((error) => logger.error('Failed to join chat rooms', error))
+
+  const emitChatRooms = async () => {
+    socket.emit('chat:rooms', await chatRooms.listRooms(socket.user))
+  }
+
+  const handleRoomMessage = async (data) => {
     if (!isObjectPayload(data)) return
 
     const recipient = getTrimmedString(data.recipient || data.room)
     const message = getTrimmedString(data.message)
 
-    if (
-      !recipient ||
-      !message ||
-      recipient.startsWith(PRIVATE_ROOM_PREFIX) ||
-      !socket.rooms.has(recipient)
-    ) {
+    if (!recipient || !message || recipient.startsWith(PRIVATE_ROOM_PREFIX)) {
       return
     }
+
+    const chatRoomId = chatRooms.parseChatRoomRecipientId(recipient)
+    if (chatRoomId) {
+      try {
+        const payload = await chatRooms.createMessage(socket.user, {
+          message,
+          recipient,
+        })
+        const memberUserIds =
+          await chatRooms.listActiveMemberUserIds(chatRoomId)
+        memberUserIds.forEach((userId) => {
+          io.to(`user:${userId}`).emit('chat:message', payload)
+        })
+      } catch (error) {
+        logger.error('Failed to send chat room message', error)
+        emitChatError(socket, error.message || 'Unable to send room message')
+      }
+      return
+    }
+
+    if (!socket.rooms.has(recipient)) return
 
     io.to(recipient).emit(
       'chat:message',
@@ -77,6 +105,45 @@ const registerChatHandlers = (
   }
 
   socket.on('chat:message', handleRoomMessage)
+
+  socket.on('chat:rooms:list', async () => {
+    try {
+      await emitChatRooms()
+    } catch (error) {
+      logger.error('Failed to list chat rooms', error)
+      emitChatError(socket, 'Unable to list chat rooms')
+    }
+  })
+
+  socket.on('chat:room_create', async (data) => {
+    if (!isObjectPayload(data)) return
+
+    try {
+      const { room } = await chatRooms.createRoom(socket.user, data)
+      socket.join(room.socketRoom)
+      socket.emit('chat:room', room)
+      await emitChatRooms()
+    } catch (error) {
+      logger.error('Failed to create chat room', error)
+      emitChatError(socket, error.message || 'Unable to create chat room')
+    }
+  })
+
+  socket.on('chat:room_join', async (data) => {
+    if (!isObjectPayload(data)) return
+
+    try {
+      const { room } = await chatRooms.joinRoom(socket.user, {
+        roomId: data.roomId,
+      })
+      socket.join(room.socketRoom)
+      socket.emit('chat:room', room)
+      await emitChatRooms()
+    } catch (error) {
+      logger.error('Failed to join chat room', error)
+      emitChatError(socket, error.message || 'Unable to join chat room')
+    }
+  })
 
   socket.on('chat:private_message', async (data) => {
     if (!isObjectPayload(data)) return

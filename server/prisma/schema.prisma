@@ -58,6 +58,10 @@ model User {
   lockedOutUntil                   DateTime?
   ownedRooms                       Room[]       @relation("RoomOwner")
   roomMemberships                  RoomPlayer[]
+  createdChatRooms                 ChatRoom[]       @relation("ChatRoomCreator")
+  chatRoomMemberships              ChatRoomMember[]
+  chatRoomInvitesSent              ChatRoomMember[] @relation("ChatRoomInviter")
+  chatMessages                     ChatMessage[]
   apiKeys                          ApiKey[]
 
   @@index([deletedAt])
@@ -138,6 +142,23 @@ enum RoomStatus {
   CLOSED
 }
 
+enum ChatRoomVisibility {
+  PUBLIC
+  INVITE_ONLY
+}
+
+enum ChatRoomMemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum ChatRoomMemberStatus {
+  INVITED
+  ACTIVE
+  LEFT
+  KICKED
+}
+
 model Room {
   id        Int        @id @default(autoincrement())
   name      String
@@ -192,4 +213,56 @@ model Friendship {
   @@index([requesterId, status])
   @@index([addresseeId, status])
   @@index([blockedById])
+}
+
+model ChatRoom {
+  id          Int                @id @default(autoincrement())
+  name        String
+  visibility  ChatRoomVisibility @default(PUBLIC)
+  createdById Int
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  createdBy   User             @relation("ChatRoomCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  memberships ChatRoomMember[]
+  messages    ChatMessage[]
+
+  @@index([visibility])
+  @@index([createdById])
+}
+
+model ChatRoomMember {
+  id          Int                  @id @default(autoincrement())
+  roomId      Int
+  userId      Int
+  role        ChatRoomMemberRole   @default(MEMBER)
+  status      ChatRoomMemberStatus @default(ACTIVE)
+  isMuted     Boolean              @default(false)
+  invitedById Int?
+  joinedAt    DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User?    @relation("ChatRoomInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([roomId, userId])
+  @@index([userId, status])
+  @@index([roomId, status])
+  @@index([invitedById])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  userId    Int
+  message   String
+  createdAt DateTime @default(now())
+
+  room ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@index([userId])
 }

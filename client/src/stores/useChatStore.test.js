@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import useChatStore, {
   GENERAL_CHAT_ROOM_ID,
+  getChatRoomId,
   getGameRoomId,
   getPrivateRoomId,
   isPrivateRoomId,
@@ -69,6 +70,69 @@ test('falls back to general when the active friend room disappears', () => {
 test('identifies private chat rooms', () => {
   assert.equal(isPrivateRoomId(getPrivateRoomId(12)), true)
   assert.equal(isPrivateRoomId(GENERAL_CHAT_ROOM_ID), false)
+})
+
+test('syncs dynamic chat rooms with membership state', () => {
+  useChatStore.getState().reset()
+
+  useChatStore.getState().syncChatRooms([
+    {
+      id: 5,
+      socketRoom: getChatRoomId(5),
+      name: 'Strategy',
+      visibility: 'INVITE_ONLY',
+      isJoined: true,
+      isAdmin: true,
+      isInvited: false,
+      membership: { isMuted: false, role: 'ADMIN', status: 'ACTIVE' },
+      members: [],
+    },
+  ])
+
+  const room = useChatStore.getState().rooms[getChatRoomId(5)]
+
+  assert.equal(room.type, 'chat')
+  assert.equal(room.chatRoomId, 5)
+  assert.equal(room.name, 'Strategy')
+  assert.equal(room.isJoined, true)
+  assert.equal(room.isAdmin, true)
+})
+
+test('preserves dynamic chat-room messages across room sync', () => {
+  useChatStore.getState().reset()
+  const roomId = getChatRoomId(6)
+
+  useChatStore.getState().syncChatRooms([
+    {
+      id: 6,
+      socketRoom: roomId,
+      name: 'Lobby',
+      visibility: 'PUBLIC',
+      isJoined: true,
+      membership: { isMuted: false, role: 'MEMBER', status: 'ACTIVE' },
+      members: [],
+    },
+  ])
+  useChatStore.getState().addMessage(roomId, {
+    message: 'saved locally',
+    user: { id: 1, username: 'me' },
+  })
+  useChatStore.getState().syncChatRooms([
+    {
+      id: 6,
+      socketRoom: roomId,
+      name: 'Lobby',
+      visibility: 'PUBLIC',
+      isJoined: true,
+      membership: { isMuted: false, role: 'MEMBER', status: 'ACTIVE' },
+      members: [],
+    },
+  ])
+
+  assert.equal(
+    useChatStore.getState().messages[roomId][0].message,
+    'saved locally',
+  )
 })
 
 test('routes private message echoes to the selected friend room', () => {

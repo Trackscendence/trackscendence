@@ -254,6 +254,11 @@ const useGameStore = create((set) => ({
     socket.emit('game:play_card', { gameId, cardIndex, declaredColor }),
   drawCard: (gameId) => socket.emit('game:draw_card', { gameId }),
   passTurn: (gameId) => socket.emit('game:pass_turn', { gameId }),
+  // Call UNO on your own last card, or catch an opponent who forgot to. Both
+  // resolve on the server, which replies with a fresh game_state_update.
+  callUno: (gameId) => socket.emit('game:call_uno', { gameId }),
+  catchUno: (gameId, targetUserId) =>
+    socket.emit('game:catch_uno', { gameId, targetUserId }),
   // Ask the server to replay the current state of a running game (page
   // refresh, reconnect). The reply arrives as a normal game_state_update.
   requestGameState: (gameId) => socket.emit('game:state', { gameId }),

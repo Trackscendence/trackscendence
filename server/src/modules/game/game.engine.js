@@ -52,6 +52,14 @@ class UnoEngine {
     this.hasDrawnThisTurn = false
     this.drawnCardThisTurn = null
 
+    // Monotonic turn counter, bumped on every turn change. The turn-timer layer
+    // captures it when arming a timeout and bails if it changed, so a move that
+    // lands just as the timer fires cannot double-apply. `turnExpiresAt` is the
+    // wall-clock deadline the socket layer stamps for the client countdown; the
+    // engine only carries it so getState() can serialize it.
+    this.turnNonce = 0
+    this.turnExpiresAt = null
+
     this.initDeck()
     this.shuffleDeck()
     this.dealCards()
@@ -412,6 +420,33 @@ class UnoEngine {
     } else if (this.currentPlayerIndex >= this.playerOrder.length) {
       this.currentPlayerIndex = 0
     }
+
+    this.turnNonce += 1
+  }
+
+  /**
+   * Applies a turn-timeout for an idle player. If they never drew this turn,
+   * force-draw one card for them; either way, advance the turn. A timeout only
+   * ever draws and passes, so it can never empty a hand and never produces a
+   * winner (callers rely on this to skip the end-of-game check).
+   *
+   * @param {string} playerId - The player whose turn timed out.
+   * @throws {Error} If the game is over or it is not that player's turn.
+   */
+  applyTurnTimeout(playerId) {
+    if (this.winner) {
+      throw new Error('Game is already over')
+    }
+
+    if (this.playerOrder[this.currentPlayerIndex] !== playerId) {
+      throw new Error('Not your turn')
+    }
+
+    if (!this.hasDrawnThisTurn) {
+      this.players[playerId].push(this._drawOne())
+    }
+
+    this.nextTurn()
   }
 
   /**
@@ -495,6 +530,7 @@ class UnoEngine {
       currentColor: this.currentColor,
       currentPlayer: this.playerOrder[this.currentPlayerIndex],
       playDirection: this.playDirection,
+      turnExpiresAt: this.turnExpiresAt,
       winner: this.winner,
       scores: this.getScores(),
       deckSize: this.drawPile.length,

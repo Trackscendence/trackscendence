@@ -1,4 +1,5 @@
-import Card from '@/components/Card'
+import { bump } from '@/dev/renderCounter'
+import HandCard from './_components/HandCard'
 
 // A card is 154px wide. Small hands sit at the default 36px overlap; larger
 // hands tighten the overlap so the whole fan stays inside FAN_MAX_WIDTH instead
@@ -17,6 +18,7 @@ const overlapFor = (count) => {
 }
 
 const PlayerHand = ({ cards, onCardClick, player }) => {
+  bump('playerHand')
   const overlap = overlapFor(cards.length)
 
   return (
@@ -36,11 +38,10 @@ const PlayerHand = ({ cards, onCardClick, player }) => {
               zIndex: cardPosition,
             }}
           >
-            <Card
+            <HandCard
               {...card}
-              onClick={
-                onCardClick ? () => onCardClick(cardPosition) : undefined
-              }
+              cardPosition={cardPosition}
+              onCardClick={onCardClick}
             />
           </li>
         ))}

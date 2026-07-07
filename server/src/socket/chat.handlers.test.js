@@ -25,7 +25,7 @@ const createIo = () => {
 const createSocket = ({ rooms = [] } = {}) => {
   const handlers = {}
   const emissions = []
-  return {
+  const socket = {
     emissions,
     handlers,
     rooms: new Set(['channel:#general', 'user:1', ...rooms]),
@@ -33,10 +33,41 @@ const createSocket = ({ rooms = [] } = {}) => {
     emit: (event, payload) => {
       emissions.push({ event, payload })
     },
+    join: (room) => {
+      socket.rooms.add(room)
+    },
     on: (event, handler) => {
       handlers[event] = handler
     },
   }
+  return socket
+}
+
+const createChatRooms = (overrides = {}) => ({
+  createMessage: async ({ message, recipient }) => ({
+    id: 1,
+    message,
+    recipient,
+    user: { id: 1, username: 'sender' },
+  }),
+  createRoom: async () => ({
+    room: { id: 8, socketRoom: 'chat:8', name: 'Room 8' },
+  }),
+  joinRoom: async () => ({
+    room: { id: 8, socketRoom: 'chat:8', name: 'Room 8' },
+  }),
+  listActiveMemberUserIds: async () => [1],
+  listActiveSocketRoomsForUser: async () => [],
+  listRooms: async () => ({ rooms: [] }),
+  parseChatRoomRecipientId: () => null,
+  ...overrides,
+})
+
+const registerTestChatHandlers = (io, socket, options = {}) => {
+  registerChatHandlers(io, socket, {
+    chatRooms: createChatRooms(options.chatRooms),
+    repository: options.repository,
+  })
 }
 
 describe('parsePrivateRecipientId', () => {
@@ -55,7 +86,7 @@ describe('registerChatHandlers', () => {
   it('broadcasts room messages only to rooms the socket has joined', () => {
     const io = createIo()
     const socket = createSocket()
-    registerChatHandlers(io, socket)
+    registerTestChatHandlers(io, socket)
 
     socket.handlers['chat:message']({
       recipient: 'channel:#general',
@@ -82,7 +113,7 @@ describe('registerChatHandlers', () => {
   it('broadcasts game room messages to the active game room', () => {
     const io = createIo()
     const socket = createSocket({ rooms: ['game:game-1'] })
-    registerChatHandlers(io, socket)
+    registerTestChatHandlers(io, socket)
 
     socket.handlers['chat:message']({
       recipient: 'game:game-1',
@@ -108,7 +139,7 @@ describe('registerChatHandlers', () => {
     const repository = {
       findRelationshipBetweenUsers: async () => ({ status: 'ACCEPTED' }),
     }
-    registerChatHandlers(io, socket, { repository })
+    registerTestChatHandlers(io, socket, { repository })
 
     await socket.handlers['chat:private_message']({
       recipient: 'user:2',
@@ -143,7 +174,7 @@ describe('registerChatHandlers', () => {
     const repository = {
       findRelationshipBetweenUsers: async () => null,
     }
-    registerChatHandlers(io, socket, { repository })
+    registerTestChatHandlers(io, socket, { repository })
 
     await socket.handlers['chat:private_message']({
       recipient: 'user:2',
@@ -157,6 +188,88 @@ describe('registerChatHandlers', () => {
         payload: {
           message: 'Private messages are only available between friends',
         },
+      },
+    ])
+  })
+
+  it('joins persisted chat rooms on registration', async () => {
+    const io = createIo()
+    const socket = createSocket()
+    registerTestChatHandlers(io, socket, {
+      chatRooms: {
+        listActiveSocketRoomsForUser: async () => ['chat:8'],
+      },
+    })
+
+    await new Promise((resolve) => setImmediate(resolve))
+
+    assert.equal(socket.rooms.has('chat:8'), true)
+  })
+
+  it('persists and broadcasts dynamic chat-room messages', async () => {
+    const io = createIo()
+    const socket = createSocket({ rooms: ['chat:8'] })
+    registerTestChatHandlers(io, socket, {
+      chatRooms: {
+        createMessage: async (user, payload) => ({
+          id: 99,
+          message: payload.message,
+          recipient: payload.recipient,
+          user: { id: user.id, username: user.username },
+        }),
+        listActiveMemberUserIds: async () => [1, 2],
+        parseChatRoomRecipientId: () => 8,
+      },
+    })
+
+    await socket.handlers['chat:message']({
+      recipient: 'chat:8',
+      message: 'hello channel',
+    })
+
+    assert.deepEqual(io.emissions, [
+      {
+        event: 'chat:message',
+        room: 'user:1',
+        payload: {
+          id: 99,
+          message: 'hello channel',
+          recipient: 'chat:8',
+          user: { id: 1, username: 'sender' },
+        },
+      },
+      {
+        event: 'chat:message',
+        room: 'user:2',
+        payload: {
+          id: 99,
+          message: 'hello channel',
+          recipient: 'chat:8',
+          user: { id: 1, username: 'sender' },
+        },
+      },
+    ])
+  })
+
+  it('supports socket chat-room creation and joins the new room', async () => {
+    const io = createIo()
+    const socket = createSocket()
+    registerTestChatHandlers(io, socket)
+
+    await socket.handlers['chat:room_create']({
+      name: 'Strategy',
+      visibility: 'PUBLIC',
+    })
+
+    assert.equal(socket.rooms.has('chat:8'), true)
+    assert.deepEqual(socket.emissions, [
+      {
+        event: 'chat:room',
+        payload: { id: 8, socketRoom: 'chat:8', name: 'Room 8' },
+      },
+      {
+        event: 'chat:rooms',
+        payload: { rooms: [] },
       },
     ])
   })

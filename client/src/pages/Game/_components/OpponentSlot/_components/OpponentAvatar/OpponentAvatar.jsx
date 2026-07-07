@@ -3,7 +3,7 @@ const OpponentAvatar = ({ player }) => {
     return (
       <img
         alt={`${player.username} avatar`}
-        className="size-[70px] rounded-full object-cover"
+        className="size-[54px] rounded-full object-cover"
         src={player.avatarUrl}
       />
     )
@@ -12,7 +12,7 @@ const OpponentAvatar = ({ player }) => {
   return (
     <span
       aria-label={`${player.username} avatar`}
-      className="block size-[70px] rounded-full bg-[#FFB347]"
+      className="block size-[54px] rounded-full bg-[#FFB347]"
       role="img"
     />
   )

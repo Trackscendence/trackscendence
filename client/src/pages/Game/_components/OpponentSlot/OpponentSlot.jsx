@@ -1,3 +1,5 @@
+import { memo } from 'react'
+import { bump } from '@/dev/renderCounter'
 import OpponentAvatar from './_components/OpponentAvatar'
 import OpponentCardStack from './_components/OpponentCardStack'
 
@@ -7,6 +9,7 @@ const SIDE_LAYOUTS = {
 }
 
 const OpponentSlot = ({ isActive = false, orientation = 'top', player }) => {
+  bump('opponentSlot')
   const isTop = orientation.startsWith('top')
   const layoutClass = isTop
     ? 'flex-col items-center'
@@ -30,4 +33,16 @@ const OpponentSlot = ({ isActive = false, orientation = 'top', player }) => {
   )
 }
 
-export default OpponentSlot
+// mapServerGameState rebuilds the `player` OBJECT every turn, so default memo
+// never hits. Compare only the fields that change the rendered slot. cardCount
+// and isActive are the load-bearing ones: without them an opponent drawing a
+// card or the turn passing would not re-render.
+const areEqual = (previous, next) =>
+  previous.isActive === next.isActive &&
+  previous.orientation === next.orientation &&
+  previous.player.id === next.player.id &&
+  previous.player.username === next.player.username &&
+  previous.player.avatarUrl === next.player.avatarUrl &&
+  previous.player.cardCount === next.player.cardCount
+
+export default memo(OpponentSlot, areEqual)

@@ -8,7 +8,6 @@ import useAuthStore from '@/stores/useAuthStore'
 let leaderboardRequestId = 0
 
 const useGameStore = create((set) => ({
-  matchHistory: [],
   leaderboard: [],
   leaderboardPagination: null,
   isLeaderboardLoading: false,
@@ -51,7 +50,6 @@ const useGameStore = create((set) => ({
   // lobby. Reset when the player re-enters the waiting room.
   roomClosed: false,
 
-  setMatchHistory: (matchHistory) => set({ matchHistory }),
   setLeaderboard: (leaderboard) => set({ leaderboard }),
 
   // Fetch the ranked-players list for the results screen and the leaderboard

@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom'
 
-// The black uppercase "Lobby" chip shared by the profile header and the
-// results screen. Renders as a Link to /lobby by default, or as a button when
-// an onClick is supplied (the results screen clears the finished game before
-// navigating). Sizing and positioning come from className so each context can
-// place it; the visual identity (black, uppercase, hover orange) stays here.
+// The black uppercase "Lobby" chip shared by the profile header and results.
+// It renders as a Link by default, or as a button when the caller must clear
+// state before navigating. Sizing and positioning come from className.
 const BASE_CLASS =
-  'inline-flex items-center justify-center gap-1 bg-black text-sm font-semibold text-white uppercase transition hover:bg-[#f2652a] focus:ring-2 focus:ring-[#f2652a]/35 focus:outline-none'
+  'inline-flex items-center justify-center gap-1 bg-black text-sm font-semibold text-white uppercase transition focus:ring-2 focus:outline-none'
+
+const VARIANT_CLASSES = {
+  default: 'hover:bg-[#f2652a] focus:ring-[#f2652a]/35',
+  neutral: 'hover:bg-[#2f2925] focus:ring-[#2f2925]/35',
+}
 
 const ChipContent = () => (
   <>
@@ -28,21 +31,20 @@ const ChipContent = () => (
   </>
 )
 
-const LobbyChip = ({ onClick, className = '' }) => {
+const LobbyChip = ({ className = '', onClick, variant = 'default' }) => {
+  const variantClass = VARIANT_CLASSES[variant] || VARIANT_CLASSES.default
+  const buttonClass = `${BASE_CLASS} ${variantClass} ${className}`
+
   if (onClick) {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        className={`${BASE_CLASS} ${className}`}
-      >
+      <button type="button" onClick={onClick} className={buttonClass}>
         <ChipContent />
       </button>
     )
   }
 
   return (
-    <Link to="/lobby" className={`${BASE_CLASS} ${className}`}>
+    <Link to="/lobby" className={buttonClass}>
       <ChipContent />
     </Link>
   )

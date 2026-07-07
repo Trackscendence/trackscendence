@@ -12,6 +12,7 @@ const OutcomeActions = ({ onPlayAgain, onHome }) => {
       </Button>
       <LobbyChip
         onClick={onHome}
+        variant="neutral"
         className="h-[42px] w-full sm:w-auto sm:px-8"
       />
     </div>

@@ -26,6 +26,11 @@ const scheduleBotTurn = ({
   gameId,
   broadcastGameState,
   checkGameEnd,
+  // Called after the bot has moved and the turn has settled, instead of the
+  // default self-reschedule. The socket layer passes this so it can arm the
+  // human turn timer once play returns to a person (and re-schedule the next
+  // bot when it does not). Omitted in unit tests, which keep the legacy loop.
+  onSettled,
   schedule = setTimeout,
   cancel = clearTimeout,
   delayMs = BOT_TURN_DELAY_MS,
@@ -58,6 +63,7 @@ const scheduleBotTurn = ({
 
     const nextEngine = gameStore.getEngine(gameId)
     if (!nextEngine || nextEngine.winner) return
+    if (onSettled) return onSettled(gameId)
     scheduleBotTurn({
       io,
       gameId,

@@ -5,6 +5,8 @@ const gameStore = require('#modules/game/game.store')
 const matchmaking = require('#modules/game/matchmaking.service')
 const gameService = require('#modules/game/game.service')
 const botTurns = require('#modules/game/bot-turn.service')
+const botPlayers = require('#modules/game/bot-player.service')
+const turnTimers = require('#modules/game/turn-timer.service')
 const roomService = require('#modules/room/room.service')
 const devRunner = require('#modules/game/dev-runner.service')
 const { buildGameStatePayload } = require('#modules/game/game.contract')
@@ -111,6 +113,7 @@ const abandonActiveGame = async (io, userId) => {
   if (!abandonedGame) return
   stopDevGameRun(abandonedGame.id)
   botTurns.clearBotTurnTimer(abandonedGame.id)
+  turnTimers.clearTurnTimer(abandonedGame.id)
   pausedGames.delete(abandonedGame.id)
 
   let rematch = false
@@ -151,6 +154,74 @@ const broadcastGameState = (io, gameId, engine) => {
 }
 
 /**
+ * Fires when a turn's deadline lapses without the player acting. Guards first:
+ * a paused, ended, or already-advanced game (turnNonce moved because the player
+ * acted just in time) is a no-op. Otherwise force-draw-and-pass for the idle
+ * player, then re-sync the turn (arm the next clock or hand to a bot) and push
+ * the new deadline. A timeout only draws and passes, so it can never end the
+ * game and needs no checkGameEnd here.
+ */
+const onTurnExpire = (io, gameId, armedNonce, checkGameEnd) => {
+  if (isGamePaused(gameId)) return
+  const engine = gameStore.getEngine(gameId)
+  if (!engine || engine.winner) return
+  if (engine.turnNonce !== armedNonce) return
+
+  try {
+    engine.applyTurnTimeout(engine.getState().currentPlayer)
+  } catch (error) {
+    logger.error(`Turn timeout failed for game ${gameId}`, error)
+    return
+  }
+
+  syncTurn(io, gameId, checkGameEnd)
+  broadcastGameState(io, gameId, engine)
+}
+
+/**
+ * Single choke point that keeps the turn clock in step with whose turn it is.
+ * Call it right after any state change, before the broadcast that should carry
+ * the deadline. It clears the old timer, then: a bot turn gets no human clock
+ * (bots move on their own fast timer, and settle back through here); a human
+ * turn gets a fresh `turnExpiresAt` stamped for the client countdown and a
+ * server timer armed against the current turnNonce. Paused/ended games just
+ * clear.
+ */
+const syncTurn = (io, gameId, checkGameEnd) => {
+  turnTimers.clearTurnTimer(gameId)
+
+  const engine = gameStore.getEngine(gameId)
+  if (!engine || engine.winner || isGamePaused(gameId)) {
+    if (engine) engine.turnExpiresAt = null
+    return
+  }
+
+  const { currentPlayer } = engine.getState()
+  if (botPlayers.isBotUserId(currentPlayer)) {
+    engine.turnExpiresAt = null
+    botTurns.scheduleBotTurn({
+      io,
+      gameId,
+      broadcastGameState,
+      checkGameEnd,
+      onSettled: () => {
+        syncTurn(io, gameId, checkGameEnd)
+        const live = gameStore.getEngine(gameId)
+        if (live) broadcastGameState(io, gameId, live)
+      },
+    })
+    return
+  }
+
+  const armedNonce = engine.turnNonce
+  engine.turnExpiresAt = Date.now() + config.TURN_TIMER_MS
+  turnTimers.armTurnTimer({
+    gameId,
+    onExpire: () => onTurnExpire(io, gameId, armedNonce, checkGameEnd),
+  })
+}
+
+/**
  * Moves a started match's players out of the lobby and into their game room,
  * then pushes the initial state. Players are addressed by their `user:${id}`
  * rooms, so no live socket references are needed here.
@@ -161,15 +232,12 @@ const startMatch = (io, { gameId, players, engine }, { checkGameEnd } = {}) => {
     io.in(`user:${userId}`).socketsJoin(`game:${gameId}`)
     io.to(`user:${userId}`).emit('game_start', { gameId, players })
   })
-  broadcastGameState(io, gameId, engine)
+  // Arm the first turn's clock (or hand off to a bot) before the opening
+  // broadcast so it already carries turnExpiresAt.
   if (checkGameEnd) {
-    botTurns.scheduleBotTurn({
-      io,
-      gameId,
-      broadcastGameState,
-      checkGameEnd,
-    })
+    syncTurn(io, gameId, checkGameEnd)
   }
+  broadcastGameState(io, gameId, engine)
 }
 
 /**
@@ -245,6 +313,7 @@ const registerHandlers = (io, socket) => {
 
     stopDevGameRun(gameId)
     botTurns.clearBotTurnTimer(gameId)
+    turnTimers.clearTurnTimer(gameId)
 
     const state = await gameStore.getGame(gameId)
     // Status check and flip with no await in between: this is the gate that
@@ -320,6 +389,11 @@ const registerHandlers = (io, socket) => {
     }
     waiting.set(userId, deadline)
     botTurns.clearBotTurnTimer(gameId)
+    // Freeze the turn clock too, so a player is never charged for time that
+    // elapsed while the game was paused for a reconnect.
+    turnTimers.clearTurnTimer(gameId)
+    const pausedEngine = gameStore.getEngine(gameId)
+    if (pausedEngine) pausedEngine.turnExpiresAt = null
     broadcastPaused(gameId, waiting)
   }
 
@@ -337,7 +411,10 @@ const registerHandlers = (io, socket) => {
     }
     pausedGames.delete(gameId)
     io.to(`game:${gameId}`).emit('game_resumed', { gameId })
-    botTurns.scheduleBotTurn({ io, gameId, broadcastGameState, checkGameEnd })
+    // Resume on a fresh full window and push it so the countdown restarts.
+    syncTurn(io, gameId, checkGameEnd)
+    const engine = gameStore.getEngine(gameId)
+    if (engine) broadcastGameState(io, gameId, engine)
   }
 
   const maybeStartDevRun = (roomId, match) => {
@@ -710,14 +787,9 @@ const registerHandlers = (io, socket) => {
 
     try {
       engine.playCard(socket.user.id, cardIndex, declaredColor)
+      syncTurn(io, gameId, checkGameEnd)
       broadcastGameState(io, gameId, engine)
       await checkGameEnd(gameId, engine)
-      botTurns.scheduleBotTurn({
-        io,
-        gameId,
-        broadcastGameState,
-        checkGameEnd,
-      })
     } catch (err) {
       socket.emit('game_error', { message: err.message })
     }
@@ -742,14 +814,9 @@ const registerHandlers = (io, socket) => {
         card: result.card,
         playable: result.playable,
       })
+      syncTurn(io, gameId, checkGameEnd)
       broadcastGameState(io, gameId, engine)
       await checkGameEnd(gameId, engine)
-      botTurns.scheduleBotTurn({
-        io,
-        gameId,
-        broadcastGameState,
-        checkGameEnd,
-      })
     } catch (err) {
       socket.emit('game_error', { message: err.message })
     }
@@ -769,14 +836,9 @@ const registerHandlers = (io, socket) => {
 
     try {
       engine.pass(socket.user.id)
+      syncTurn(io, gameId, checkGameEnd)
       broadcastGameState(io, gameId, engine)
       await checkGameEnd(gameId, engine)
-      botTurns.scheduleBotTurn({
-        io,
-        gameId,
-        broadcastGameState,
-        checkGameEnd,
-      })
     } catch (err) {
       socket.emit('game_error', { message: err.message })
     }

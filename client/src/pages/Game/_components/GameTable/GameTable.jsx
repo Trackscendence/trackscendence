@@ -2,6 +2,8 @@ import CenterZone from '../CenterZone'
 import OpponentSlot from '../OpponentSlot'
 import PassTurnButton from '../PassTurnButton'
 import PlayerHand from '../PlayerHand'
+import TurnBanner from '../TurnBanner'
+import TurnSplash from '../TurnSplash'
 
 const TOP_SEATS = ['top-left', 'top', 'top-right']
 
@@ -25,12 +27,14 @@ const getSidePositionClass = (topOpponentCount) => {
 }
 
 const GameTable = ({
+  activePlayerName,
   canDraw,
   canPass,
   currentPlayer,
   currentTurnPlayerId,
   deckSize,
   direction,
+  isMyTurn,
   onCardClick,
   onDrawPileClick,
   onPassClick,
@@ -38,6 +42,7 @@ const GameTable = ({
   opponents,
   pendingDraw,
   topCard,
+  turnExpiresAt,
 }) => {
   const topOpponents = getOpponentsBySeat(opponents, TOP_SEATS)
   const leftOpponent = getOpponentBySeat(opponents, 'left')
@@ -46,7 +51,7 @@ const GameTable = ({
   const sidePositionClass = getSidePositionClass(topOpponents.length)
 
   return (
-    <section className="bg-surface-warm min-h-[100svh] w-full overflow-x-hidden px-4 pt-4 text-black sm:px-6 lg:px-10">
+    <section className="bg-surface-warm relative min-h-[100svh] w-full overflow-x-hidden px-4 pt-4 text-black sm:px-6 lg:px-10">
       <div className="mx-auto grid min-h-[calc(100svh-1rem)] w-full max-w-[1440px] grid-cols-1 grid-rows-[auto_auto_auto_auto_auto] gap-4 [grid-template-areas:'top'_'center'_'left'_'right'_'bottom'] md:relative md:block md:h-[calc(100svh-1rem)] md:min-h-0">
         <div className="flex min-h-48 items-start justify-center [grid-area:top] md:absolute md:top-0 md:left-1/2 md:min-h-0 md:w-full md:max-w-[820px] md:-translate-x-1/2 lg:max-w-[920px]">
           <div className="flex w-full flex-wrap items-start justify-center gap-x-2 gap-y-3 md:justify-around">
@@ -76,7 +81,7 @@ const GameTable = ({
           </div>
         )}
 
-        <div className="flex min-h-72 items-center justify-center [grid-area:center] md:absolute md:top-1/2 md:left-1/2 md:min-h-0 md:-translate-x-1/2 md:-translate-y-1/2">
+        <div className="relative flex min-h-72 items-center justify-center [grid-area:center] md:absolute md:top-1/2 md:left-1/2 md:min-h-0 md:-translate-x-1/2 md:-translate-y-1/2">
           <CenterZone
             canDraw={canDraw}
             deckSize={deckSize}
@@ -90,6 +95,13 @@ const GameTable = ({
             pendingDraw={pendingDraw}
             topCard={topCard}
           />
+          <div className="absolute top-full left-1/2 mt-2 -translate-x-1/2">
+            <TurnBanner
+              activePlayerName={activePlayerName}
+              expiresAt={turnExpiresAt}
+              isMyTurn={isMyTurn}
+            />
+          </div>
         </div>
 
         {rightOpponent && (
@@ -123,6 +135,7 @@ const GameTable = ({
           </div>
         </div>
       </div>
+      <TurnSplash expiresAt={turnExpiresAt} isMyTurn={isMyTurn} />
     </section>
   )
 }

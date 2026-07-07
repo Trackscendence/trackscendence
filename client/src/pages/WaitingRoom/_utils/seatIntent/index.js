@@ -1,1 +1,1 @@
-export { getSeatIntentKey } from './seatIntent'
+export { claimSeatIntent, getSeatIntentKey } from './seatIntent'

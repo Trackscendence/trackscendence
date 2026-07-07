@@ -11,7 +11,7 @@ import {
   cancelDeferredRoomExit,
   scheduleDeferredRoomExit,
 } from './_utils/deferredRoomExit'
-import { getSeatIntentKey } from './_utils/seatIntent'
+import { claimSeatIntent, getSeatIntentKey } from './_utils/seatIntent'
 
 // Once a match forms, hold on "All players here", reveal the overlay after a
 // beat, then hand off to the game table — mirrors the design's 1.3s + fade.
@@ -37,7 +37,6 @@ const WaitingRoom = () => {
   const roomClosed = useGameStore((state) => state.roomClosed)
   const [isOverlayVisible, setIsOverlayVisible] = useState(false)
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
-  const handledSeatIntentKeyRef = useRef(null)
   const leaveTimerRef = useRef(null)
   // 'deciding' while the room list loads, then 'choosing' (Quick Start) when no
   // room is open. Once seated, the room itself drives the view.
@@ -67,15 +66,14 @@ const WaitingRoom = () => {
     // cleanup's room:leave would otherwise undo a seat emitted by the lobby.
     // The reactive `rooms` then renders the room once the server confirms it,
     // so there is no decide timer and Quick Start never shows.
-    const seatIntentKey = getSeatIntentKey(seatIntent)
-    if (seatIntentKey && handledSeatIntentKeyRef.current !== seatIntentKey) {
-      handledSeatIntentKeyRef.current = seatIntentKey
+    const hasSeatIntent = Boolean(getSeatIntentKey(seatIntent))
+    if (hasSeatIntent && claimSeatIntent(seatIntent, location.key)) {
       if (seatIntent.type === 'join') joinRoomById(seatIntent.roomId)
       else createRoom(seatIntent.capacity)
     }
     // Direct arrival (post-login): decide for ourselves after a short beat.
     // Auto-join a room if one is available, or offer Quick Start to open one.
-    const decideTimer = seatIntent
+    const decideTimer = hasSeatIntent
       ? null
       : setTimeout(() => {
           const state = useGameStore.getState()
@@ -106,7 +104,7 @@ const WaitingRoom = () => {
         leaveLobby,
       })
     }
-  }, [token, seatIntent])
+  }, [token, seatIntent, location.key])
 
   // The owner ended the room out from under this player (#221): hand back to
   // the lobby. The owner who pressed End is already navigating there.

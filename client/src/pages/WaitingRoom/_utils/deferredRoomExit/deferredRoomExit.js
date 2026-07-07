@@ -1,8 +1,15 @@
-export const cancelDeferredRoomExit = ({ timerRef, cancel = clearTimeout }) => {
-  if (!timerRef.current) return
+let deferredRoomExitTimer = null
 
-  cancel(timerRef.current)
-  timerRef.current = null
+export const cancelDeferredRoomExit = ({
+  timerRef,
+  cancel = clearTimeout,
+} = {}) => {
+  const timer = timerRef?.current ?? deferredRoomExitTimer
+  if (!timer) return
+
+  cancel(timer)
+  if (timerRef) timerRef.current = null
+  if (deferredRoomExitTimer === timer) deferredRoomExitTimer = null
 }
 
 export const scheduleDeferredRoomExit = ({
@@ -14,9 +21,12 @@ export const scheduleDeferredRoomExit = ({
 }) => {
   cancelDeferredRoomExit({ timerRef, cancel })
 
-  timerRef.current = schedule(() => {
+  const timer = schedule(() => {
     leaveRoom()
     leaveLobby()
-    timerRef.current = null
+    if (timerRef) timerRef.current = null
+    if (deferredRoomExitTimer === timer) deferredRoomExitTimer = null
   }, 0)
+  deferredRoomExitTimer = timer
+  if (timerRef) timerRef.current = timer
 }

@@ -1,3 +1,6 @@
+const MAX_CLAIMED_SEAT_INTENTS = 20
+const claimedSeatIntentKeys = new Set()
+
 export const getSeatIntentKey = (seatIntent) => {
   if (!seatIntent || typeof seatIntent !== 'object') return null
 
@@ -12,4 +15,23 @@ export const getSeatIntentKey = (seatIntent) => {
   }
 
   return null
+}
+
+export const claimSeatIntent = (seatIntent, locationKey) => {
+  const seatIntentKey = getSeatIntentKey(seatIntent)
+  if (!seatIntentKey) return false
+
+  const scopedKey = `${locationKey || 'current'}:${seatIntentKey}`
+  if (claimedSeatIntentKeys.has(scopedKey)) return false
+
+  claimedSeatIntentKeys.add(scopedKey)
+  while (claimedSeatIntentKeys.size > MAX_CLAIMED_SEAT_INTENTS) {
+    const oldestKey = claimedSeatIntentKeys.values().next().value
+    claimedSeatIntentKeys.delete(oldestKey)
+  }
+  return true
+}
+
+export const resetSeatIntentClaimsForTests = () => {
+  claimedSeatIntentKeys.clear()
 }

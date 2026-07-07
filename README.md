@@ -70,6 +70,7 @@ Our platform enforces robust security mechanisms to protect user accounts and ga
 
 - **Password Policies**: Strong password strength validation and secure authenticated password change procedures.
 - **Password Reset**: Expiring password reset tokens delivered securely via Mailpit or configured SMTP server.
+- **Identifier Login**: The standard login form accepts either the account email address or username, normalizes the identifier, and sends the same generic failure message for invalid credentials.
 - **Two-Factor Authentication (2FA)**: TOTP-based 2FA with backup recovery codes. Managed directly via the authenticated User Settings page.
 - **Account Protection**: Automated failed login lockout thresholds and session security features.
 - **42 OAuth Login**: "Continue with 42" signs users in through the 42 intra (authorization-code flow, `public` scope). A first login provisions an account from the intra profile; an intra email that matches an existing account links the 42 identity to it instead, still gated by 2FA when enabled. The server exchanges the code, issues the platform's own JWT, and never stores intra tokens.

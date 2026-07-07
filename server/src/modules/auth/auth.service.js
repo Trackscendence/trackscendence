@@ -198,7 +198,7 @@ const validateLoginInput = ({ identifier, password } = {}) => {
   const details = []
 
   if (!normalizedIdentifier) {
-    details.push('Identifier is required')
+    details.push('Email or username is required')
   }
   if (!normalizedPassword) {
     details.push('Password is required')
@@ -1070,5 +1070,6 @@ module.exports = {
   setupTwoFactor,
   toSafeAuthUser,
   validateFortyTwoCallbackInput,
+  validateLoginInput,
   validateRegistrationInput,
 }

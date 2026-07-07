@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import useChatStore, {
   GENERAL_CHAT_ROOM_ID,
+  getGameRoomId,
   getPrivateRoomId,
   isPrivateRoomId,
 } from './useChatStore.js'
@@ -121,4 +122,24 @@ test('keeps per-room message history bounded', () => {
 
   assert.equal(messages.length, 100)
   assert.equal(messages[0].message, 'message-5')
+})
+
+test('stores and clears game-room messages', () => {
+  useChatStore.getState().reset()
+  const roomId = getGameRoomId('game-1')
+
+  useChatStore.getState().receiveRoomMessage({
+    recipient: roomId,
+    message: 'table talk',
+    user: { id: 2, username: 'player2' },
+  })
+
+  assert.equal(
+    useChatStore.getState().messages[roomId][0].message,
+    'table talk',
+  )
+
+  useChatStore.getState().clearRoomMessages(roomId)
+
+  assert.equal(useChatStore.getState().messages[roomId], undefined)
 })

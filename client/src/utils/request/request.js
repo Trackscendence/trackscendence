@@ -2,6 +2,21 @@ const env = import.meta.env || {}
 
 export const apiBaseUrl = `${(env.VITE_API_URL || '/api').replace(/\/$/, '')}/v1`
 
+// Dev-only breadcrumb: the debug HUD listens for this to log failed API calls.
+// The name is owned here (the producer) so the HUD can import it without prod
+// ever reaching into the dev module. The dispatch is gated on env.DEV, so it
+// and this string tree-shake out of production builds.
+export const REQUEST_ERROR_EVENT = 'trackscendence:request-error'
+
+const emitRequestError = (method, path, status, message) => {
+  if (!env.DEV || typeof window === 'undefined') return
+  window.dispatchEvent(
+    new CustomEvent(REQUEST_ERROR_EVENT, {
+      detail: { method, path, status, message },
+    }),
+  )
+}
+
 const SESSION_ERROR_MESSAGES = new Set([
   'Authentication required',
   'Invalid or expired token',
@@ -59,14 +74,17 @@ const request = async (path, { method = 'GET', body, token } = {}) => {
   } catch (err) {
     clearTimeout(timeoutId)
     if (err.name === 'AbortError') {
+      emitRequestError(method, path, 'timeout', 'Request timed out')
       throw new Error('Request timed out')
     }
+    emitRequestError(method, path, 'network', err.message)
     throw err
   }
   clearTimeout(timeoutId)
 
   if (!response.ok) {
     const error = await parseError(response)
+    emitRequestError(method, path, response.status, error.message)
 
     if (
       response.status === 401 &&

@@ -18,6 +18,11 @@ const useDevStore = create(
       mockOpponent: false,
       // Which seeded identity the fake opponent wears.
       fillWith: 'uno',
+      // Room size for a server-seeded bot room.
+      devRoomCapacity: '2',
+      // When a seeded room starts, let the server play every turn through to
+      // the result screen.
+      devRoomAutoRun: false,
       // Skip the waiting-room reveal delays and jump straight to the game.
       instantMatch: false,
       // The real vs. fake data source. 'live' leaves the real backend and
@@ -43,6 +48,8 @@ const useDevStore = create(
         set({
           mockOpponent: false,
           fillWith: 'uno',
+          devRoomCapacity: '2',
+          devRoomAutoRun: false,
           instantMatch: false,
           dataSource: 'live',
           outcomeState: 'won',
@@ -59,12 +66,14 @@ const useDevStore = create(
       version: 1,
       partialize: (state) => ({
         fillWith: state.fillWith,
+        devRoomCapacity: state.devRoomCapacity,
         outcomeState: state.outcomeState,
         simSpeed: state.simSpeed,
         simPlayers: state.simPlayers,
       }),
       migrate: (persistedState) => ({
         fillWith: persistedState?.fillWith ?? 'uno',
+        devRoomCapacity: persistedState?.devRoomCapacity ?? '2',
         outcomeState: persistedState?.outcomeState ?? 'won',
         simSpeed: persistedState?.simSpeed ?? 'normal',
         simPlayers: persistedState?.simPlayers ?? '2',
@@ -76,6 +85,9 @@ const useDevStore = create(
 // True whenever the panel is faking something — drives the orange status LED so
 // you always know at a glance that what's on screen is rigged, not real.
 export const selectIsRigged = (state) =>
-  state.mockOpponent || state.dataSource !== 'live' || state.simulateGame
+  state.mockOpponent ||
+  state.devRoomAutoRun ||
+  state.dataSource !== 'live' ||
+  state.simulateGame
 
 export default useDevStore

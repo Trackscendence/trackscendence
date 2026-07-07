@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
+import { socket } from '@/services/socket'
 import useDevStore, { selectIsRigged } from './useDevStore'
 import ToggleSwitch from './controls/ToggleSwitch'
 import RadioGroup from './controls/RadioGroup'
@@ -94,6 +95,8 @@ const DevControls = () => {
   const rigged = useDevStore(selectIsRigged)
   const mockOpponent = useDevStore((state) => state.mockOpponent)
   const fillWith = useDevStore((state) => state.fillWith)
+  const devRoomCapacity = useDevStore((state) => state.devRoomCapacity)
+  const devRoomAutoRun = useDevStore((state) => state.devRoomAutoRun)
   const dataSource = useDevStore((state) => state.dataSource)
   const outcomeState = useDevStore((state) => state.outcomeState)
   const simulateGame = useDevStore((state) => state.simulateGame)
@@ -102,6 +105,7 @@ const DevControls = () => {
   const setFlag = useDevStore((state) => state.setFlag)
   const restartSim = useDevStore((state) => state.restartSim)
   const reset = useDevStore((state) => state.reset)
+  const [botRoomStatus, setBotRoomStatus] = useState(null)
 
   // The simulated game's winner, for the status line under the sim controls.
   const simWinnerId = useGameStore((state) =>
@@ -152,6 +156,34 @@ const DevControls = () => {
     const params = new URLSearchParams(search)
     if (pathname !== '/game' || params.get('source') === 'mock')
       navigate('/game')
+  }
+
+  const handleSpawnBotRoom = () => {
+    setBotRoomStatus({ kind: 'pending', message: 'opening room' })
+    socket.timeout(5000).emit(
+      'dev:spawn_bot_room',
+      {
+        playerName: fillWith,
+        capacity: Number(devRoomCapacity),
+        autoRun: devRoomAutoRun,
+        speed: simSpeed,
+      },
+      (error, response) => {
+        if (error) {
+          setBotRoomStatus({ kind: 'error', message: 'server did not answer' })
+          return
+        }
+        if (!response?.ok) {
+          setBotRoomStatus({
+            kind: 'error',
+            message: response?.message || 'room failed',
+          })
+          return
+        }
+        setBotRoomStatus({ kind: 'success', message: 'room ready' })
+        navigate('/lobby')
+      },
+    )
   }
 
   // Ctrl+` fully hides / re-summons the panel when it's in your way.
@@ -233,6 +265,41 @@ const DevControls = () => {
             options={FILL_OPTIONS}
             onChange={(next) => setFlag('fillWith', next)}
           />
+          <RadioGroup
+            label="Bot room size"
+            name="dev-bot-room-size"
+            value={devRoomCapacity}
+            options={SIM_PLAYER_OPTIONS}
+            onChange={(next) => setFlag('devRoomCapacity', next)}
+          />
+          <ToggleSwitch
+            label="End-to-end run"
+            hint="Auto-plays the spawned game after you join"
+            checked={devRoomAutoRun}
+            onChange={(next) => setFlag('devRoomAutoRun', next)}
+          />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSpawnBotRoom}
+              disabled={botRoomStatus?.kind === 'pending'}
+              className="self-start rounded-md bg-[#FFB04F] px-3 py-1.5 font-mono text-[12px] font-bold text-[#1C120A] transition-colors hover:bg-[#ffc275] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFB04F] disabled:cursor-wait disabled:bg-[#B39B7C]"
+            >
+              Open bot room
+            </button>
+            {botRoomStatus ? (
+              <span
+                className={[
+                  'font-mono text-[11px]',
+                  botRoomStatus.kind === 'error'
+                    ? 'text-[#E03325]'
+                    : 'text-[#B39B7C]',
+                ].join(' ')}
+              >
+                {botRoomStatus.message}
+              </span>
+            ) : null}
+          </div>
         </section>
 
         <div className="border-t border-[#FDE8CF]/10" />

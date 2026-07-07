@@ -57,6 +57,14 @@ const toRoomDto = (room) => ({
 
 const isRoomFull = (roomDto) => roomDto.players.length >= roomDto.capacity
 
+const validateCapacity = (capacity) => {
+  if (capacity !== undefined && !ALLOWED_CAPACITIES.includes(capacity)) {
+    throw new BadRequestException('Unsupported room size', {
+      details: [`Room size must be one of ${ALLOWED_CAPACITIES.join(', ')}`],
+    })
+  }
+}
+
 /**
  * Rooms the lobby page shows: OPEN and IN_GAME, oldest first.
  * @returns {Promise<Array<Object>>} room DTOs
@@ -82,11 +90,7 @@ const listRooms = async () => {
  *   checks `isRoomFull` on it to decide whether the match should start
  */
 const seatUser = async (user, { capacity } = {}) => {
-  if (capacity !== undefined && !ALLOWED_CAPACITIES.includes(capacity)) {
-    throw new BadRequestException('Unsupported room size', {
-      details: [`Room size must be one of ${ALLOWED_CAPACITIES.join(', ')}`],
-    })
-  }
+  validateCapacity(capacity)
 
   for (let attempt = 0; attempt < SEAT_ATTEMPTS; attempt += 1) {
     // One read serves both checks on the seat hot path: the visible-rooms list
@@ -135,6 +139,43 @@ const seatUser = async (user, { capacity } = {}) => {
   }
 
   throw new ConflictException('No seat is available right now, try again')
+}
+
+/**
+ * Opens a new room for a specific owner without falling through to another
+ * open room. Used by development tools that need a seeded owner in the lobby
+ * grid while keeping the real join path intact.
+ *
+ * @param {{ id: number, username: string }} owner
+ * @param {{ capacity?: number, name?: string }} [options]
+ * @returns {Promise<Object>} the opened room DTO
+ */
+const createRoomForOwner = async (owner, { capacity, name } = {}) => {
+  validateCapacity(capacity)
+
+  const currentRoom = await roomRepository.findActiveRoomByUserId(owner.id)
+  if (currentRoom) {
+    const dto = toRoomDto(currentRoom)
+    if (dto.status === 'OPEN') return dto
+    throw new ConflictException('That owner is already in a game room')
+  }
+
+  for (let attempt = 0; attempt < SEAT_ATTEMPTS; attempt += 1) {
+    const { room, error } = await roomRepository.createRoomIfUnderLimit({
+      name: name ?? `${owner.username}'s room`,
+      capacity: capacity ?? DEFAULT_CAPACITY,
+      ownerId: owner.id,
+      maxOpenRooms: MAX_OPEN_ROOMS,
+    })
+    if (room) return toRoomDto(room)
+    if (error === roomRepository.ROOM_ERRORS.CONFLICT) {
+      await backoffBeforeRetry(attempt)
+      continue
+    }
+    throw new ConflictException('A room is already open')
+  }
+
+  throw new ConflictException('Could not open the room, try again')
 }
 
 /**
@@ -264,11 +305,28 @@ const closeRoomsForGame = async (gameId) => {
   return closedCount > 0
 }
 
+/**
+ * Closes one open room and returns the room as it was before closing so callers
+ * can notify seated players.
+ *
+ * @param {number} roomId
+ * @returns {Promise<Object|null>} the closed room DTO, or null if it was not open
+ */
+const closeOpenRoomById = async (roomId) => {
+  const room = (await roomRepository.findVisibleRooms()).find(
+    (candidate) => candidate.id === roomId && candidate.status === 'OPEN',
+  )
+  if (!room) return null
+  const closed = await roomRepository.closeOpenRoomById(roomId)
+  return closed > 0 ? toRoomDto(room) : null
+}
+
 module.exports = {
   toRoomDto,
   isRoomFull,
   listRooms,
   seatUser,
+  createRoomForOwner,
   joinRoom,
   leaveOpenRoom,
   markRoomInGame,
@@ -276,4 +334,5 @@ module.exports = {
   releaseRoomClaim,
   endOwnedRoom,
   closeRoomsForGame,
+  closeOpenRoomById,
 }

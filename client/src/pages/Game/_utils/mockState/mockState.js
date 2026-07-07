@@ -55,10 +55,22 @@ const currentPlayer = {
 }
 
 const opponentBySeat = {
+  'top-left': {
+    id: 'player-4',
+    username: 'Player 4',
+    seat: 'top-left',
+    cardCount: 4,
+  },
   top: {
     id: 'player-2',
     username: 'Player 2',
     seat: 'top',
+    cardCount: 4,
+  },
+  'top-right': {
+    id: 'player-5',
+    username: 'Player 5',
+    seat: 'top-right',
     cardCount: 4,
   },
   left: {
@@ -98,6 +110,8 @@ const MOCK_PLAYER_SEATS = {
   2: ['top'],
   3: ['left', 'right'],
   4: ['top', 'left', 'right'],
+  5: ['top-left', 'top-right', 'left', 'right'],
+  6: ['top-left', 'top', 'top-right', 'left', 'right'],
 }
 
 const getPlayerSeats = (playerCount) => {
@@ -121,9 +135,16 @@ export const getMockGameState = ({
 // The Rig's data-source switch sends the game page here with ?source=mock;
 // the remaining params keep every table arrangement reachable by URL.
 
-const SUPPORTED_PLAYER_COUNTS = new Set(['2', '3', '4'])
+const SUPPORTED_PLAYER_COUNTS = new Set(['2', '3', '4', '5', '6'])
 const SUPPORTED_DIRECTIONS = new Set(['clockwise', 'counter-clockwise'])
-const SUPPORTED_SEATS = new Set(['bottom', 'top', 'left', 'right'])
+const SUPPORTED_SEATS = new Set([
+  'bottom',
+  'top-left',
+  'top',
+  'top-right',
+  'left',
+  'right',
+])
 
 const getPlayerCount = (value) => {
   if (SUPPORTED_PLAYER_COUNTS.has(value)) return Number(value)

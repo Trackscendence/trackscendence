@@ -14,11 +14,9 @@ const MAX_OPEN_ROOMS = 8
 const DEFAULT_CAPACITY = 2
 
 // Capacities a player may request when creating a room. The engine allows
-// 2 to 10, but the game table only lays out three opponent seats (top, left,
-// right), so it renders every player only up to four. We offer just those
-// sizes; a six-seat room would leave two opponents unplaced on the table.
-// Widening this waits on a five/six-opponent table layout.
-const ALLOWED_CAPACITIES = [2, 3, 4]
+// 2 to 10; the table currently supports up to six seats while keeping the
+// quick-start menu small.
+const ALLOWED_CAPACITIES = [2, 3, 4, 6]
 
 module.exports = {
   MAX_OPEN_ROOMS,

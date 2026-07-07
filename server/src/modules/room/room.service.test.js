@@ -7,12 +7,19 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 
 const roomService = require('#modules/room/room.service')
 const roomRepository = require('#modules/room/room.repository')
-const { MAX_OPEN_ROOMS } = require('#modules/room/room.constants')
+const {
+  ALLOWED_CAPACITIES,
+  MAX_OPEN_ROOMS,
+} = require('#modules/room/room.constants')
 
 // The capacity guard runs before any database access, so it can be exercised
 // without a live database (#156).
 describe('seatUser capacity validation', () => {
   const user = { id: 1, username: 'tester' }
+
+  it('offers six-player rooms', () => {
+    assert.deepStrictEqual(ALLOWED_CAPACITIES, [2, 3, 4, 6])
+  })
 
   it('rejects a capacity that is not an offered room size', async () => {
     await assert.rejects(

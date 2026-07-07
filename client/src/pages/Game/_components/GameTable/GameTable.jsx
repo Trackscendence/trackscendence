@@ -29,27 +29,31 @@ const GameTable = ({
   return (
     <section className="bg-surface-warm min-h-[100svh] w-full overflow-x-hidden px-4 pt-4 text-black sm:px-6 lg:px-10">
       <div className="mx-auto grid min-h-[calc(100svh-1rem)] w-full max-w-[1440px] grid-cols-1 grid-rows-[auto_auto_auto_auto_auto] gap-4 [grid-template-areas:'top'_'center'_'left'_'right'_'bottom'] md:relative md:block md:h-[calc(100svh-1rem)] md:min-h-0">
-        <div className="flex min-h-48 items-start justify-center [grid-area:top] md:absolute md:top-0 md:left-[calc(50%-4rem)] md:min-h-0 md:-translate-x-1/2">
+        <div className="flex min-h-48 items-start justify-center [grid-area:top] md:absolute md:top-0 md:left-1/2 md:min-h-0 md:-translate-x-1/2">
           {topOpponent && (
-            <OpponentSlot
-              isActive={topOpponent.id === currentTurnPlayerId}
-              orientation="top"
-              player={topOpponent}
-            />
+            <div className="origin-top scale-[0.8]">
+              <OpponentSlot
+                isActive={topOpponent.id === currentTurnPlayerId}
+                orientation="top"
+                player={topOpponent}
+              />
+            </div>
           )}
         </div>
 
         {leftOpponent && (
           <div className="flex min-h-[21rem] items-center justify-center [grid-area:left] md:absolute md:top-[38%] md:left-0 md:min-h-0 md:-translate-y-1/2 md:justify-start">
-            <OpponentSlot
-              isActive={leftOpponent.id === currentTurnPlayerId}
-              orientation="left"
-              player={leftOpponent}
-            />
+            <div className="origin-left scale-[0.8]">
+              <OpponentSlot
+                isActive={leftOpponent.id === currentTurnPlayerId}
+                orientation="left"
+                player={leftOpponent}
+              />
+            </div>
           </div>
         )}
 
-        <div className="flex min-h-72 items-center justify-center [grid-area:center] md:absolute md:top-[55%] md:left-1/2 md:min-h-0 md:-translate-x-1/2 md:-translate-y-1/2">
+        <div className="flex min-h-72 items-center justify-center [grid-area:center] md:absolute md:top-1/2 md:left-1/2 md:min-h-0 md:-translate-x-1/2 md:-translate-y-1/2">
           <CenterZone
             canDraw={canDraw}
             deckSize={deckSize}
@@ -67,11 +71,13 @@ const GameTable = ({
 
         {rightOpponent && (
           <div className="flex min-h-[21rem] items-center justify-center [grid-area:right] md:absolute md:top-[38%] md:right-0 md:min-h-0 md:-translate-y-1/2 md:justify-end">
-            <OpponentSlot
-              isActive={rightOpponent.id === currentTurnPlayerId}
-              orientation="right"
-              player={rightOpponent}
-            />
+            <div className="origin-right scale-[0.8]">
+              <OpponentSlot
+                isActive={rightOpponent.id === currentTurnPlayerId}
+                orientation="right"
+                player={rightOpponent}
+              />
+            </div>
           </div>
         )}
 
@@ -83,11 +89,13 @@ const GameTable = ({
               <PassTurnButton onPassClick={onPassClick} />
             </div>
           )}
-          <PlayerHand
-            cards={currentPlayer.cards}
-            onCardClick={onCardClick}
-            player={currentPlayer}
-          />
+          <div className="w-full origin-bottom scale-[0.8]">
+            <PlayerHand
+              cards={currentPlayer.cards}
+              onCardClick={onCardClick}
+              player={currentPlayer}
+            />
+          </div>
         </div>
       </div>
     </section>

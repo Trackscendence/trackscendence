@@ -1,0 +1,35 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 96 96"
+  role="img"
+  aria-label="Draw bot avatar"
+>
+  <rect width="96" height="96" rx="20" fill="#533118" />
+  <circle cx="48" cy="48" r="31" fill="#f4a261" />
+  <rect
+    x="29"
+    y="31"
+    width="24"
+    height="34"
+    rx="5"
+    fill="#fff3d6"
+    stroke="#533118"
+    stroke-width="5"
+  />
+  <rect
+    x="43"
+    y="31"
+    width="24"
+    height="34"
+    rx="5"
+    fill="#2a9d8f"
+    stroke="#533118"
+    stroke-width="5"
+  />
+  <path
+    d="M55 42v13M49 49h13"
+    stroke="#fff3d6"
+    stroke-width="5"
+    stroke-linecap="round"
+  />
+</svg>

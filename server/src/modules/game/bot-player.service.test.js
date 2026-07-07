@@ -7,7 +7,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 
 const botPlayerRepository = require('#modules/game/bot-player.repository')
 const botPlayers = require('#modules/game/bot-player.service')
-const { COLORS } = require('#modules/game/game.constants')
+const { CARD_TYPES, COLORS, VALUES } = require('#modules/game/game.constants')
 
 describe('bot player helpers', () => {
   afterEach(() => mock.restoreAll())
@@ -21,7 +21,8 @@ describe('bot player helpers', () => {
         id: nextId++,
         username: player.username,
         displayName: player.displayName,
-        avatarUrl: null,
+        bio: player.bio,
+        avatarUrl: player.avatarUrl,
       }),
     )
 
@@ -31,6 +32,15 @@ describe('bot player helpers', () => {
     assert.equal(users.length, 2)
     assert.equal(botPlayers.isBotUserId(users[0].id), true)
     assert.equal(upsertMock.mock.calls[0].arguments[0].username, 'bot-uno')
+    assert.match(upsertMock.mock.calls[0].arguments[0].bio, /Balanced/)
+    assert.equal(
+      upsertMock.mock.calls[0].arguments[0].avatarUrl,
+      '/bot-avatars/uno.svg',
+    )
+    assert.equal(
+      botPlayers.getBotStrategyForUserId(users[1].id),
+      botPlayers.BOT_STRATEGIES.TEMPO,
+    )
   })
 
   it('declares the most common color in the current hand', () => {
@@ -61,6 +71,115 @@ describe('bot player helpers', () => {
     botPlayers.playNextAction(engine)
 
     assert.deepStrictEqual(plays, [[7, 1, null]])
+  })
+
+  it('uses the tempo strategy to spend action cards before numbers', () => {
+    botPlayers.rememberBotUsers([{ id: 21, username: 'bot-skip' }])
+    const plays = []
+    const engine = {
+      hasDrawnThisTurn: false,
+      getState: () => ({ currentPlayer: 21 }),
+      getHand: () => [
+        { type: CARD_TYPES.NUMBER, color: COLORS.GREEN, value: VALUES.THREE },
+        { type: CARD_TYPES.ACTION, color: COLORS.GREEN, value: VALUES.SKIP },
+      ],
+      canPlayCard: (card) => card.color === COLORS.GREEN,
+      playCard: (...args) => plays.push(args),
+    }
+
+    botPlayers.playNextAction(engine)
+
+    assert.deepStrictEqual(plays, [[21, 1, null]])
+  })
+
+  it('uses the pressure strategy to spend draw cards before numbers', () => {
+    botPlayers.rememberBotUsers([{ id: 22, username: 'bot-draw' }])
+    const plays = []
+    const engine = {
+      hasDrawnThisTurn: false,
+      getState: () => ({ currentPlayer: 22 }),
+      getHand: () => [
+        { type: CARD_TYPES.NUMBER, color: COLORS.GREEN, value: VALUES.THREE },
+        {
+          type: CARD_TYPES.ACTION,
+          color: COLORS.GREEN,
+          value: VALUES.DRAW_TWO,
+        },
+      ],
+      canPlayCard: (card) => card.color === COLORS.GREEN,
+      playCard: (...args) => plays.push(args),
+    }
+
+    botPlayers.playNextAction(engine)
+
+    assert.deepStrictEqual(plays, [[22, 1, null]])
+  })
+
+  it('uses the leader strategy to avoid the shortest hand color', () => {
+    botPlayers.rememberBotUsers([{ id: 23, username: 'bot-reverse' }])
+    const plays = []
+    const engine = {
+      hasDrawnThisTurn: false,
+      getState: () => ({
+        currentPlayer: 23,
+        playerHandsSizes: { 23: 2, 31: 1, 41: 5 },
+      }),
+      getHand: (playerId) =>
+        String(playerId) === '31'
+          ? [
+              {
+                type: CARD_TYPES.NUMBER,
+                color: COLORS.RED,
+                value: VALUES.ONE,
+              },
+              {
+                type: CARD_TYPES.NUMBER,
+                color: COLORS.RED,
+                value: VALUES.TWO,
+              },
+            ]
+          : [
+              {
+                type: CARD_TYPES.NUMBER,
+                color: COLORS.RED,
+                value: VALUES.FIVE,
+              },
+              {
+                type: CARD_TYPES.NUMBER,
+                color: COLORS.GREEN,
+                value: VALUES.FIVE,
+              },
+            ],
+      canPlayCard: (card) => card.value === VALUES.FIVE,
+      playCard: (...args) => plays.push(args),
+    }
+
+    botPlayers.playNextAction(engine)
+
+    assert.deepStrictEqual(plays, [[23, 1, null]])
+  })
+
+  it('uses the closer strategy to save a playable drawn wild card', () => {
+    botPlayers.rememberBotUsers([{ id: 24, username: 'bot-wild' }])
+    const passes = []
+    const plays = []
+    const engine = {
+      hasDrawnThisTurn: true,
+      getState: () => ({ currentPlayer: 24 }),
+      getHand: () => [
+        { type: CARD_TYPES.NUMBER, color: COLORS.BLUE, value: VALUES.EIGHT },
+        { type: CARD_TYPES.NUMBER, color: COLORS.GREEN, value: VALUES.THREE },
+        { type: CARD_TYPES.WILD, color: COLORS.WILD, value: VALUES.WILD },
+      ],
+      canPlayCard: (card) => card.color === COLORS.WILD,
+      playCard: (...args) => plays.push(args),
+      pass: (...args) => passes.push(args),
+    }
+
+    botPlayers.playNextAction(engine)
+
+    assert.deepStrictEqual(plays, [])
+    assert.deepStrictEqual(passes, [[24]])
   })
 
   it('draws and immediately plays a playable drawn card', () => {

@@ -4,6 +4,7 @@ const botUserSelect = {
   id: true,
   username: true,
   displayName: true,
+  bio: true,
   avatarUrl: true,
 }
 
@@ -13,6 +14,8 @@ const upsertBotPlayer = (player) => {
     update: {
       username: player.username,
       displayName: player.displayName,
+      bio: player.bio,
+      avatarUrl: player.avatarUrl,
       isBot: true,
       isGuest: false,
       deletedAt: null,
@@ -21,6 +24,8 @@ const upsertBotPlayer = (player) => {
       email: player.email,
       username: player.username,
       displayName: player.displayName,
+      bio: player.bio,
+      avatarUrl: player.avatarUrl,
       isBot: true,
     },
     select: botUserSelect,

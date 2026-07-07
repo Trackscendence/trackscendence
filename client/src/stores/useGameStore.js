@@ -47,6 +47,9 @@ const useGameStore = create((set) => ({
   // "my room" (and the opponent's name) from this list; the lobby page renders
   // it as room cards.
   rooms: [],
+  // True while a room-grid page (lobby, waiting room) is watching `rooms_update`
+  // broadcasts, so a socket reconnect can re-join the server-side `rooms` room.
+  watchingRooms: false,
   // Suppresses the player's own room in incoming `rooms_update`s after they
   // leave, until the server confirms, so a late in-flight broadcast can't
   // re-show it (order-independent; still correct once multiple concurrent
@@ -209,6 +212,18 @@ const useGameStore = create((set) => ({
       }
     }),
   listRooms: () => socket.emit('room:list'),
+
+  // Subscribe to room-list broadcasts while a room-grid page (lobby, waiting
+  // room) is mounted; the flag lets a socket reconnect re-join the `rooms` room,
+  // since a fresh transport starts outside every server-side room.
+  watchRooms: () => {
+    set({ watchingRooms: true })
+    socket.emit('rooms:watch')
+  },
+  unwatchRooms: () => {
+    set({ watchingRooms: false })
+    socket.emit('rooms:unwatch')
+  },
 
   // Intentional forfeit from the in-game exit: end the game for everyone. The
   // server tears it down and reopens the room for the players left behind; this

@@ -35,19 +35,19 @@ SEED_SCALE=10000 SEED_GAMES=250000 npm run bench:seed   # volume for E2/E5/E6
 | E1  | F1, F2  | Initial-route JS (gzip), per-chunk sizes, budget gate       | Done. Shows the win. |
 | E3  | B1      | activeGames size, scan latency, RSS over N games            | Done. Shows the win. |
 | E2  | B3, I6  | Leaderboard plan + p95 latency, aggregation vs denormalized | Planned (baseline).  |
-| E4  | B5      | rooms_update payload bytes + fan-out (recipients)           | Done (baseline).     |
-| E5  | B4      | Prisma pool acquire-wait + timeout rate under load          | Done (baseline).     |
-| E6  | F3      | Profile load request count + wall-clock                     | Planned (baseline).  |
-| E7  | F5      | Game-table re-renders per update, INP                       | Planned (baseline).  |
+| E4  | B5      | rooms_update payload bytes + fan-out (recipients)           | Done; B5 shipped.    |
+| E5  | B4      | Prisma pool acquire-wait + timeout rate under load          | Done; B4 shipped.    |
+| E6  | F3      | Profile load request count                                  | Done; F3 shipped.    |
+| E7  | F5      | Game-table card re-renders per update                       | Done; F5 shipped.    |
 | E8  | —       | CI bundle-size budget gate                                  | Done (wired in CI).  |
 
 Honest reading: E1, E3, and E8 measure or guard work that already merged
-(route/vendor splitting; the game-store leak fix; the bundle budget), so they
-show real wins now. E2/E4/E5 and F5 are still open in the audit, so those
-experiments land as baselines and get their "after" once B3/B4/B5/F5 ship.
-Graceful shutdown (a prerequisite E5 touches) already merged separately. E6 and
-E7 need a live server auth flow and a browser React profiler respectively, so
-they stay planned until built with the right harness.
+(route/vendor splitting; the game-store leak fix; the bundle budget). E4 and E5
+were baselines that B5 and B4 now realize: B5 scopes the room broadcast to lobby
+watchers (the watchers-only fan-out E4 modelled), and B4 tunes the pool as the
+app default (the large-pool condition E5 measured). E6 and E7 are measured
+before/after for the F3 and F5 fixes (see below). E2 remains the open baseline
+until B3 ships the denormalized leaderboard endpoint.
 
 ## E1 — initial-route JS
 
@@ -113,3 +113,33 @@ instead of shipping silently. Reproduce it locally with:
 ```bash
 npm run bench:e1 -- --budget-kb=170
 ```
+
+## E6 — profile load request count (browser)
+
+E6 counts the REST calls a cold `/profile` load fires, before and after F3.
+Because Playwright is not a repo dependency (see the browser-verification notes),
+the measurement runs from a pinned Playwright script against the `compose:dev`
+stack rather than a committed benchmark: log in as the seed `dev` account,
+navigate to `/profile`, and record the profile-domain requests (`/users/me`,
+`/friends`, `/friends/requests`, `/game/leaderboard`).
+
+Measured: a cold load dropped from **4 distinct profile calls to 3** (F3 removes
+the dead `/friends/requests`), and the leaderboard is now fetched with `limit=5`.
+The 30s freshness guard is covered by `profileStore.currentProfileLoader.test.js`
+(a warm re-nav within the window fires no calls).
+
+## E7 — game-table re-renders per update (browser)
+
+E7 counts how many card and slot components re-render per `game_state_update`,
+before and after F5. The components carry a dev-only render counter
+(`client/src/dev/renderCounter.js`, tree-shaken from production) that increments
+`window.__renderCounts`. A pinned Playwright script logs in, turns on the dev
+Rig's client-side game simulation (no socket bot needed), and samples the
+counter across a window of live play.
+
+Measured over the same sim (~10 updates): leaf `Card` re-renders dropped from
+**126 to 22** — roughly **12.6 to 2.2 card re-renders per update, ~5.7x fewer**.
+`OpponentSlot` stays at one render per update because an opponent's `cardCount`
+changes each turn (the comparator correctly re-renders it), and `PlayerHand`
+(not memoized by design) tracks the update count. The "before" number is taken by
+temporarily removing the `memo` wrappers on the same sim.

@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import Card from '@/components/Card'
 
 const HORIZONTAL_OFFSETS = [
@@ -68,4 +69,12 @@ const OpponentCardStack = ({ orientation, player }) => {
   )
 }
 
-export default OpponentCardStack
+// The `player` OBJECT is rebuilt every turn by mapServerGameState, so default
+// memo never hits. cardCount is load-bearing: it drives how many face-down
+// cards the stack renders, so an opponent drawing must re-render it.
+const areEqual = (previous, next) =>
+  previous.orientation === next.orientation &&
+  previous.player.id === next.player.id &&
+  previous.player.cardCount === next.player.cardCount
+
+export default memo(OpponentCardStack, areEqual)

@@ -668,6 +668,171 @@ test('UnoEngine Turn Timeout (#352)', async (t) => {
   )
 })
 
+test('UnoEngine UNO Call / Catch (#353)', async (t) => {
+  const num = (color, value) => ({ type: CARD_TYPES.NUMBER, color, value })
+  // Seats p1 with the given hand and p2 with three green cards (enough that a
+  // single p2 play never itself drops to one card and opens a second window).
+  const seat = (
+    p1Cards,
+    p2Cards = [
+      num(COLORS.GREEN, VALUES.NINE),
+      num(COLORS.GREEN, VALUES.ONE),
+      num(COLORS.GREEN, VALUES.FOUR),
+    ],
+  ) => {
+    const game = new UnoEngine(['p1', 'p2'])
+    game.currentPlayerIndex = 0
+    game.playDirection = 1
+    game.hasDrawnThisTurn = false
+    game.drawnCardThisTurn = null
+    game.players['p1'] = p1Cards
+    game.players['p2'] = p2Cards
+    game.discardPile = [num(COLORS.RED, VALUES.THREE)]
+    game.currentColor = COLORS.RED
+    return game
+  }
+
+  await t.test('playing down to one card opens the UNO window', () => {
+    const game = seat([
+      num(COLORS.RED, VALUES.FIVE),
+      num(COLORS.BLUE, VALUES.TWO),
+    ])
+    game.playCard('p1', 0)
+    assert.deepStrictEqual(game.getState().unoState, {
+      playerId: 'p1',
+      called: false,
+    })
+  })
+
+  await t.test('calling UNO keeps you safe on the opponent next play', () => {
+    const game = seat(
+      [num(COLORS.RED, VALUES.FIVE), num(COLORS.BLUE, VALUES.TWO)],
+      [
+        num(COLORS.RED, VALUES.SEVEN),
+        num(COLORS.GREEN, VALUES.ONE),
+        num(COLORS.GREEN, VALUES.FOUR),
+      ],
+    )
+    game.playCard('p1', 0)
+    game.callUno('p1')
+    const before = game.players['p1'].length
+    game.playCard('p2', 0)
+    assert.strictEqual(game.players['p1'].length, before)
+    assert.strictEqual(game.getState().unoState, null)
+  })
+
+  await t.test('forgetting to call draws the penalty on the next play', () => {
+    const game = seat(
+      [num(COLORS.RED, VALUES.FIVE), num(COLORS.BLUE, VALUES.TWO)],
+      [
+        num(COLORS.RED, VALUES.SEVEN),
+        num(COLORS.GREEN, VALUES.ONE),
+        num(COLORS.GREEN, VALUES.FOUR),
+      ],
+    )
+    game.playCard('p1', 0)
+    const before = game.players['p1'].length
+    game.playCard('p2', 0)
+    assert.strictEqual(
+      game.players['p1'].length,
+      before + GAME_RULES.UNO_PENALTY_CARDS,
+    )
+    assert.strictEqual(game.getState().unoState, null)
+  })
+
+  await t.test('catching an uncalled player draws them the penalty', () => {
+    const game = seat([
+      num(COLORS.RED, VALUES.FIVE),
+      num(COLORS.BLUE, VALUES.TWO),
+    ])
+    game.playCard('p1', 0)
+    const before = game.players['p1'].length
+    const result = game.catchUno('p1')
+    assert.strictEqual(
+      game.players['p1'].length,
+      before + GAME_RULES.UNO_PENALTY_CARDS,
+    )
+    assert.deepStrictEqual(result, {
+      penalizedId: 'p1',
+      cards: GAME_RULES.UNO_PENALTY_CARDS,
+    })
+    assert.strictEqual(game.getState().unoState, null)
+  })
+
+  await t.test('a called player cannot be caught', () => {
+    const game = seat([
+      num(COLORS.RED, VALUES.FIVE),
+      num(COLORS.BLUE, VALUES.TWO),
+    ])
+    game.playCard('p1', 0)
+    game.callUno('p1')
+    assert.throws(() => game.catchUno('p1'), /already called/)
+  })
+
+  await t.test('only the window owner can call, only while open', () => {
+    const game = seat([
+      num(COLORS.RED, VALUES.FIVE),
+      num(COLORS.BLUE, VALUES.TWO),
+    ])
+    assert.throws(() => game.callUno('p1'), /No UNO to call/)
+    game.playCard('p1', 0)
+    assert.throws(() => game.callUno('p2'), /No UNO to call/)
+  })
+
+  await t.test('winning on the last card clears the window, no penalty', () => {
+    const game = seat([num(COLORS.RED, VALUES.FIVE)])
+    game.unoState = { playerId: 'p1', called: false }
+    game.playCard('p1', 0)
+    assert.strictEqual(game.getState().winner, 'p1')
+    assert.strictEqual(game.getState().unoState, null)
+  })
+
+  await t.test('drawing back above one card closes your own window', () => {
+    const game = seat([num(COLORS.RED, VALUES.FIVE)])
+    game.unoState = { playerId: 'p1', called: false }
+    game.drawPile = [num(COLORS.RED, VALUES.SIX)]
+    game.drawCard('p1')
+    assert.strictEqual(game.getState().unoState, null)
+  })
+
+  await t.test(
+    '2-player skip opens your window and the opponent may catch',
+    () => {
+      const game = seat([
+        { type: CARD_TYPES.ACTION, color: COLORS.RED, value: VALUES.SKIP },
+        num(COLORS.RED, VALUES.TWO),
+      ])
+      game.playCard('p1', 0)
+      assert.deepStrictEqual(game.getState().unoState, {
+        playerId: 'p1',
+        called: false,
+      })
+      assert.strictEqual(game.getState().currentPlayer, 'p1')
+      const before = game.players['p1'].length
+      game.catchUno('p1')
+      assert.strictEqual(
+        game.players['p1'].length,
+        before + GAME_RULES.UNO_PENALTY_CARDS,
+      )
+    },
+  )
+
+  await t.test(
+    '2-player skip then your winning play does not self-penalize',
+    () => {
+      const game = seat([
+        { type: CARD_TYPES.ACTION, color: COLORS.RED, value: VALUES.SKIP },
+        num(COLORS.RED, VALUES.TWO),
+      ])
+      game.playCard('p1', 0)
+      game.playCard('p1', 0)
+      assert.strictEqual(game.getState().winner, 'p1')
+      assert.strictEqual(game.players['p1'].length, 0)
+      assert.strictEqual(game.getState().unoState, null)
+    },
+  )
+})
+
 test.describe('Scoring (#197)', () => {
   test('cardPoints scores number cards at face value', () => {
     const game = new UnoEngine(['p1', 'p2'])

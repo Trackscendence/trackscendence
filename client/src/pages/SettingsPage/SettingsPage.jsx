@@ -133,30 +133,34 @@ const SettingsPage = () => {
   const section = SECTION_COPY[activeKey] ?? SECTION_COPY.account
 
   return (
-    <div className="mx-auto w-full max-w-[1104px]">
-      <h1 className="text-3xl font-black tracking-[-0.025em] text-[#1c1410] sm:text-4xl">
-        Settings
-      </h1>
-      <p className="mt-1.5 text-sm text-[#8a6845]">
-        Manage your account and security.
-      </p>
+    <div className="-mx-5 -mt-8 -mb-12 min-h-[calc(100vh-8rem)] bg-[#fff2df] px-5 py-8">
+      <div className="mx-auto w-full max-w-[1104px]">
+        <h1 className="text-3xl font-black tracking-[-0.025em] text-[#1c1410] sm:text-4xl">
+          Settings
+        </h1>
+        <p className="mt-1.5 text-sm text-[#8a6845]">
+          Manage your account and security.
+        </p>
 
-      <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-start">
-        <SettingsSidebar
-          items={NAV_ITEMS}
-          activeKey={activeKey}
-          onSelect={setActiveKey}
-        />
+        <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-start">
+          <SettingsSidebar
+            items={NAV_ITEMS}
+            activeKey={activeKey}
+            onSelect={setActiveKey}
+          />
 
-        <div className="flex-1 space-y-6">
-          <div>
-            <h2 className="text-2xl font-black tracking-[-0.025em] text-[#1c1410]">
-              {section.title}
-            </h2>
-            <p className="mt-1 text-sm text-[#8a6845]">{section.description}</p>
+          <div className="flex-1 space-y-6">
+            <div>
+              <h2 className="text-2xl font-black tracking-[-0.025em] text-[#1c1410]">
+                {section.title}
+              </h2>
+              <p className="mt-1 text-sm text-[#8a6845]">
+                {section.description}
+              </p>
+            </div>
+
+            {renderSettingsSection({ activeKey, navigate, setActiveKey, user })}
           </div>
-
-          {renderSettingsSection({ activeKey, navigate, setActiveKey, user })}
         </div>
       </div>
     </div>

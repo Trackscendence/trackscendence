@@ -144,13 +144,17 @@ const useGameStore = create((set) => ({
       gamePlayers: [],
     }),
 
-  // Seat the player. With no capacity the server joins the open room (or opens
-  // a default two-player one); with a capacity it opens a room of that size
-  // when none exists (the Quick Start choice). The game starts once the room
-  // fills.
+  // Quick-start seat: join a visible open room when one exists, otherwise open
+  // a default room. The game starts once the room fills.
   seatRoom: (capacity) => {
     set({ suppressOwnRoom: false })
     socket.emit('room:seat', capacity != null ? { capacity } : {})
+  },
+  // Explicit create from the lobby or the first-player quick-start picker.
+  // This always asks the server to open a room owned by this player.
+  createRoom: (capacity) => {
+    set({ suppressOwnRoom: false })
+    socket.emit('room:create', capacity != null ? { capacity } : {})
   },
   // Join a specific open room by id (the lobby grid's join button).
   joinRoomById: (roomId) => {

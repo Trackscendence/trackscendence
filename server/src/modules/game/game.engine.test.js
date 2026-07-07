@@ -343,6 +343,120 @@ test('UnoEngine Action Card Side Effects', async (t) => {
   )
 })
 
+test('UnoEngine 2-Player Turn Return (#351)', async (t) => {
+  // In a 2-player game the only opponent is always the "next" player, so any
+  // card that skips the next player hands the turn straight back to the one who
+  // played it: Skip, Reverse, Draw Two, Wild Draw Three, Wild Draw Four. A plain
+  // Wild and ordinary number cards pass the turn to the opponent. This looked
+  // like a bug in a live game (playing Wild Draw Four then moving again), but it
+  // is correct UNO. These tests lock it against future refactors.
+
+  // Seats p1 with `firstCard` plus a blue 2 filler so playing one card never
+  // wins, and puts a red 3 on the discard so a red or number card is always
+  // legal to play.
+  const seatTwoPlayer = (firstCard) => {
+    const game = new UnoEngine(['p1', 'p2'])
+    game.currentPlayerIndex = 0
+    game.playDirection = 1
+    game.hasDrawnThisTurn = false
+    game.drawnCardThisTurn = null
+    game.players['p1'] = [
+      firstCard,
+      { type: CARD_TYPES.NUMBER, color: COLORS.BLUE, value: VALUES.TWO },
+    ]
+    game.discardPile = [
+      { type: CARD_TYPES.NUMBER, color: COLORS.RED, value: VALUES.THREE },
+    ]
+    game.currentColor = COLORS.RED
+    return game
+  }
+
+  await t.test('Skip returns the turn to the player', () => {
+    const game = seatTwoPlayer({
+      type: CARD_TYPES.ACTION,
+      color: COLORS.RED,
+      value: VALUES.SKIP,
+    })
+    game.playCard('p1', 0)
+    assert.strictEqual(game.getState().currentPlayer, 'p1')
+  })
+
+  await t.test('Reverse returns the turn to the player', () => {
+    const game = seatTwoPlayer({
+      type: CARD_TYPES.ACTION,
+      color: COLORS.RED,
+      value: VALUES.REVERSE,
+    })
+    game.playCard('p1', 0)
+    assert.strictEqual(game.getState().currentPlayer, 'p1')
+  })
+
+  await t.test('Draw Two draws 2 for the opponent and returns the turn', () => {
+    const game = seatTwoPlayer({
+      type: CARD_TYPES.ACTION,
+      color: COLORS.RED,
+      value: VALUES.DRAW_TWO,
+    })
+    const before = game.players['p2'].length
+    game.playCard('p1', 0)
+    assert.strictEqual(game.players['p2'].length, before + 2)
+    assert.strictEqual(game.getState().currentPlayer, 'p1')
+  })
+
+  await t.test(
+    'Wild Draw Three draws 3 for the opponent and returns the turn',
+    () => {
+      const game = seatTwoPlayer({
+        type: CARD_TYPES.WILD,
+        color: COLORS.WILD,
+        value: VALUES.WILD_DRAW_THREE,
+      })
+      const before = game.players['p2'].length
+      game.playCard('p1', 0, COLORS.YELLOW)
+      assert.strictEqual(game.players['p2'].length, before + 3)
+      assert.strictEqual(game.getState().currentColor, COLORS.YELLOW)
+      assert.strictEqual(game.getState().currentPlayer, 'p1')
+    },
+  )
+
+  await t.test(
+    'Wild Draw Four draws 4 for the opponent and returns the turn',
+    () => {
+      const game = seatTwoPlayer({
+        type: CARD_TYPES.WILD,
+        color: COLORS.WILD,
+        value: VALUES.WILD_DRAW_FOUR,
+      })
+      const before = game.players['p2'].length
+      game.playCard('p1', 0, COLORS.GREEN)
+      assert.strictEqual(game.players['p2'].length, before + 4)
+      assert.strictEqual(game.getState().currentColor, COLORS.GREEN)
+      assert.strictEqual(game.getState().currentPlayer, 'p1')
+    },
+  )
+
+  await t.test('Plain Wild passes the turn to the opponent', () => {
+    const game = seatTwoPlayer({
+      type: CARD_TYPES.WILD,
+      color: COLORS.WILD,
+      value: VALUES.WILD,
+    })
+    game.playCard('p1', 0, COLORS.GREEN)
+    assert.strictEqual(game.getState().currentColor, COLORS.GREEN)
+    assert.strictEqual(game.getState().currentPlayer, 'p2')
+  })
+
+  await t.test('Number card passes the turn to the opponent', () => {
+    const game = seatTwoPlayer({
+      type: CARD_TYPES.NUMBER,
+      color: COLORS.RED,
+      value: VALUES.FIVE,
+    })
+    game.playCard('p1', 0)
+    assert.strictEqual(game.getState().currentPlayer, 'p2')
+  })
+})
+
 test('UnoEngine Draw and Play / Pass Rules', async (t) => {
   await t.test('Drawn card not playable: turn auto-advances', () => {
     const game = new UnoEngine(['p1', 'p2'])

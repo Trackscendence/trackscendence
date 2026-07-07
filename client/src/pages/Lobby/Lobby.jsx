@@ -13,15 +13,17 @@ const Lobby = () => {
   const rooms = useGameStore((state) => state.rooms)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-  // Hydrate the room list; later changes arrive via the server's
-  // `rooms_update` broadcasts. The socket itself is connected at the app
-  // level (App.jsx) and Socket.IO buffers the emit if the connection is
-  // still being established. Lobby viewers are not seated in a room, so
-  // nothing needs to be undone on unmount.
+  // Watch room-list broadcasts and hydrate the current list. The socket is
+  // connected at the app level (App.jsx) and Socket.IO buffers the emits if the
+  // connection is still being established. Lobby viewers are not seated in a
+  // room; the only thing to undo on unmount is the broadcast subscription, so a
+  // socket that leaves the room grid stops receiving `rooms_update` (audit B5).
   useEffect(() => {
     if (!token) return undefined
-    useGameStore.getState().listRooms()
-    return undefined
+    const { watchRooms, listRooms, unwatchRooms } = useGameStore.getState()
+    watchRooms()
+    listRooms()
+    return () => unwatchRooms()
   }, [token])
 
   // Create and Join hand the seat off to the waiting room as navigation intent

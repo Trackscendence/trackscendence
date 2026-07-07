@@ -214,7 +214,14 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <Suspense fallback={<LoadingSpinner message="Loading page" />}>
+      <Suspense
+        fallback={
+          <LoadingSpinner
+            className="bg-surface-warm text-[#2A1A08]"
+            message="Loading"
+          />
+        }
+      >
         <Routes>
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
@@ -222,8 +229,11 @@ const App = () => {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/signup/success" element={<SignupSuccess />} />
-            <Route path="/oauth/42/callback" element={<OAuth42Callback />} />
           </Route>
+
+          {/* Standalone (no AuthLayout header): the callback is a full-screen
+              transition into the app, not an auth form. */}
+          <Route path="/oauth/42/callback" element={<OAuth42Callback />} />
 
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />

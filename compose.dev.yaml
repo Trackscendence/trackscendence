@@ -6,7 +6,22 @@ services:
     build: !reset null
     image: node:22-alpine
     working_dir: /app
-    command: sh -c "npm install && npm run prisma:generate && npx prisma migrate deploy && npx prisma db seed && exec node --watch index.js"
+    # Install is best-effort and retried: the node_modules volume is already
+    # populated after the first boot, so a transient registry ECONNRESET must
+    # not abort startup. `;` (not `&&`) after the install chain means we run the
+    # server with the existing deps even if every install attempt fails; a
+    # genuinely missing dependency still surfaces loudly at prisma/node.
+    command: >-
+      sh -c "npm install --prefer-offline --no-audit --no-fund
+      || (sleep 3 && npm install --prefer-offline --no-audit --no-fund)
+      || (sleep 5 && npm install --prefer-offline --no-audit --no-fund)
+      || echo 'npm install failed after retries; continuing with existing node_modules';
+      npm run prisma:generate
+      && (npx prisma migrate deploy
+      || (sleep 3 && npx prisma migrate deploy)
+      || (sleep 5 && npx prisma migrate deploy))
+      && npx prisma db seed
+      && exec node --watch index.js"
     environment:
       NODE_ENV: development
       SMTP_HOST: mailpit
@@ -23,7 +38,14 @@ services:
     build: !reset null
     image: node:22-alpine
     working_dir: /app
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    # Same best-effort, retried install as the server: don't let a transient
+    # registry error kill the Vite dev server when node_modules already exists.
+    command: >-
+      sh -c "npm install --prefer-offline --no-audit --no-fund
+      || (sleep 3 && npm install --prefer-offline --no-audit --no-fund)
+      || (sleep 5 && npm install --prefer-offline --no-audit --no-fund)
+      || echo 'npm install failed after retries; continuing with existing node_modules';
+      npm run dev -- --host 0.0.0.0"
     # !override so the dev client does not inherit the production client's TLS
     # env or its 8080/8443 port publishes: dev runs Vite on 5173 only.
     environment: !override

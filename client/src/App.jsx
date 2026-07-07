@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useNotificationStore from '@/stores/useNotificationStore'
 import useSocketStore from '@/stores/useSocketStore'
@@ -49,6 +49,7 @@ const DevControls = import.meta.env.DEV
 const DevHud = import.meta.env.DEV ? lazy(() => import('@/dev/DevHud')) : null
 
 const App = () => {
+  const navigate = useNavigate()
   const notifications = useNotificationStore((state) => state.notifications)
   const dismissNotification = useNotificationStore((state) => state.dismiss)
   const token = useAuthStore((state) => state.token)
@@ -135,6 +136,21 @@ const App = () => {
     return () =>
       window.removeEventListener('trackscendence:session-expired', handler)
   }, [])
+
+  // A reconnecting client that still has a game in progress is routed back into
+  // it, unless it is already on the game page. This is what makes the 90s
+  // reconnect window usable after a full tab close: the browser can land the
+  // player anywhere, and they are still returned to their game.
+  useEffect(() => {
+    const handler = (e) => {
+      const gameId = e.detail?.gameId
+      if (!gameId || window.location.pathname === '/game') return
+      navigate(`/game?gameId=${gameId}`)
+    }
+    window.addEventListener('trackscendence:active-game', handler)
+    return () =>
+      window.removeEventListener('trackscendence:active-game', handler)
+  }, [navigate])
 
   if (bootStatus === 'checking') {
     // Stay quiet for the first tries (the API is legitimately starting), then

@@ -28,6 +28,7 @@
     "build-storybook": "npm run build-storybook --prefix client",
     "bench": "npm run bench:e1 && npm run bench:e3",
     "bench:e1": "node benchmarks/e1-bundle.mjs",
+    "bench:e2": "node server/benchmarks/e2-leaderboard.js",
     "bench:e3": "node server/benchmarks/e3-game-store-memory.js",
     "bench:e4": "node server/benchmarks/e4-rooms-broadcast.js",
     "bench:e5": "node server/benchmarks/e5-prisma-pool.js",

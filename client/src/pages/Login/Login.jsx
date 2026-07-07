@@ -8,7 +8,12 @@ import LoginForm from './_components/LoginForm'
 const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isAuthenticated, isLoading, isFortyTwoLoginEnabled } = useAuthStore()
+  const {
+    isAuthenticated,
+    isLoading,
+    isFortyTwoLoginEnabled,
+    isAuthProvidersLoading,
+  } = useAuthStore()
 
   // Re-check provider availability whenever the login screen is shown, so the
   // 42 button recovers if the startup probe missed.
@@ -53,7 +58,8 @@ const Login = () => {
         </div>
 
         <FortyTwoButton
-          comingSoon={!isFortyTwoLoginEnabled}
+          comingSoon={!isAuthProvidersLoading && !isFortyTwoLoginEnabled}
+          isChecking={isAuthProvidersLoading && !isFortyTwoLoginEnabled}
           onClick={
             isFortyTwoLoginEnabled
               ? () => useAuthStore.getState().startFortyTwoLogin()

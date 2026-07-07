@@ -53,10 +53,22 @@
    * the headline, not the surface.
    */
   --color-surface-outcome: #fde8cf;
+  /*
+   * UNO green — the fourth suit, new to the codebase. Red (#E03325), yellow
+   * (#FFB04F), and blue (#3684CC) already appear inline across the game flow;
+   * green is defined once here so the four-pip "deal" on the loading page never
+   * drifts. Use `bg-uno-green`, never the raw hex.
+   */
+  --color-uno-green: #2fa84f;
 
   --animate-wr-dot-1: wr-dot-pulse 1.8s ease-in-out 0s infinite;
   --animate-wr-dot-2: wr-dot-pulse 1.8s ease-in-out 0.3s infinite;
   --animate-wr-dot-3: wr-dot-pulse 1.8s ease-in-out 0.6s infinite;
+  /* Fourth pip in the loading-page "deal" — continues the 0.3s stagger. */
+  --animate-wr-dot-4: wr-dot-pulse 1.8s ease-in-out 0.9s infinite;
+  /* Boot-gate progress: a green segment slides under a faint rail. */
+  --animate-progress-indeterminate: progress-indeterminate 1.4s ease-in-out
+    infinite;
   --animate-wr-breathe: wr-breathe 2.4s ease-in-out infinite;
   --animate-wr-pop: wr-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   --animate-wr-overlay: wr-overlay-in 0.5s ease forwards;
@@ -126,6 +138,17 @@
     27% {
       transform: scale(1);
       opacity: 1;
+    }
+  }
+
+  /* A 40%-wide segment sweeps left to right; reduced motion pins it at the
+     start as a static ~40% fill (see ProgressBar). */
+  @keyframes progress-indeterminate {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(250%);
     }
   }
 

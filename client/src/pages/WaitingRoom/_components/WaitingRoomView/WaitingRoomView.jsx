@@ -1,6 +1,7 @@
 import WaitingHeadline from './_components/WaitingHeadline'
 import StatusLine from './_components/StatusLine'
 import PlayerGrid from './_components/PlayerGrid'
+import FillSeatsButton from './_components/FillSeatsButton'
 import LeaveRoomButton from './_components/LeaveRoomButton'
 import GameStartOverlay from './_components/GameStartOverlay'
 
@@ -8,7 +9,9 @@ const WaitingRoomView = ({
   slots,
   isMatched,
   neededMore,
+  canFillWithBots,
   isOverlayVisible,
+  onFillWithBots,
   onLeaveRoom,
 }) => {
   return (
@@ -19,7 +22,12 @@ const WaitingRoomView = ({
           <StatusLine isMatched={isMatched} neededMore={neededMore} />
         </div>
         <PlayerGrid slots={slots} />
-        <LeaveRoomButton onClick={onLeaveRoom} />
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {canFillWithBots ? (
+            <FillSeatsButton onClick={onFillWithBots} />
+          ) : null}
+          <LeaveRoomButton onClick={onLeaveRoom} />
+        </div>
       </main>
       {isOverlayVisible ? <GameStartOverlay /> : null}
     </div>

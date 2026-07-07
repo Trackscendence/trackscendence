@@ -37,6 +37,7 @@ model User {
   privacyAcceptedAt                DateTime?
   deletedAt                        DateTime?
   isGuest                          Boolean  @default(false)
+  isBot                            Boolean  @default(false)
   gamesPlayed                      Int      @default(0)
   wins                             Int      @default(0)
   losses                           Int      @default(0)
@@ -60,6 +61,7 @@ model User {
   apiKeys                          ApiKey[]
 
   @@index([deletedAt])
+  @@index([isBot])
 }
 
 model ApiKey {

@@ -2,6 +2,7 @@ const BadRequestException = require('#exceptions/bad-request.exception')
 const UnauthorizedException = require('#exceptions/unauthorized.exception')
 const { deleteAvatarFileByUrl } = require('#modules/users/users.avatar')
 const dataRightsRepository = require('#modules/users/users.data-rights.repository')
+const authTokenCache = require('#modules/auth/auth.token-cache')
 const logger = require('#utils/logger')
 
 const INVALID_TOKEN_MESSAGE = 'Invalid or expired token'
@@ -191,6 +192,9 @@ const deleteCurrentUserAccount = async (viewer, payload) => {
     deletedAt,
     userId: viewer.id,
   })
+  // Deletion bumps tokenVersion and sets deletedAt; drop any cached auth so the
+  // account can't stay authenticated on the fast path for the TTL (audit B4).
+  authTokenCache.invalidate(viewer.id)
   await cleanupAvatarFile(user.avatarUrl, viewer.id)
 
   return {

@@ -31,6 +31,8 @@ const TWO_FACTOR_SETUP_INVALID_MESSAGE =
   'Stored two-factor setup is invalid. Restart setup and try again'
 const NEW_PASSWORD_MUST_DIFFER_MESSAGE =
   'New password must differ from current password'
+const PASSWORD_LOGIN_NOT_ENABLED_MESSAGE =
+  'Set a password before changing password settings'
 
 const MAX_LOGIN_ATTEMPTS = 8
 const LOCKED_DURATION_MINUTES = 2
@@ -63,6 +65,7 @@ module.exports = {
   TWO_FACTOR_SETUP_NOT_STARTED_MESSAGE,
   TWO_FACTOR_SETUP_INVALID_MESSAGE,
   NEW_PASSWORD_MUST_DIFFER_MESSAGE,
+  PASSWORD_LOGIN_NOT_ENABLED_MESSAGE,
   MAX_LOGIN_ATTEMPTS,
   LOCKED_DURATION_MINUTES,
   GENERIC_ACCOUNT_LOCKED_MESSAGE,

@@ -11,6 +11,7 @@ const safeUserSelect = {
   wins: true,
   losses: true,
   rank: true,
+  isGuest: true,
   role: true,
   createdAt: true,
   termsAcceptedAt: true,
@@ -114,6 +115,18 @@ const createFortyTwoUser = ({
       fortyTwoId,
       displayName,
       avatarUrl,
+    },
+    select: authUserSelect,
+  })
+}
+
+const createGuestUser = ({ email, username, displayName }) => {
+  return prisma.user.create({
+    data: {
+      email,
+      username,
+      displayName,
+      isGuest: true,
     },
     select: authUserSelect,
   })
@@ -414,6 +427,37 @@ const updateUserLoginAttempts = (userId, data) => {
     data,
   })
 }
+
+const upgradeGuestById = async (
+  id,
+  { email, username, passwordHash, privacyAcceptedAt, termsAcceptedAt },
+) => {
+  return await prisma.$transaction(async (tx) => {
+    const result = await tx.user.updateMany({
+      where: { id, isGuest: true, deletedAt: null },
+      data: {
+        email,
+        username,
+        passwordHash,
+        privacyAcceptedAt,
+        termsAcceptedAt,
+        isGuest: false,
+        failedLoginCount: 0,
+        lockedOutUntil: null,
+        tokenVersion: { increment: 1 },
+      },
+    })
+
+    if (result.count !== 1) {
+      return null
+    }
+
+    return await tx.user.findUnique({
+      where: { id },
+      select: authUserSelect,
+    })
+  })
+}
 module.exports = {
   activatePendingTwoFactorSetup,
   clearPasswordResetToken,
@@ -422,6 +466,7 @@ module.exports = {
   consumeRecoveryCodeAndChallenge,
   consumeTwoFactorChallenge,
   createFortyTwoUser,
+  createGuestUser,
   createUser,
   findAuthById,
   findByEmail,
@@ -437,6 +482,7 @@ module.exports = {
   updatePasswordById,
   updatePasswordByIdInTransaction,
   updatePasswordResetToken,
+  upgradeGuestById,
   withLockedPasswordResetToken,
   updateUserLoginAttempts,
 }

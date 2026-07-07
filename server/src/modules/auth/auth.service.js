@@ -41,6 +41,7 @@ const {
   TWO_FACTOR_SETUP_NOT_STARTED_MESSAGE,
   TWO_FACTOR_SETUP_INVALID_MESSAGE,
   NEW_PASSWORD_MUST_DIFFER_MESSAGE,
+  PASSWORD_LOGIN_NOT_ENABLED_MESSAGE,
   MAX_LOGIN_ATTEMPTS,
   LOCKED_DURATION_MINUTES,
   GENERIC_ACCOUNT_LOCKED_MESSAGE,
@@ -59,6 +60,7 @@ const toSafeAuthUser = (user) => ({
   wins: user.wins,
   losses: user.losses,
   rank: user.rank,
+  isGuest: Boolean(user.isGuest),
   role: user.role,
   createdAt: user.createdAt,
   termsAcceptedAt: user.termsAcceptedAt,
@@ -498,6 +500,34 @@ const resolveAvailableUsername = async (base, isTaken) => {
   throw new ConflictException('Username is already taken')
 }
 
+const GUEST_EMAIL_DOMAIN = 'guest.trackscendence.invalid'
+const GUEST_IDENTITY_RETRIES = 5
+
+const buildGuestIdentity = () => {
+  const usernameSuffix = crypto.randomBytes(6).toString('hex')
+  const label = usernameSuffix.slice(0, 4).toUpperCase()
+
+  return {
+    email: `guest-${crypto.randomUUID()}@${GUEST_EMAIL_DOMAIN}`,
+    username: `guest${usernameSuffix}`,
+    displayName: `Guest ${label}`,
+  }
+}
+
+const createGuestUser = async () => {
+  for (let attempt = 0; attempt < GUEST_IDENTITY_RETRIES; attempt += 1) {
+    try {
+      return await authRepository.createGuestUser(buildGuestIdentity())
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) {
+        throw error
+      }
+    }
+  }
+
+  throw new ConflictException('Guest login is unavailable. Please try again')
+}
+
 const buildFortyTwoProfile = (rawProfile) => {
   const fortyTwoId = Number(rawProfile?.id)
   const email =
@@ -714,6 +744,64 @@ const login = async (payload) => {
   })
 
   return await buildLoginResult(user)
+}
+
+const loginAsGuest = async () => {
+  return await buildLoginResult(await createGuestUser())
+}
+
+const upgradeGuestAccount = async (viewer, payload) => {
+  const authUser = await authRepository.findAuthById(viewer.id)
+
+  if (!authUser) {
+    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+  }
+
+  if (!authUser.isGuest) {
+    throw new BadRequestException('Only guest accounts can be upgraded')
+  }
+
+  const normalizedPayload = normalizeRegistrationInput(payload)
+  validateRegistrationInput(normalizedPayload)
+
+  const { email, username, password } = normalizedPayload
+  const [existingEmail, existingUsername] = await Promise.all([
+    authRepository.findByEmail(email),
+    authRepository.findByUsername(username),
+  ])
+
+  if (existingEmail && existingEmail.id !== authUser.id) {
+    throw new ConflictException('Email is already registered')
+  }
+
+  if (existingUsername && existingUsername.id !== authUser.id) {
+    throw new ConflictException('Username is already taken')
+  }
+
+  const acceptedAt = new Date()
+  const passwordHash = await bcrypt.hash(password, 12)
+
+  try {
+    const upgradedUser = await authRepository.upgradeGuestById(authUser.id, {
+      email,
+      username,
+      passwordHash,
+      privacyAcceptedAt: acceptedAt,
+      termsAcceptedAt: acceptedAt,
+    })
+
+    if (!upgradedUser) {
+      throw new BadRequestException('Only guest accounts can be upgraded')
+    }
+
+    return await buildLoginResult(upgradedUser)
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new ConflictException(getUniqueConflictMessage(error))
+    }
+
+    throw error
+  }
 }
 
 const completeTwoFactorLogin = async (payload) => {
@@ -1049,6 +1137,7 @@ const resetPassword = async (payload) => {
 
 module.exports = {
   INVALID_CREDENTIALS_MESSAGE,
+  buildGuestIdentity,
   buildFortyTwoProfile,
   getUsernameValidationMessages,
   changePassword,
@@ -1060,6 +1149,7 @@ module.exports = {
   getFortyTwoAuthorizeUrl,
   getUserFromToken,
   login,
+  loginAsGuest,
   loginWithFortyTwo,
   regenerateTwoFactor,
   register,
@@ -1069,6 +1159,7 @@ module.exports = {
   sanitizeFortyTwoLogin,
   setupTwoFactor,
   toSafeAuthUser,
+  upgradeGuestAccount,
   validateFortyTwoCallbackInput,
   validateLoginInput,
   validateRegistrationInput,

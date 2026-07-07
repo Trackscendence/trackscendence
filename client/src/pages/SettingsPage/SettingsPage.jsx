@@ -69,7 +69,7 @@ const SECTION_COPY = {
   },
 }
 
-const renderSettingsSection = ({ activeKey, navigate, user }) => {
+const renderSettingsSection = ({ activeKey, navigate, setActiveKey, user }) => {
   if (activeKey === 'account') {
     return <AccountSettings user={user} />
   }
@@ -80,6 +80,23 @@ const renderSettingsSection = ({ activeKey, navigate, user }) => {
 
   if (activeKey === 'danger') {
     return <DeleteAccountSettings user={user} />
+  }
+
+  if (user.isGuest) {
+    return (
+      <SettingsCard title="Account security">
+        <div className="space-y-4 text-sm leading-6 text-[#6f5439]">
+          <p>Save this guest profile before adding password or 2FA settings.</p>
+          <button
+            className="rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none"
+            type="button"
+            onClick={() => setActiveKey('account')}
+          >
+            Save progress
+          </button>
+        </div>
+      </SettingsCard>
+    )
   }
 
   return (
@@ -139,7 +156,7 @@ const SettingsPage = () => {
             <p className="mt-1 text-sm text-[#8a6845]">{section.description}</p>
           </div>
 
-          {renderSettingsSection({ activeKey, navigate, user })}
+          {renderSettingsSection({ activeKey, navigate, setActiveKey, user })}
         </div>
       </div>
     </div>

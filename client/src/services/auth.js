@@ -31,6 +31,20 @@ export const login = (payload) => {
   })
 }
 
+export const loginAsGuest = () => {
+  return request('/auth/guest', {
+    method: 'POST',
+  })
+}
+
+export const upgradeGuestAccount = (payload, token) => {
+  return request('/auth/guest/upgrade', {
+    method: 'POST',
+    body: payload,
+    token,
+  })
+}
+
 export const completeTwoFactorLogin = (payload) => {
   return request('/auth/login/2fa', {
     method: 'POST',

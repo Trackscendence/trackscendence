@@ -7,8 +7,10 @@ import {
   fetchCurrentUser,
   getFortyTwoLoginUrl,
   login as loginRequest,
+  loginAsGuest as loginAsGuestRequest,
   logout as logoutRequest,
   register as registerRequest,
+  upgradeGuestAccount as upgradeGuestAccountRequest,
 } from '@/services/auth'
 import { loadAuthProvidersWithRetry } from './authProvidersProbe'
 
@@ -84,6 +86,22 @@ const useAuthStore = create((set, get) => ({
 
   login: async (payload) => {
     const result = await loginRequest(payload)
+    return applyAuthenticatedResult(set, result)
+  },
+
+  loginAsGuest: async () => {
+    const result = await loginAsGuestRequest()
+    return applyAuthenticatedResult(set, result)
+  },
+
+  upgradeGuestAccount: async (payload) => {
+    const activeToken = get().token || localStorage.getItem(AUTH_TOKEN_KEY)
+
+    if (!activeToken) {
+      throw new Error('Authentication required')
+    }
+
+    const result = await upgradeGuestAccountRequest(payload, activeToken)
     return applyAuthenticatedResult(set, result)
   },
 

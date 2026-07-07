@@ -10,16 +10,60 @@ process.env.FORTYTWO_CLIENT_ID = ''
 process.env.FORTYTWO_CLIENT_SECRET = ''
 process.env.FORTYTWO_REDIRECT_URI = ''
 
+const authRepository = require('#modules/auth/auth.repository')
 const {
   buildFortyTwoProfile,
+  buildGuestIdentity,
   getAuthProviders,
   getFortyTwoAuthorizeUrl,
+  loginAsGuest,
   resolveAvailableUsername,
   sanitizeFortyTwoLogin,
+  upgradeGuestAccount,
   validateFortyTwoCallbackInput,
   validateLoginInput,
   validateRegistrationInput,
 } = require('#modules/auth/auth.service')
+
+const withRepositoryStubs = async (stubs, callback) => {
+  const originals = {}
+
+  for (const key of Object.keys(stubs)) {
+    originals[key] = authRepository[key]
+    authRepository[key] = stubs[key]
+  }
+
+  try {
+    return await callback()
+  } finally {
+    for (const key of Object.keys(stubs)) {
+      authRepository[key] = originals[key]
+    }
+  }
+}
+
+const buildAuthUser = (overrides = {}) => ({
+  id: 101,
+  email: 'guest-test@example.com',
+  username: 'guest',
+  displayName: 'Guest ABCD',
+  bio: null,
+  avatarUrl: null,
+  gamesPlayed: 0,
+  wins: 0,
+  losses: 0,
+  rank: null,
+  isGuest: true,
+  role: 'USER',
+  createdAt: new Date('2026-07-07T00:00:00.000Z'),
+  termsAcceptedAt: null,
+  privacyAcceptedAt: null,
+  tokenVersion: 0,
+  twoFactorChallengeVersion: 0,
+  twoFactorEnabled: false,
+  twoFactorPendingSecretCiphertext: null,
+  ...overrides,
+})
 
 describe('sanitizeFortyTwoLogin', () => {
   it('keeps a plain intra login as-is', () => {
@@ -61,6 +105,97 @@ describe('resolveAvailableUsername', () => {
     )
 
     assert.strictEqual(username, 'jdoe4')
+  })
+})
+
+describe('buildGuestIdentity', () => {
+  it('creates a valid guest identity', () => {
+    const identity = buildGuestIdentity()
+
+    assert.match(identity.email, /^guest-[^@]+@guest\.trackscendence\.invalid$/)
+    assert.match(identity.username, /^guest[a-f0-9]{12}$/)
+    assert.match(identity.displayName, /^Guest [A-F0-9]{4}$/)
+  })
+})
+
+describe('loginAsGuest', () => {
+  it('creates a guest user and returns a login result', async () => {
+    let createdPayload
+
+    await withRepositoryStubs(
+      {
+        createGuestUser: async (payload) => {
+          createdPayload = payload
+          return buildAuthUser(payload)
+        },
+      },
+      async () => {
+        const result = await loginAsGuest()
+
+        assert.ok(result.token)
+        assert.strictEqual(result.user.isGuest, true)
+        assert.match(createdPayload.username, /^guest[a-f0-9]{12}$/)
+      },
+    )
+  })
+})
+
+describe('upgradeGuestAccount', () => {
+  const payload = {
+    email: 'saved@example.com',
+    username: 'player',
+    password: 'StrongPass1!',
+    privacyAccepted: true,
+    termsAccepted: true,
+  }
+
+  it('rejects registered users', async () => {
+    await withRepositoryStubs(
+      {
+        findAuthById: async () => buildAuthUser({ isGuest: false }),
+      },
+      async () => {
+        await assert.rejects(() => upgradeGuestAccount({ id: 101 }, payload), {
+          statusCode: 400,
+        })
+      },
+    )
+  })
+
+  it('converts a guest into a registered account and returns a fresh token', async () => {
+    let upgradePayload
+
+    await withRepositoryStubs(
+      {
+        findAuthById: async () => buildAuthUser(),
+        findByEmail: async () => null,
+        findByUsername: async () => null,
+        upgradeGuestById: async (id, data) => {
+          upgradePayload = { id, ...data }
+
+          return buildAuthUser({
+            id,
+            email: data.email,
+            username: data.username,
+            passwordHash: data.passwordHash,
+            privacyAcceptedAt: data.privacyAcceptedAt,
+            termsAcceptedAt: data.termsAcceptedAt,
+            isGuest: false,
+            tokenVersion: 1,
+          })
+        },
+      },
+      async () => {
+        const result = await upgradeGuestAccount({ id: 101 }, payload)
+
+        assert.ok(result.token)
+        assert.strictEqual(result.user.email, payload.email)
+        assert.strictEqual(result.user.username, payload.username)
+        assert.strictEqual(result.user.isGuest, false)
+        assert.notStrictEqual(upgradePayload.passwordHash, payload.password)
+        assert.match(upgradePayload.passwordHash, /^\$2[aby]\$/)
+      },
+    )
   })
 })
 

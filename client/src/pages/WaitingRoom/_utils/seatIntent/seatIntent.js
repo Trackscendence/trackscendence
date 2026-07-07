@@ -10,6 +10,7 @@ export const getSeatIntentKey = (seatIntent) => {
   }
 
   if (seatIntent.type === 'create') {
+    if (seatIntent.capacity == null) return 'create:default'
     const capacity = Number(seatIntent.capacity)
     return Number.isFinite(capacity) ? `create:${capacity}` : null
   }

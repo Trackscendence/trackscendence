@@ -24,6 +24,10 @@ test('keeps create and join intents distinct', () => {
   )
 })
 
+test('accepts the default create intent from the lobby button', () => {
+  assert.equal(getSeatIntentKey({ type: 'create' }), 'create:default')
+})
+
 test('claims a navigation-scoped seat intent only once', () => {
   resetSeatIntentClaimsForTests()
 

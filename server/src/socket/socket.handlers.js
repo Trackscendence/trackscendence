@@ -9,6 +9,7 @@ const roomService = require('#modules/room/room.service')
 const devRunner = require('#modules/game/dev-runner.service')
 const { buildGameStatePayload } = require('#modules/game/game.contract')
 const { registerChatHandlers } = require('./chat.handlers')
+const { runExclusiveRoomAction } = require('./room-action-guard')
 
 // Grace timers for players who dropped mid-game, keyed by userId. Module
 // scoped on purpose: the timer must survive the socket that scheduled it and
@@ -334,72 +335,95 @@ const registerHandlers = (io, socket) => {
     await broadcastRooms(io)
   }
 
+  const runRoomEntryAction = async (actionName, action) => {
+    const result = await runExclusiveRoomAction(
+      `room-entry:${socket.user.id}`,
+      action,
+    )
+    if (result.skipped) {
+      logger.info(
+        `Ignored duplicate ${actionName} for user ${socket.user.username}`,
+      )
+    }
+  }
+
   // Quick-start auto-seat: called by the waiting room on direct entry. It joins
   // a joinable open room when one exists, otherwise it opens a default room.
   socket.on('room:seat', async (data) => {
-    try {
-      const rawCapacity =
-        data && typeof data === 'object' ? data.capacity : undefined
-      const capacity = rawCapacity == null ? undefined : Number(rawCapacity)
+    await runRoomEntryAction('room:seat', async () => {
+      try {
+        const rawCapacity =
+          data && typeof data === 'object' ? data.capacity : undefined
+        const capacity = rawCapacity == null ? undefined : Number(rawCapacity)
 
-      const room = await roomService.seatUser(socket.user, { capacity })
-      logger.info(`User ${socket.user.username} seated in room ${room.id}`)
-      await finishRoomSeat(room)
-    } catch (error) {
-      logger.error('Failed to seat player', error)
-      socket.emit('room_error', {
-        message: error.message || 'Unable to join a room',
-      })
-    }
+        const room = await roomService.seatUser(socket.user, { capacity })
+        logger.info(`User ${socket.user.username} seated in room ${room.id}`)
+        await finishRoomSeat(room)
+      } catch (error) {
+        logger.error('Failed to seat player', error)
+        socket.emit('room_error', {
+          message: error.message || 'Unable to join a room',
+        })
+      }
+    })
   })
 
   // Explicit create from the lobby "+ Room" button. This never falls through
   // to someone else's open room; the caller either reuses their own open room
   // or opens a new one at the requested capacity.
   socket.on('room:create', async (data) => {
-    try {
-      const rawCapacity =
-        data && typeof data === 'object' ? data.capacity : undefined
-      const capacity = rawCapacity == null ? undefined : Number(rawCapacity)
+    await runRoomEntryAction('room:create', async () => {
+      try {
+        const rawCapacity =
+          data && typeof data === 'object' ? data.capacity : undefined
+        const capacity = rawCapacity == null ? undefined : Number(rawCapacity)
 
-      const room = await roomService.createRoom(socket.user, { capacity })
-      logger.info(`User ${socket.user.username} opened room ${room.id}`)
-      await finishRoomSeat(room)
-    } catch (error) {
-      logger.error('Failed to open room', error)
-      socket.emit('room_error', {
-        message: error.message || 'Unable to open a room',
-      })
-    }
+        const room = await roomService.createRoom(socket.user, { capacity })
+        logger.info(`User ${socket.user.username} opened room ${room.id}`)
+        await finishRoomSeat(room)
+      } catch (error) {
+        logger.error('Failed to open room', error)
+        socket.emit('room_error', {
+          message: error.message || 'Unable to open a room',
+        })
+      }
+    })
   })
 
   // Join a specific room from the lobby grid (a configurable room someone else
   // created). The match starts if this seat fills it.
   socket.on('room:join', async (data) => {
     if (!data || typeof data !== 'object' || Array.isArray(data)) return
-    try {
-      const room = await roomService.joinRoom(socket.user, Number(data.roomId))
-      logger.info(`User ${socket.user.username} joined room ${room.id}`)
-      await finishRoomSeat(room)
-    } catch (error) {
-      logger.error('Failed to join room', error)
-      socket.emit('room_error', {
-        message: error.message || 'Unable to join the room',
-      })
-    }
+    await runRoomEntryAction('room:join', async () => {
+      try {
+        const room = await roomService.joinRoom(
+          socket.user,
+          Number(data.roomId),
+        )
+        logger.info(`User ${socket.user.username} joined room ${room.id}`)
+        await finishRoomSeat(room)
+      } catch (error) {
+        logger.error('Failed to join room', error)
+        socket.emit('room_error', {
+          message: error.message || 'Unable to join the room',
+        })
+      }
+    })
   })
 
   socket.on('room:fill_bots', async () => {
-    try {
-      const room = await roomService.fillOpenRoomWithBots(socket.user.id)
-      logger.info(`User ${socket.user.username} filled room ${room.id}`)
-      await finishRoomSeat(room)
-    } catch (error) {
-      logger.error('Failed to add bot players', error)
-      socket.emit('room_error', {
-        message: error.message || 'Unable to add bot players',
-      })
-    }
+    await runRoomEntryAction('room:fill_bots', async () => {
+      try {
+        const room = await roomService.fillOpenRoomWithBots(socket.user.id)
+        logger.info(`User ${socket.user.username} filled room ${room.id}`)
+        await finishRoomSeat(room)
+      } catch (error) {
+        logger.error('Failed to add bot players', error)
+        socket.emit('room_error', {
+          message: error.message || 'Unable to add bot players',
+        })
+      }
+    })
   })
 
   socket.on('room:leave', async () => {

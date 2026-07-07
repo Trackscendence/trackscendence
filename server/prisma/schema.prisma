@@ -121,7 +121,7 @@ model Game {
 
   // Recent-match history (profile page) filters GamePlayer by userId then orders
   // by Game.endedAt desc. Index the sort column so the join does not fall back to
-  // an unindexed sort as the games table grows.
+  // a sort with no index as the games table grows.
   @@index([endedAt])
 }
 

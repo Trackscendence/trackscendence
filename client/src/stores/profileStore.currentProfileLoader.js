@@ -43,7 +43,7 @@ export const createCurrentProfileLoader = ({
 
     // Start the leaderboard fetch alongside the profile fan-out (not after it
     // resolves) so the sidebar and the header land together instead of the
-    // leaderboard waterfalling in a second render. Placed after the freshness
+    // leaderboard arriving as a later second render. Placed after the freshness
     // early-return above so a cached remount does not refire it.
     get().loadLeaderboard()
 

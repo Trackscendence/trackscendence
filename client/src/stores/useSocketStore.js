@@ -12,11 +12,20 @@ import {
 
 const handleConnect = () => {
   useSocketStore.getState().setConnected(true)
-  // A reconnected socket missed every broadcast while it was down: replay
-  // the running game's state, if any. Dev-rigged games (the Rig's sim and
+  // A reconnected socket is a fresh transport that missed every broadcast while
+  // it was down and starts outside every server-side room. Re-join the `rooms`
+  // watcher room and re-hydrate the list if a room-grid page is still mounted,
+  // otherwise a lobby/waiting-room viewer would silently stop seeing updates
+  // after a reconnect (the component never remounts to re-watch).
+  const { gameState, requestGameState, watchingRooms, watchRooms, listRooms } =
+    useGameStore.getState()
+  if (watchingRooms) {
+    watchRooms()
+    listRooms()
+  }
+  // Replay the running game's state, if any. Dev-rigged games (the Rig's sim and
   // mock ids) exist only in this client, so the server is never asked about
   // them; the check erases from production builds with the dev import.
-  const { gameState, requestGameState } = useGameStore.getState()
   if (!gameState?.gameId) return
   if (import.meta.env.DEV && gameState.gameId === DEV_GAME_ID) return
   requestGameState(gameState.gameId)

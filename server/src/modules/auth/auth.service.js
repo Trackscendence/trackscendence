@@ -10,6 +10,7 @@ const authFortyTwo = require('#modules/auth/auth.forty-two')
 const authMailer = require('#modules/auth/auth.mailer')
 const authRepository = require('#modules/auth/auth.repository')
 const authToken = require('#modules/auth/auth.token')
+const authTokenCache = require('#modules/auth/auth.token-cache')
 const authTwoFactor = require('#modules/auth/auth.two-factor')
 const {
   normalizeIdentifier,
@@ -798,6 +799,9 @@ const upgradeGuestAccount = async (viewer, payload) => {
       throw new BadRequestException('Only guest accounts can be upgraded')
     }
 
+    // The upgrade bumped tokenVersion, so any cached auth for the old token
+    // must go (audit B4).
+    authTokenCache.invalidate(authUser.id)
     return await buildLoginResult(upgradedUser)
   } catch (error) {
     if (isUniqueConstraintError(error)) {
@@ -891,13 +895,23 @@ const getUserFromToken = async (token) => {
     throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
   }
 
+  // Fast path (audit B4): a cache hit still re-checks the token's version
+  // against the version we cached from the DB, so a revoked token is rejected;
+  // only a matching, unexpired entry skips the DB read.
+  const cached = authTokenCache.get(userId)
+  if (cached && cached.tokenVersion === tokenVersion) {
+    return cached.user
+  }
+
   const user = await authRepository.findTokenUserById(userId)
 
   if (!user || user.deletedAt || user.tokenVersion !== tokenVersion) {
     throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
   }
 
-  return toSafeAuthUser(user)
+  const safeUser = toSafeAuthUser(user)
+  authTokenCache.set(userId, user.tokenVersion, safeUser)
+  return safeUser
 }
 
 const getAuthenticatedUser = async (authorizationHeader) => {
@@ -1026,6 +1040,9 @@ const changePassword = async (user, payload) => {
 
   const passwordHash = await bcrypt.hash(newPassword, 12)
   await authRepository.updatePasswordById(user.id, passwordHash)
+  // The password change bumped tokenVersion, invalidating every old token
+  // (audit B4): drop the cached entry so the fast path can't keep one alive.
+  authTokenCache.invalidate(user.id)
 
   return { message: 'Password updated successfully' }
 }
@@ -1134,6 +1151,9 @@ const resetPassword = async (payload) => {
         user.id,
         passwordHash,
       )
+      // The reset bumped tokenVersion, revoking every old token (audit B4).
+      // A rollback after this only costs a cache miss, so it is safe here.
+      authTokenCache.invalidate(user.id)
     },
   )
 

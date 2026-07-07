@@ -1,11 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import useAuthStore from '@/stores/useAuthStore'
 import Button from '@/components/Button'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
 import { validateLoginInput } from '@/services/auth.validations'
 
-const LoginForm = ({ onSuccess, initialTwoFactorState = null }) => {
+const LoginForm = ({
+  onSuccess,
+  initialTwoFactorState = null,
+  onTwoFactorActiveChange,
+}) => {
   const { completeTwoFactorLogin, login } = useAuthStore.getState()
   const [form, setForm] = useState({ identifier: '', password: '' })
   const [twoFactorForm, setTwoFactorForm] = useState({
@@ -19,6 +23,12 @@ const LoginForm = ({ onSuccess, initialTwoFactorState = null }) => {
   const [error, setError] = useState('')
   const [validationDetails, setValidationDetails] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Let the page know when the challenge step is active so it can hide the
+  // alternative sign-in options — they don't apply mid-verification.
+  useEffect(() => {
+    onTwoFactorActiveChange?.(Boolean(twoFactorState))
+  }, [twoFactorState, onTwoFactorActiveChange])
 
   const handleChange = (event) => {
     setError('')

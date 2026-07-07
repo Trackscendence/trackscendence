@@ -1,0 +1,1 @@
+export { resolveFortyTwoButtonState } from './resolveFortyTwoButtonState'

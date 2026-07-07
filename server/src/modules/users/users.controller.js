@@ -1,4 +1,5 @@
 const { uploadCurrentUserAvatarFile } = require('#modules/users/users.avatar')
+const dataRightsService = require('#modules/users/users.data-rights.service')
 const usersService = require('#modules/users/users.service')
 
 const getCurrentProfile = async (req, res) => {
@@ -40,8 +41,30 @@ const deleteCurrentUserAvatar = async (req, res) => {
   res.json(result)
 }
 
+const exportCurrentUserData = async (req, res) => {
+  const result = await dataRightsService.exportCurrentUserData(req.user)
+  const username = req.user.username.replace(/[^a-z0-9-]/gi, '-')
+
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="trackscendence-data-${username}.json"`,
+  )
+  res.json(result)
+}
+
+const deleteCurrentUserAccount = async (req, res) => {
+  const result = await dataRightsService.deleteCurrentUserAccount(
+    req.user,
+    req.body,
+  )
+
+  res.json(result)
+}
+
 module.exports = {
+  deleteCurrentUserAccount,
   deleteCurrentUserAvatar,
+  exportCurrentUserData,
   getCurrentProfile,
   getProfile,
   searchUsers,

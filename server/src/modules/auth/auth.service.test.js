@@ -17,6 +17,7 @@ const {
   resolveAvailableUsername,
   sanitizeFortyTwoLogin,
   validateFortyTwoCallbackInput,
+  validateRegistrationInput,
 } = require('#modules/auth/auth.service')
 
 describe('sanitizeFortyTwoLogin', () => {
@@ -130,6 +131,39 @@ describe('validateFortyTwoCallbackInput', () => {
     assert.throws(() => validateFortyTwoCallbackInput({ code: 'abc' }), {
       statusCode: 400,
     })
+  })
+})
+
+describe('validateRegistrationInput', () => {
+  const validPayload = {
+    email: 'test@example.com',
+    username: 'player',
+    password: 'StrongPass1!',
+    privacyAccepted: true,
+    termsAccepted: true,
+  }
+
+  it('accepts registration when both policy acknowledgements are present', () => {
+    assert.doesNotThrow(() => validateRegistrationInput(validPayload))
+  })
+
+  it('requires Terms and Privacy acknowledgement', () => {
+    assert.throws(
+      () =>
+        validateRegistrationInput({
+          ...validPayload,
+          privacyAccepted: false,
+          termsAccepted: false,
+        }),
+      (error) => {
+        assert.equal(error.statusCode, 400)
+        assert.deepEqual(error.payload.details.slice(-2), [
+          'Terms of Service acceptance is required',
+          'Privacy Policy acceptance is required',
+        ])
+        return true
+      },
+    )
   })
 })
 

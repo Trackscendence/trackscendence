@@ -30,6 +30,18 @@ export const deleteAvatar = (token) => {
   })
 }
 
+export const exportAccountData = (token) => {
+  return request('/users/me/export', { token })
+}
+
+export const deleteAccount = (payload, token) => {
+  return request('/users/me', {
+    method: 'DELETE',
+    body: payload,
+    token,
+  })
+}
+
 export const getUserByUsername = (username, token) => {
   return request(`/users/${encodeURIComponent(username)}`, { token })
 }

@@ -37,7 +37,11 @@ const SignupForm = ({ onSuccess }) => {
     setError('')
     setValidationDetails([])
 
-    const normalizedForm = normalizeSignupInput(form)
+    const normalizedForm = {
+      ...normalizeSignupInput(form),
+      privacyAccepted,
+      termsAccepted,
+    }
     const { isValid, errors } = validateSignupInput(normalizedForm)
 
     if (!isValid) {

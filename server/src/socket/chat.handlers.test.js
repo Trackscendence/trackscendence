@@ -22,13 +22,13 @@ const createIo = () => {
   }
 }
 
-const createSocket = () => {
+const createSocket = ({ rooms = [] } = {}) => {
   const handlers = {}
   const emissions = []
   return {
     emissions,
     handlers,
-    rooms: new Set(['channel:#general', 'user:1']),
+    rooms: new Set(['channel:#general', 'user:1', ...rooms]),
     user: { id: 1, username: 'sender' },
     emit: (event, payload) => {
       emissions.push({ event, payload })
@@ -73,6 +73,29 @@ describe('registerChatHandlers', () => {
         payload: {
           message: 'hello room',
           recipient: 'channel:#general',
+          user: { id: 1, username: 'sender' },
+        },
+      },
+    ])
+  })
+
+  it('broadcasts game room messages to the active game room', () => {
+    const io = createIo()
+    const socket = createSocket({ rooms: ['game:game-1'] })
+    registerChatHandlers(io, socket)
+
+    socket.handlers['chat:message']({
+      recipient: 'game:game-1',
+      message: 'draw before you pass',
+    })
+
+    assert.deepEqual(io.emissions, [
+      {
+        event: 'chat:message',
+        room: 'game:game-1',
+        payload: {
+          message: 'draw before you pass',
+          recipient: 'game:game-1',
           user: { id: 1, username: 'sender' },
         },
       },

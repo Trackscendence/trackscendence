@@ -95,7 +95,7 @@ const useSocketStore = create((set) => ({
 
   sendChatMessage: (message, recipient) => {
     const text = message.trim()
-    if (!text) return false
+    if (!text || typeof recipient !== 'string' || !recipient) return false
 
     const event = isPrivateRoomId(recipient)
       ? 'chat:private_message'

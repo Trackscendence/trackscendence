@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 export const GENERAL_CHAT_ROOM_ID = 'channel:#general'
 export const PRIVATE_ROOM_PREFIX = 'user:'
+export const GAME_ROOM_PREFIX = 'game:'
 
 const MAX_MESSAGES_PER_ROOM = 100
 
@@ -25,6 +26,8 @@ const getDefaultState = () => ({
 })
 
 export const getPrivateRoomId = (userId) => `${PRIVATE_ROOM_PREFIX}${userId}`
+
+export const getGameRoomId = (gameId) => `${GAME_ROOM_PREFIX}${gameId}`
 
 export const isPrivateRoomId = (roomId) => {
   return typeof roomId === 'string' && roomId.startsWith(PRIVATE_ROOM_PREFIX)
@@ -98,6 +101,21 @@ const useChatStore = create((set) => ({
         [roomId]: messages.slice(-MAX_MESSAGES_PER_ROOM),
       },
     })),
+  clearRoomMessages: (roomId) =>
+    set((state) => {
+      if (roomId === GENERAL_CHAT_ROOM_ID) {
+        return {
+          messages: {
+            ...state.messages,
+            [GENERAL_CHAT_ROOM_ID]: [],
+          },
+        }
+      }
+
+      const messages = { ...state.messages }
+      delete messages[roomId]
+      return { messages }
+    }),
   receiveRoomMessage: (data) => {
     if (!data || typeof data.message !== 'string' || !data.user) return
 

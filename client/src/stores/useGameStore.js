@@ -37,6 +37,11 @@ const useGameStore = create((set) => ({
   // navigate-on-match effect must not refire on remount), while the game page
   // still needs the identities to caption opponents. Only clearGame resets it.
   gamePlayers: [],
+  // Set by `game_paused` while a dropped player rides out their reconnect
+  // window: { gameId, userIds, deadline }. The Game page covers the table with
+  // a countdown until `game_resumed` (back in time) or game_start/clearGame
+  // reset it. null whenever the game is running normally.
+  pausedGame: null,
 
   // Persistent rooms (#185): `rooms_update` -> rooms. The waiting room derives
   // "my room" (and the opponent's name) from this list; the lobby page renders
@@ -88,6 +93,16 @@ const useGameStore = create((set) => ({
   setGameState: (gameState) => set({ gameState }),
   setGameError: (gameError) => set({ gameError }),
   setGameOutcome: (gameOutcome) => set({ gameOutcome }),
+  // A `game_paused` for a game this client already replaced is ignored; passing
+  // null (on `game_resumed`) always clears the overlay.
+  setPausedGame: (pausedGame) =>
+    set((state) => {
+      if (!pausedGame) return { pausedGame: null }
+      if (state.gameState && pausedGame.gameId !== state.gameState.gameId) {
+        return {}
+      }
+      return { pausedGame }
+    }),
 
   // Maps a game_over payload onto this user's outcome. 'player_left' ended the
   // match without a result: the player who left (abandonedBy) heads to the
@@ -148,6 +163,7 @@ const useGameStore = create((set) => ({
       gameError: null,
       gameOutcome: null,
       gamePlayers: [],
+      pausedGame: null,
     }),
 
   // Quick-start seat: join a visible open room when one exists, otherwise open

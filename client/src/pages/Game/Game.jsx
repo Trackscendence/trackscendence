@@ -3,10 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
+import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import { DEV_GAME_ID } from '@/dev/DevControls/constants'
 import GameScreen from './_components/GameScreen'
 import GameTable from './_components/GameTable'
 import LiveGameTable from './_components/LiveGameTable'
+import GamePausedOverlay from './_components/GamePausedOverlay'
 import mapServerGameState from './_utils/mapServerGameState'
 import { getMockGameFromSearchParams } from './_utils/mockState'
 
@@ -24,6 +26,7 @@ const Game = () => {
   const gameState = useGameStore((state) => state.gameState)
   const gamePlayers = useGameStore((state) => state.gamePlayers)
   const gameOutcome = useGameStore((state) => state.gameOutcome)
+  const pausedGame = useGameStore((state) => state.pausedGame)
 
   const gameId = searchParams.get('gameId')
 
@@ -117,9 +120,23 @@ const Game = () => {
     )
   }
 
+  // While paused, name the players the table is waiting for so the overlay can
+  // caption the countdown ("Waiting for Alice…").
+  const pausedNames = pausedGame
+    ? pausedGame.userIds.map(
+        (userId) =>
+          getPlayerIdentity(
+            gamePlayers.find((player) => player.userId === userId),
+          ).name,
+      )
+    : []
+
   return (
     <GameScreen currentUserId={user.id} gameId={gameState.gameId}>
       <LiveGameTable gameId={gameState.gameId} table={table} />
+      {pausedGame ? (
+        <GamePausedOverlay names={pausedNames} deadline={pausedGame.deadline} />
+      ) : null}
     </GameScreen>
   )
 }

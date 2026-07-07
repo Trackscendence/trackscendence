@@ -1,0 +1,24 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 96 96"
+  role="img"
+  aria-label="Skip bot avatar"
+>
+  <rect width="96" height="96" rx="20" fill="#143f37" />
+  <circle cx="48" cy="48" r="31" fill="#65c18c" />
+  <path
+    d="M30 48h36"
+    fill="none"
+    stroke="#143f37"
+    stroke-width="8"
+    stroke-linecap="round"
+  />
+  <path
+    d="M53 35l14 13-14 13"
+    fill="none"
+    stroke="#143f37"
+    stroke-width="8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

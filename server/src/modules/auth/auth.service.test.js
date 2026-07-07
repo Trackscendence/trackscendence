@@ -11,11 +11,14 @@ process.env.FORTYTWO_CLIENT_SECRET = ''
 process.env.FORTYTWO_REDIRECT_URI = ''
 
 const authRepository = require('#modules/auth/auth.repository')
+const authToken = require('#modules/auth/auth.token')
+const authTokenCache = require('#modules/auth/auth.token-cache')
 const {
   buildFortyTwoProfile,
   buildGuestIdentity,
   getAuthProviders,
   getFortyTwoAuthorizeUrl,
+  getUserFromToken,
   login,
   loginAsGuest,
   requestPasswordReset,
@@ -69,6 +72,68 @@ const buildAuthUser = (overrides = {}) => ({
   lockedOutUntil: null,
   passwordHash: null,
   ...overrides,
+})
+
+describe('getUserFromToken auth cache (B4)', () => {
+  it('serves a second lookup from cache without hitting the DB', async () => {
+    authTokenCache.clear()
+    const token = authToken.signAccessToken({
+      id: 101,
+      tokenVersion: 0,
+      role: 'USER',
+    })
+    let dbReads = 0
+    await withRepositoryStubs(
+      {
+        findTokenUserById: async () => {
+          dbReads += 1
+          return buildAuthUser({ deletedAt: null })
+        },
+      },
+      async () => {
+        const first = await getUserFromToken(token)
+        const second = await getUserFromToken(token)
+        assert.strictEqual(first.id, 101)
+        assert.strictEqual(second.id, 101)
+        assert.strictEqual(dbReads, 1) // second call hit the cache
+      },
+    )
+  })
+
+  it('rejects a token whose version no longer matches, even when cached', async () => {
+    authTokenCache.clear()
+    // Seed the cache from a v0 token.
+    const oldToken = authToken.signAccessToken({
+      id: 101,
+      tokenVersion: 0,
+      role: 'USER',
+    })
+    await withRepositoryStubs(
+      { findTokenUserById: async () => buildAuthUser({ deletedAt: null }) },
+      async () => {
+        await getUserFromToken(oldToken)
+      },
+    )
+    // A token minted before a version bump must be rejected on the cache hit.
+    const staleToken = authToken.signAccessToken({
+      id: 101,
+      tokenVersion: 0,
+      role: 'USER',
+    })
+    // The DB now reports a bumped version; the cached entry still carries v0,
+    // so the stale token (v0) must not authenticate against a real v1 user.
+    await withRepositoryStubs(
+      {
+        findTokenUserById: async () =>
+          buildAuthUser({ tokenVersion: 1, deletedAt: null }),
+      },
+      async () => {
+        // Invalidate as the bump sites do, then the stale token fails on the DB.
+        authTokenCache.invalidate(101)
+        await assert.rejects(() => getUserFromToken(staleToken))
+      },
+    )
+  })
 })
 
 describe('sanitizeFortyTwoLogin', () => {

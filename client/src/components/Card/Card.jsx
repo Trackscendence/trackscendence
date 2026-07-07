@@ -1,4 +1,6 @@
+import { memo } from 'react'
 import backCard from '@/assets/cards/back.png'
+import { bump } from '@/dev/renderCounter'
 import Symbol from './_components/Symbol'
 
 const COLOR_STYLES = {
@@ -23,6 +25,7 @@ const Card = ({
   onClick,
   ...props
 }) => {
+  bump('card')
   const { 'aria-label': customAriaLabel, ...buttonProps } = props
   const [backgroundClass, textClass] = COLOR_STYLES[color] ?? COLOR_STYLES.wild
   const stateClass = playable ? 'cursor-pointer' : 'cursor-not-allowed'
@@ -90,4 +93,7 @@ const Card = ({
   )
 }
 
-export default Card
+// Card receives spread PRIMITIVES (color/type/value/playable/id) plus a stable
+// onClick, so default shallow memo skips face-down opponent cards, the
+// discard/draw piles, and unchanged own-hand cards across a game_state_update.
+export default memo(Card)

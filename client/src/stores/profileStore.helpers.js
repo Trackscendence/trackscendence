@@ -1,9 +1,5 @@
 import { AUTH_TOKEN_KEY } from '@/services/auth'
-import {
-  listFriendRequests,
-  listFriends,
-  sendFriendRequest,
-} from '@/services/friends'
+import { listFriends, sendFriendRequest } from '@/services/friends'
 import { getLeaderboard } from '@/services/game'
 import {
   deleteAvatar,
@@ -16,8 +12,6 @@ import useAuthStore from '@/stores/useAuthStore'
 
 export const emptyFriendContext = {
   friends: [],
-  incomingRequests: [],
-  outgoingRequests: [],
   leaderboard: [],
 }
 
@@ -26,21 +20,16 @@ export const getActiveToken = () => {
 }
 
 export const loadFriendContext = async (token) => {
-  const [friendsResult, requestsResult] = await Promise.all([
-    listFriends(token),
-    listFriendRequests(token),
-  ])
+  const friendsResult = await listFriends(token)
 
   return {
     friends: friendsResult.friends || [],
-    incomingRequests: requestsResult.incoming || [],
-    outgoingRequests: requestsResult.outgoing || [],
   }
 }
 
 export const loadLeaderboardContext = async (token) => {
   try {
-    const result = await getLeaderboard({}, token)
+    const result = await getLeaderboard({ limit: 5 }, token)
 
     return {
       leaderboard: result.leaderboard || [],

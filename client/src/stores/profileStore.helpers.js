@@ -1,4 +1,4 @@
-import { AUTH_TOKEN_KEY } from '@/services/auth'
+import { getStoredToken } from '@/services/auth'
 import { listFriends, sendFriendRequest } from '@/services/friends'
 import { getLeaderboard } from '@/services/game'
 import {
@@ -16,7 +16,7 @@ export const emptyFriendContext = {
 }
 
 export const getActiveToken = () => {
-  return useAuthStore.getState().token || localStorage.getItem(AUTH_TOKEN_KEY)
+  return useAuthStore.getState().token || getStoredToken()
 }
 
 export const loadFriendContext = async (token) => {

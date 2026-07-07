@@ -43,12 +43,12 @@ const WaitingRoom = () => {
   // room is open. Once seated, the room itself drives the view.
   const [phase, setPhase] = useState('deciding')
 
-  // The single-room flow (#154). Two ways in: with a seat intent from the
+  // The room flow (#154/#273). Two ways in: with a seat intent from the
   // lobby's Create/Join, we seat the player straight away; on a direct arrival
-  // (post-login) we join the one open room if there is one, otherwise offer
-  // Quick Start so the first player opens it. The socket is app-owned and stays
-  // up across navigation, so unmounting sends an explicit room:leave rather
-  // than disconnecting.
+  // (post-login) we join an open room if there is one, otherwise offer Quick
+  // Start so the first player opens one. The socket is app-owned and stays up
+  // across navigation, so unmounting sends an explicit room:leave rather than
+  // disconnecting.
   useEffect(() => {
     if (!token) return undefined
     const {
@@ -56,7 +56,7 @@ const WaitingRoom = () => {
       leaveRoom,
       leaveLobby,
       setRoomClosed,
-      seatRoom,
+      createRoom,
       joinRoomById,
     } = useGameStore.getState()
     cancelDeferredRoomExit({ timerRef: leaveTimerRef })
@@ -71,10 +71,10 @@ const WaitingRoom = () => {
     if (seatIntentKey && handledSeatIntentKeyRef.current !== seatIntentKey) {
       handledSeatIntentKeyRef.current = seatIntentKey
       if (seatIntent.type === 'join') joinRoomById(seatIntent.roomId)
-      else seatRoom(seatIntent.capacity)
+      else createRoom(seatIntent.capacity)
     }
-    // Direct arrival (post-login): decide for ourselves after a short beat —
-    // auto-join the one open room, or offer Quick Start to open the first one.
+    // Direct arrival (post-login): decide for ourselves after a short beat.
+    // Auto-join a room if one is available, or offer Quick Start to open one.
     const decideTimer = seatIntent
       ? null
       : setTimeout(() => {
@@ -159,7 +159,7 @@ const WaitingRoom = () => {
     leaveToLobby()
   }
   const handleQuickStart = (size) => {
-    useGameStore.getState().seatRoom(size)
+    useGameStore.getState().createRoom(size)
     setPhase('seated')
   }
 

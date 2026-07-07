@@ -37,7 +37,6 @@ const Lobby = () => {
   if (!user) return null
 
   const identity = getPlayerIdentity(user)
-  const hasOpenRoom = rooms.some((room) => room.status === 'OPEN')
 
   return (
     <>
@@ -50,7 +49,6 @@ const Lobby = () => {
           avatarUrl: identity.avatarUrl,
         }}
         rooms={rooms}
-        canCreateRoom={!hasOpenRoom}
         onCreateRoom={handleCreateRoom}
         onJoinRoom={handleJoinRoom}
       />

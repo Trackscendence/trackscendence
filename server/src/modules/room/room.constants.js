@@ -4,13 +4,9 @@
  * narrowing, not structural limits.
  */
 
-// How many rooms may be OPEN at once. We deliberately keep this at one: the
-// game runs a single shared room at a time. The first player to arrive opens
-// it (with a chosen capacity), everyone else joins that same room, and it is
-// gone once the game starts, empties, or the owner ends it — at which point the
-// next player can open a fresh one. One room keeps the flow simple with a small
-// player base (#156).
-const MAX_OPEN_ROOMS = 1
+// How many rooms may be OPEN at once. The schema can hold more, but the lobby
+// should stay bounded so abandoned rooms cannot grow without limit.
+const MAX_OPEN_ROOMS = 8
 
 // Seats in a room created without an explicit capacity. The waiting-room
 // auto-seat uses this, keeping the quick two-player game the default; the

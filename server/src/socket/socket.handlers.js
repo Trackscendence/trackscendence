@@ -5,12 +5,81 @@ const gameStore = require('#modules/game/game.store')
 const matchmaking = require('#modules/game/matchmaking.service')
 const gameService = require('#modules/game/game.service')
 const roomService = require('#modules/room/room.service')
+const devRunner = require('#modules/game/dev-runner.service')
 const { buildGameStatePayload } = require('#modules/game/game.contract')
 
 // Grace timers for players who dropped mid-game, keyed by userId. Module
 // scoped on purpose: the timer must survive the socket that scheduled it and
 // be cancellable from the player's next connection.
 const pendingAbandons = new Map()
+const pendingDevRunsByRoom = new Map()
+const devRoomExpirations = new Map()
+const devGameTimers = new Map()
+const DEV_ROOM_TTL_MS = 5 * 60 * 1000
+
+const stopDevGameRun = (gameId) => {
+  const timer = devGameTimers.get(gameId)
+  if (timer) clearTimeout(timer)
+  devGameTimers.delete(gameId)
+}
+
+const clearDevRoomExpiration = (roomId) => {
+  const timer = devRoomExpirations.get(roomId)
+  if (timer) clearTimeout(timer)
+  devRoomExpirations.delete(roomId)
+}
+
+const scheduleDevRoomExpiration = (io, roomId) => {
+  clearDevRoomExpiration(roomId)
+  const timer = setTimeout(() => {
+    pendingDevRunsByRoom.delete(roomId)
+    devRoomExpirations.delete(roomId)
+    roomService
+      .closeOpenRoomById(roomId)
+      .then(async (closedRoom) => {
+        if (!closedRoom) return
+        closedRoom.players.forEach((player) => {
+          io.to(`user:${player.userId}`).emit('room:closed', {
+            roomId: closedRoom.id,
+          })
+        })
+        await broadcastRooms(io)
+      })
+      .catch((error) => logger.error('Failed to expire dev room', error))
+  }, DEV_ROOM_TTL_MS)
+  devRoomExpirations.set(roomId, timer)
+}
+
+const scheduleDevGameRun = ({ io, gameId, delayMs, checkGameEnd }) => {
+  stopDevGameRun(gameId)
+  const tick = async () => {
+    devGameTimers.delete(gameId)
+    const engine = gameStore.getEngine(gameId)
+    if (!engine || engine.winner) {
+      stopDevGameRun(gameId)
+      return
+    }
+
+    try {
+      devRunner.playNextAction(engine)
+      broadcastGameState(io, gameId, engine)
+      await checkGameEnd(gameId, engine)
+    } catch (error) {
+      stopDevGameRun(gameId)
+      logger.error(`Failed to advance dev game ${gameId}`, error)
+      return
+    }
+
+    const currentEngine = gameStore.getEngine(gameId)
+    if (!currentEngine || currentEngine.winner) {
+      stopDevGameRun(gameId)
+      return
+    }
+    devGameTimers.set(gameId, setTimeout(tick, delayMs))
+  }
+
+  devGameTimers.set(gameId, setTimeout(tick, delayMs))
+}
 
 /**
  * Abandons whatever IN_PROGRESS game the player is in and notifies the
@@ -21,6 +90,7 @@ const pendingAbandons = new Map()
 const abandonActiveGame = async (io, userId) => {
   const abandonedGame = await matchmaking.handlePlayerDisconnect(userId)
   if (!abandonedGame) return
+  stopDevGameRun(abandonedGame.id)
 
   io.to(`game:${abandonedGame.id}`).emit('game_over', {
     gameId: abandonedGame.id,
@@ -83,8 +153,8 @@ const broadcastRooms = async (io) => {
  * match and reopens the room.
  */
 const startMatchIfRoomFull = async (io, room) => {
-  if (room.status !== 'OPEN' || !roomService.isRoomFull(room)) return
-  if (!(await roomService.claimRoomForGame(room.id))) return
+  if (room.status !== 'OPEN' || !roomService.isRoomFull(room)) return null
+  if (!(await roomService.claimRoomForGame(room.id))) return null
 
   let match
   try {
@@ -98,6 +168,7 @@ const startMatchIfRoomFull = async (io, room) => {
     throw error
   }
   startMatch(io, match)
+  return match
 }
 
 const registerHandlers = (io, socket) => {
@@ -120,6 +191,103 @@ const registerHandlers = (io, socket) => {
       if (game) socket.join(`game:${game.id}`)
     })
     .catch((error) => logger.error('Failed to rejoin game room', error))
+
+  const checkGameEnd = async (gameId, engine) => {
+    if (!engine.winner) return
+
+    stopDevGameRun(gameId)
+
+    const state = await gameStore.getGame(gameId)
+    // Status check and flip with no await in between: this is the gate that
+    // makes game-end processing (and the save below) run exactly once when
+    // this races the abandon path. It relies on the store handing out a
+    // shared object, so the first flip is immediately visible to the loser;
+    // a copy-returning store (Redis) must replace it with an atomic
+    // compare-and-set inside the store.
+    if (!state || state.status !== 'IN_PROGRESS') return
+    state.status = 'COMPLETED'
+    state.winner = engine.winner
+    // Capture the final scores before the engine is freed below; the winner
+    // takes the sum of the opponents' hands, everyone else scores 0 (#197).
+    state.scores = engine.getScores()
+    state.endedAt = new Date()
+    await gameStore.saveGame(gameId, state)
+    gameStore.deleteEngine(gameId)
+
+    // Persist before the game_over emit so the results screen reads a
+    // leaderboard that already includes this game. A failed save loses the
+    // stats row (logged, worth alerting on) but must never block tearing the
+    // game down for the players.
+    try {
+      await gameService.persistGameResult(state)
+    } catch (error) {
+      logger.error(`Failed to persist completed game ${gameId}`, error)
+    }
+
+    // The game is flushed to PostgreSQL and its engine freed above, so drop its
+    // in-memory record too. Without this the state lingers in activeGames for
+    // the life of the process (an unbounded leak) and grows the
+    // findActiveGameByUser scan that runs on every connect/disconnect.
+    await gameStore.deleteGame(gameId)
+
+    // Same payload shape as the abandon path below: winnerUserId carries the
+    // outcome, reason says how the game ended.
+    io.to(`game:${gameId}`).emit('game_over', {
+      gameId,
+      winnerUserId: engine.winner,
+      reason: 'completed',
+    })
+
+    // The room served its purpose once the game ends; close it so the
+    // lobby offers a fresh room for the next round.
+    try {
+      if (await roomService.closeRoomsForGame(gameId)) {
+        await broadcastRooms(io)
+      }
+    } catch (error) {
+      logger.error('Failed to close room for finished game', error)
+    }
+  }
+
+  const maybeStartDevRun = (roomId, match) => {
+    if (!match) return
+    const run = pendingDevRunsByRoom.get(roomId)
+    if (!run) return
+
+    pendingDevRunsByRoom.delete(roomId)
+    clearDevRoomExpiration(roomId)
+    if (!run.autoRun) return
+
+    scheduleDevGameRun({
+      io,
+      gameId: match.gameId,
+      delayMs: run.delayMs,
+      checkGameEnd,
+    })
+  }
+
+  const fillDevRunRoom = async (room) => {
+    const run = pendingDevRunsByRoom.get(room.id)
+    if (!run?.autoRun || room.players.length >= room.capacity) return room
+
+    let filledRoom = room
+    const seatedIds = new Set(room.players.map((player) => player.userId))
+    const fillNames = devRunner.getFillPlayerNames(
+      run.playerName,
+      room.capacity,
+    )
+    for (const name of fillNames) {
+      if (filledRoom.players.length >= filledRoom.capacity) break
+      const player = await devRunner.ensureDevPlayer(name)
+      if (seatedIds.has(player.id)) continue
+      const joinedRoom = await roomService.joinRoom(player, filledRoom.id)
+      if (joinedRoom.id === filledRoom.id) {
+        filledRoom = joinedRoom
+        seatedIds.add(player.id)
+      }
+    }
+    return filledRoom
+  }
 
   socket.on('join_lobby', async () => {
     logger.info(`User ${socket.user.username} joined the lobby`)
@@ -157,10 +325,12 @@ const registerHandlers = (io, socket) => {
         data && typeof data === 'object' ? data.capacity : undefined
       const capacity = rawCapacity == null ? undefined : Number(rawCapacity)
 
-      const room = await roomService.seatUser(socket.user, { capacity })
+      let room = await roomService.seatUser(socket.user, { capacity })
       logger.info(`User ${socket.user.username} seated in room ${room.id}`)
 
-      await startMatchIfRoomFull(io, room)
+      room = await fillDevRunRoom(room)
+      const match = await startMatchIfRoomFull(io, room)
+      maybeStartDevRun(room.id, match)
       await broadcastRooms(io)
     } catch (error) {
       logger.error('Failed to seat player', error)
@@ -175,10 +345,12 @@ const registerHandlers = (io, socket) => {
   socket.on('room:join', async (data) => {
     if (!data || typeof data !== 'object' || Array.isArray(data)) return
     try {
-      const room = await roomService.joinRoom(socket.user, Number(data.roomId))
+      let room = await roomService.joinRoom(socket.user, Number(data.roomId))
       logger.info(`User ${socket.user.username} joined room ${room.id}`)
 
-      await startMatchIfRoomFull(io, room)
+      room = await fillDevRunRoom(room)
+      const match = await startMatchIfRoomFull(io, room)
+      maybeStartDevRun(room.id, match)
       await broadcastRooms(io)
     } catch (error) {
       logger.error('Failed to join room', error)
@@ -212,6 +384,8 @@ const registerHandlers = (io, socket) => {
           message: 'You can only end a room you own',
         })
       }
+      pendingDevRunsByRoom.delete(endedRoom.id)
+      clearDevRoomExpiration(endedRoom.id)
       endedRoom.players.forEach((player) => {
         io.to(`user:${player.userId}`).emit('room:closed', {
           roomId: endedRoom.id,
@@ -234,6 +408,37 @@ const registerHandlers = (io, socket) => {
       socket.emit('room_error', { message: 'Unable to load rooms' })
     }
   })
+
+  if (config.NODE_ENV === 'development') {
+    socket.on('dev:spawn_bot_room', async (data, respond) => {
+      const reply = typeof respond === 'function' ? respond : () => {}
+      const payload = data && typeof data === 'object' ? data : {}
+      const playerName = devRunner.normalizePlayerName(payload.playerName)
+      const capacity =
+        payload.capacity == null ? 2 : Number.parseInt(payload.capacity, 10)
+      const autoRun = Boolean(payload.autoRun)
+      const delayMs = devRunner.resolveSpeedMs(payload.speed)
+
+      try {
+        const owner = await devRunner.ensureDevPlayer(playerName)
+        const room = await roomService.createRoomForOwner(owner, {
+          capacity,
+          name: `${playerName}'s room`,
+        })
+        pendingDevRunsByRoom.set(room.id, { autoRun, delayMs, playerName })
+        scheduleDevRoomExpiration(io, room.id)
+        await broadcastRooms(io)
+        logger.info(`Dev room ${room.id} opened by ${owner.username}`)
+        reply({ ok: true, room })
+      } catch (error) {
+        logger.error('Failed to open dev room', error)
+        reply({
+          ok: false,
+          message: error.message || 'Unable to open a dev room',
+        })
+      }
+    })
+  }
 
   // Leaves the matchmaking queue without dropping the connection. The socket
   // now lives for the whole session (it is no longer owned by the lobby page),
@@ -299,61 +504,6 @@ const registerHandlers = (io, socket) => {
     const payload = { ...data, user: socket.user }
     io.to(room).emit('message', payload)
   })
-
-  const checkGameEnd = async (gameId, engine) => {
-    if (!engine.winner) return
-
-    const state = await gameStore.getGame(gameId)
-    // Status check and flip with no await in between: this is the gate that
-    // makes game-end processing (and the save below) run exactly once when
-    // this races the abandon path. It relies on the store handing out a
-    // shared object, so the first flip is immediately visible to the loser;
-    // a copy-returning store (Redis) must replace it with an atomic
-    // compare-and-set inside the store.
-    if (!state || state.status !== 'IN_PROGRESS') return
-    state.status = 'COMPLETED'
-    state.winner = engine.winner
-    // Capture the final scores before the engine is freed below; the winner
-    // takes the sum of the opponents' hands, everyone else scores 0 (#197).
-    state.scores = engine.getScores()
-    state.endedAt = new Date()
-    await gameStore.saveGame(gameId, state)
-    gameStore.deleteEngine(gameId)
-
-    // Persist before the game_over emit so the results screen reads a
-    // leaderboard that already includes this game. A failed save loses the
-    // stats row (logged, worth alerting on) but must never block tearing the
-    // game down for the players.
-    try {
-      await gameService.persistGameResult(state)
-    } catch (error) {
-      logger.error(`Failed to persist completed game ${gameId}`, error)
-    }
-
-    // The game is flushed to PostgreSQL and its engine freed above, so drop its
-    // in-memory record too. Without this the state lingers in activeGames for
-    // the life of the process (an unbounded leak) and grows the
-    // findActiveGameByUser scan that runs on every connect/disconnect.
-    await gameStore.deleteGame(gameId)
-
-    // Same payload shape as the abandon path below: winnerUserId carries the
-    // outcome, reason says how the game ended.
-    io.to(`game:${gameId}`).emit('game_over', {
-      gameId,
-      winnerUserId: engine.winner,
-      reason: 'completed',
-    })
-
-    // The room served its purpose once the game ends; close it so the
-    // lobby offers a fresh room for the next round.
-    try {
-      if (await roomService.closeRoomsForGame(gameId)) {
-        await broadcastRooms(io)
-      }
-    } catch (error) {
-      logger.error('Failed to close room for finished game', error)
-    }
-  }
 
   // Resync (#201): a refreshed or late-mounting page holds a gameId but
   // missed the last broadcast. Replay the match roster and the current state

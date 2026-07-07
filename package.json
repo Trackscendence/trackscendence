@@ -23,7 +23,11 @@
     "prisma:generate": "docker compose exec server npm run prisma:generate",
     "prisma:migrate": "docker compose exec server npm run prisma:migrate",
     "storybook": "npm run storybook --prefix client",
-    "build-storybook": "npm run build-storybook --prefix client"
+    "build-storybook": "npm run build-storybook --prefix client",
+    "bench": "npm run bench:e1 && npm run bench:e3",
+    "bench:e1": "node benchmarks/e1-bundle.mjs",
+    "bench:e3": "node server/benchmarks/e3-game-store-memory.js",
+    "bench:seed": "node server/prisma/seed.bench.js"
   },
   "dependencies": {
     "concurrently": "^9.2.1",

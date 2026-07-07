@@ -24,21 +24,32 @@ const useGameStore = create((set) => ({
   match: null,
   gameState: null,
   gameError: null,
-  // How the last game ended for this user: 'won' | 'lost' | 'end' (a player
-  // left), written by handleGameOver. The Game page navigates to /results
-  // when it appears; game_start and clearGame reset it so a stale outcome can
-  // never bounce a fresh game straight to the results screen.
+  // How the last game ended for this user, written by handleGameOver:
+  //   'won' | 'lost'   -> the game finished; go to /results
+  //   'end'            -> a player left and there is no room to wait in; /results
+  //   'left'           -> this client forfeited; go to /lobby
+  //   'rematch'        -> a player left but the room reopened; go and wait ('/')
+  // The Game page routes on it; game_start and clearGame reset it so a stale
+  // outcome can never bounce a fresh game straight off the table.
   gameOutcome: null,
   // The players of the running game, written alongside `match` on game_start
   // but with a longer life: leaving the waiting room clears `match` (its
   // navigate-on-match effect must not refire on remount), while the game page
   // still needs the identities to caption opponents. Only clearGame resets it.
   gamePlayers: [],
+  // Set by `game_paused` while a dropped player rides out their reconnect
+  // window: { gameId, userIds, deadline }. The Game page covers the table with
+  // a countdown until `game_resumed` (back in time) or game_start/clearGame
+  // reset it. null whenever the game is running normally.
+  pausedGame: null,
 
   // Persistent rooms (#185): `rooms_update` -> rooms. The waiting room derives
   // "my room" (and the opponent's name) from this list; the lobby page renders
   // it as room cards.
   rooms: [],
+  // True while a room-grid page (lobby, waiting room) is watching `rooms_update`
+  // broadcasts, so a socket reconnect can re-join the server-side `rooms` room.
+  watchingRooms: false,
   // Suppresses the player's own room in incoming `rooms_update`s after they
   // leave, until the server confirms, so a late in-flight broadcast can't
   // re-show it (order-independent; still correct once multiple concurrent
@@ -85,9 +96,21 @@ const useGameStore = create((set) => ({
   setGameState: (gameState) => set({ gameState }),
   setGameError: (gameError) => set({ gameError }),
   setGameOutcome: (gameOutcome) => set({ gameOutcome }),
+  // A `game_paused` for a game this client already replaced is ignored; passing
+  // null (on `game_resumed`) always clears the overlay.
+  setPausedGame: (pausedGame) =>
+    set((state) => {
+      if (!pausedGame) return { pausedGame: null }
+      if (state.gameState && pausedGame.gameId !== state.gameState.gameId) {
+        return {}
+      }
+      return { pausedGame }
+    }),
 
-  // Maps a game_over payload onto this user's outcome. 'player_left' means
-  // the match ended without a result; otherwise the winner id decides it.
+  // Maps a game_over payload onto this user's outcome. 'player_left' ended the
+  // match without a result: the player who left (abandonedBy) heads to the
+  // lobby, while the survivors either wait in their reopened room (rematch) or,
+  // if none reopened, land on the results screen. Otherwise the winner decides.
   handleGameOver: (payload) =>
     set((state) => {
       // A late game_over from a game this client already replaced must not
@@ -95,10 +118,13 @@ const useGameStore = create((set) => ({
       if (state.gameState && payload.gameId !== state.gameState.gameId) {
         return {}
       }
-      if (payload.reason === 'player_left') {
-        return { gameOutcome: 'end' }
-      }
       const ownUserId = useAuthStore.getState().user?.id
+      if (payload.reason === 'player_left') {
+        if (ownUserId != null && ownUserId === payload.abandonedBy) {
+          return { gameOutcome: 'left' }
+        }
+        return { gameOutcome: payload.rematch ? 'rematch' : 'end' }
+      }
       return {
         gameOutcome: payload.winnerUserId === ownUserId ? 'won' : 'lost',
       }
@@ -140,6 +166,7 @@ const useGameStore = create((set) => ({
       gameError: null,
       gameOutcome: null,
       gamePlayers: [],
+      pausedGame: null,
     }),
 
   // Quick-start seat: join a visible open room when one exists, otherwise open
@@ -185,6 +212,23 @@ const useGameStore = create((set) => ({
       }
     }),
   listRooms: () => socket.emit('room:list'),
+
+  // Subscribe to room-list broadcasts while a room-grid page (lobby, waiting
+  // room) is mounted; the flag lets a socket reconnect re-join the `rooms` room,
+  // since a fresh transport starts outside every server-side room.
+  watchRooms: () => {
+    set({ watchingRooms: true })
+    socket.emit('rooms:watch')
+  },
+  unwatchRooms: () => {
+    set({ watchingRooms: false })
+    socket.emit('rooms:unwatch')
+  },
+
+  // Intentional forfeit from the in-game exit: end the game for everyone. The
+  // server tears it down and reopens the room for the players left behind; this
+  // client heads to the lobby (handleGameOver reads the resulting game_over).
+  leaveGame: () => socket.emit('game:leave'),
 
   playCard: (gameId, cardIndex, declaredColor) =>
     socket.emit('game:play_card', { gameId, cardIndex, declaredColor }),

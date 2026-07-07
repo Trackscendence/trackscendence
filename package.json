@@ -16,6 +16,8 @@
     "compose:down": "docker compose down",
     "compose:dev": "docker compose -f compose.yaml -f compose.dev.yaml up --build",
     "compose:dev_down": "docker compose -f compose.yaml -f compose.dev.yaml down",
+    "compose:debug": "docker compose -f compose.yaml -f compose.dev.yaml -f compose.debug.yaml up --build",
+    "compose:debug_down": "docker compose -f compose.yaml -f compose.dev.yaml -f compose.debug.yaml down",
     "compose:build": "docker compose build",
     "compose:logs": "docker compose logs -f",
     "compose:clean": "docker compose down -v",
@@ -28,6 +30,8 @@
     "bench:e1": "node benchmarks/e1-bundle.mjs",
     "bench:e2": "node server/benchmarks/e2-leaderboard.js",
     "bench:e3": "node server/benchmarks/e3-game-store-memory.js",
+    "bench:e4": "node server/benchmarks/e4-rooms-broadcast.js",
+    "bench:e5": "node server/benchmarks/e5-prisma-pool.js",
     "bench:seed": "node server/prisma/seed.bench.js"
   },
   "dependencies": {

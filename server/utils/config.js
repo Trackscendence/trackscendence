@@ -1,4 +1,5 @@
 const path = require('path')
+const os = require('os')
 require('dotenv').config({
   path: path.resolve(__dirname, '../../.env'),
   quiet: true,
@@ -107,6 +108,22 @@ const optionalConfigs = {
   // shows them a countdown for this long, enough to reopen a closed tab or ride
   // out a brief network drop, then ends if the player never comes back.
   GAME_RECONNECT_GRACE_MS: parseNumber('GAME_RECONNECT_GRACE_MS', 90 * 1000),
+
+  // Prisma connection pool (audit B4). Prisma's implicit default is
+  // num_cpus*2+1; we set it explicitly so it is visible and overridable. On a
+  // container os.cpus() can report host cores rather than the CPU quota, so
+  // operators may pin a lower DB_CONNECTION_LIMIT. pool_timeout is in seconds.
+  DB_CONNECTION_LIMIT: parseNumber(
+    'DB_CONNECTION_LIMIT',
+    os.cpus().length * 2 + 1,
+  ),
+  DB_POOL_TIMEOUT: parseNumber('DB_POOL_TIMEOUT', 10),
+
+  // Short-TTL cache of the per-token auth lookup (audit B4), so a burst of
+  // socket connects/requests for the same user skips the DB. TTL is the backstop
+  // that heals a missed invalidation; MAX_ENTRIES bounds the cache. 0 disables.
+  AUTH_CACHE_TTL_MS: parseNumber('AUTH_CACHE_TTL_MS', 15 * 1000),
+  AUTH_CACHE_MAX_ENTRIES: parseNumber('AUTH_CACHE_MAX_ENTRIES', 10000),
 }
 
 const requiredConfigs = {

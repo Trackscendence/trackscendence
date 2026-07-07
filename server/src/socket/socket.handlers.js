@@ -173,12 +173,15 @@ const startMatch = (io, { gameId, players, engine }, { checkGameEnd } = {}) => {
 }
 
 /**
- * Pushes the full room list to every connected client. With the MVP's single
- * room this is cheap; once many rooms exist, this is the seam to scope the
- * broadcast to lobby watchers instead.
+ * Pushes the full room list to the lobby watchers only. Clients that care about
+ * the room grid (the lobby and waiting-room pages) join the `rooms` room via
+ * `rooms:watch`; everyone else (game players, chat-only sockets) never receives
+ * this snapshot. With N connected sockets and W watchers this cuts the fan-out
+ * from N to W recipients per broadcast (audit B5). A broadcast with no watchers
+ * is a cheap no-op.
  */
 const broadcastRooms = async (io) => {
-  io.emit('rooms_update', await roomService.listRooms())
+  io.to('rooms').emit('rooms_update', await roomService.listRooms())
 }
 
 /**
@@ -548,6 +551,16 @@ const registerHandlers = (io, socket) => {
       socket.emit('room_error', { message: 'Unable to load rooms' })
     }
   })
+
+  // Subscribe/unsubscribe this socket to room-list broadcasts. The lobby and
+  // waiting-room pages watch on mount and unwatch on unmount, so `broadcastRooms`
+  // reaches only the sockets actually looking at the grid (audit B5). Kept
+  // separate from `join_lobby`, which drives the dormant matchmaking queue and
+  // its player count, not the room snapshot. `socket.join`/`leave` are
+  // idempotent, and Socket.IO drops a socket from all its rooms on disconnect,
+  // so the `rooms` membership is self-cleaning.
+  socket.on('rooms:watch', () => socket.join('rooms'))
+  socket.on('rooms:unwatch', () => socket.leave('rooms'))
 
   if (config.NODE_ENV === 'development') {
     socket.on('dev:spawn_bot_room', async (data, respond) => {

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import useAuthStore from '@/stores/useAuthStore'
 import Button from '@/components/Button'
 
-const GuestLoginButton = ({ onSuccess }) => {
+const GuestLoginButton = ({ onSuccess, disabled = false }) => {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -25,7 +25,7 @@ const GuestLoginButton = ({ onSuccess }) => {
       <Button
         type="button"
         variant="orangeOutline"
-        disabled={isSubmitting}
+        disabled={disabled || isSubmitting}
         onClick={handleClick}
       >
         {isSubmitting ? 'Starting guest session' : 'Play as guest'}

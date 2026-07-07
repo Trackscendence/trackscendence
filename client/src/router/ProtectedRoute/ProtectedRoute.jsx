@@ -3,7 +3,8 @@ import useAuthStore from '@/stores/useAuthStore'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
 const ProtectedRoute = () => {
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isLoading = useAuthStore((state) => state.isLoading)
   const location = useLocation()
 
   if (isLoading) {

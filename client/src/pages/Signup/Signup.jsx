@@ -6,7 +6,12 @@ import SignupForm from './_components/SignupForm'
 
 const Signup = () => {
   const navigate = useNavigate()
-  const { isFortyTwoLoginEnabled, isAuthProvidersLoading } = useAuthStore()
+  const isFortyTwoLoginEnabled = useAuthStore(
+    (state) => state.isFortyTwoLoginEnabled,
+  )
+  const isAuthProvidersLoading = useAuthStore(
+    (state) => state.isAuthProvidersLoading,
+  )
 
   // Re-check provider availability on mount so the 42 button recovers if the
   // startup probe missed.

@@ -12,6 +12,7 @@
  */
 
 const roomRepository = require('#modules/room/room.repository')
+const botPlayers = require('#modules/game/bot-player.service')
 const {
   MAX_OPEN_ROOMS,
   DEFAULT_CAPACITY,
@@ -217,6 +218,68 @@ const createRoomForOwner = async (owner, { capacity, name } = {}) => {
 }
 
 /**
+ * Fills the caller's open room with server-owned bot users. Only the room owner
+ * can fill empty seats, so another seated user cannot unexpectedly start the
+ * owner's room. Bot seats use the same serializable RoomPlayer insert path as
+ * human joins.
+ *
+ * @param {number} ownerUserId
+ * @returns {Promise<Object>} the filled room DTO
+ */
+const fillOpenRoomWithBots = async (ownerUserId) => {
+  const currentRoom = await roomRepository.findOpenRoomByUserId(ownerUserId)
+  if (!currentRoom) {
+    throw new ConflictException('Open a room before adding bot players')
+  }
+  if (currentRoom.ownerId !== ownerUserId) {
+    throw new ConflictException('Only the room owner can add bot players')
+  }
+
+  let roomDto = toRoomDto(currentRoom)
+  if (isRoomFull(roomDto)) return roomDto
+
+  const candidates = await botPlayers.ensureBotPlayers(
+    botPlayers.getBotPoolSize(),
+  )
+  for (const candidate of candidates) {
+    if (isRoomFull(roomDto)) return roomDto
+    if (roomDto.players.some((player) => player.userId === candidate.id)) {
+      continue
+    }
+
+    const activeBotRoom = await roomRepository.findActiveRoomByUserId(
+      candidate.id,
+    )
+    if (activeBotRoom && activeBotRoom.id !== roomDto.id) continue
+
+    const { room, error } = await roomRepository.addPlayerToRoom(
+      roomDto.id,
+      candidate.id,
+    )
+    if (room) {
+      roomDto = toRoomDto(room)
+      continue
+    }
+    if (
+      error === roomRepository.ROOM_ERRORS.CONFLICT ||
+      error === roomRepository.ROOM_ERRORS.FULL
+    ) {
+      const refreshedRoom =
+        await roomRepository.findOpenRoomByUserId(ownerUserId)
+      if (!refreshedRoom) break
+      roomDto = toRoomDto(refreshedRoom)
+      continue
+    }
+    throw new ConflictException('That room is no longer available')
+  }
+
+  if (!isRoomFull(roomDto)) {
+    throw new ConflictException('No bot seats are available right now')
+  }
+  return roomDto
+}
+
+/**
  * Joins a user into a specific open room by id (the lobby grid's "join this
  * room" for a configurable room someone else created). Idempotent: if the
  * user already holds a seat somewhere, that seat is returned. Refuses when the
@@ -366,6 +429,7 @@ module.exports = {
   seatUser,
   createRoom,
   createRoomForOwner,
+  fillOpenRoomWithBots,
   joinRoom,
   leaveOpenRoom,
   markRoomInGame,

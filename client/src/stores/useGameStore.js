@@ -161,6 +161,7 @@ const useGameStore = create((set) => ({
     set({ suppressOwnRoom: false })
     socket.emit('room:join', { roomId })
   },
+  fillRoomWithBots: () => socket.emit('room:fill_bots'),
   // Leaving unseats just this player; ending closes the whole room (owner
   // only, enforced server-side). Both optimistically drop the player's own
   // room from the local grid so the lobby never lingers on a room they just

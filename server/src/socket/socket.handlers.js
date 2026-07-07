@@ -4,6 +4,7 @@ const lobbyStore = require('#modules/game/lobby.store')
 const gameStore = require('#modules/game/game.store')
 const matchmaking = require('#modules/game/matchmaking.service')
 const gameService = require('#modules/game/game.service')
+const botTurns = require('#modules/game/bot-turn.service')
 const roomService = require('#modules/room/room.service')
 const devRunner = require('#modules/game/dev-runner.service')
 const { buildGameStatePayload } = require('#modules/game/game.contract')
@@ -92,6 +93,7 @@ const abandonActiveGame = async (io, userId) => {
   const abandonedGame = await matchmaking.handlePlayerDisconnect(userId)
   if (!abandonedGame) return
   stopDevGameRun(abandonedGame.id)
+  botTurns.clearBotTurnTimer(abandonedGame.id)
 
   io.to(`game:${abandonedGame.id}`).emit('game_over', {
     gameId: abandonedGame.id,
@@ -128,13 +130,21 @@ const broadcastGameState = (io, gameId, engine) => {
  * then pushes the initial state. Players are addressed by their `user:${id}`
  * rooms, so no live socket references are needed here.
  */
-const startMatch = (io, { gameId, players, engine }) => {
+const startMatch = (io, { gameId, players, engine }, { checkGameEnd } = {}) => {
   players.forEach(({ userId }) => {
     io.in(`user:${userId}`).socketsLeave('lobby')
     io.in(`user:${userId}`).socketsJoin(`game:${gameId}`)
     io.to(`user:${userId}`).emit('game_start', { gameId, players })
   })
   broadcastGameState(io, gameId, engine)
+  if (checkGameEnd) {
+    botTurns.scheduleBotTurn({
+      io,
+      gameId,
+      broadcastGameState,
+      checkGameEnd,
+    })
+  }
 }
 
 /**
@@ -153,7 +163,7 @@ const broadcastRooms = async (io) => {
  * game for the same players (#232); a failed start aborts the never-announced
  * match and reopens the room.
  */
-const startMatchIfRoomFull = async (io, room) => {
+const startMatchIfRoomFull = async (io, room, { checkGameEnd } = {}) => {
   if (room.status !== 'OPEN' || !roomService.isRoomFull(room)) return null
   if (!(await roomService.claimRoomForGame(room.id))) return null
 
@@ -168,7 +178,7 @@ const startMatchIfRoomFull = async (io, room) => {
     await roomService.releaseRoomClaim(room.id)
     throw error
   }
-  startMatch(io, match)
+  startMatch(io, match, { checkGameEnd })
   return match
 }
 
@@ -198,6 +208,7 @@ const registerHandlers = (io, socket) => {
     if (!engine.winner) return
 
     stopDevGameRun(gameId)
+    botTurns.clearBotTurnTimer(gameId)
 
     const state = await gameStore.getGame(gameId)
     // Status check and flip with no await in between: this is the gate that
@@ -303,7 +314,7 @@ const registerHandlers = (io, socket) => {
     try {
       let match = await matchmaking.tryStartMatch()
       while (match) {
-        startMatch(io, match)
+        startMatch(io, match, { checkGameEnd })
         match = await matchmaking.tryStartMatch()
       }
     } catch (error) {
@@ -318,7 +329,7 @@ const registerHandlers = (io, socket) => {
 
   const finishRoomSeat = async (room) => {
     const filledRoom = await fillDevRunRoom(room)
-    const match = await startMatchIfRoomFull(io, filledRoom)
+    const match = await startMatchIfRoomFull(io, filledRoom, { checkGameEnd })
     maybeStartDevRun(filledRoom.id, match)
     await broadcastRooms(io)
   }
@@ -374,6 +385,19 @@ const registerHandlers = (io, socket) => {
       logger.error('Failed to join room', error)
       socket.emit('room_error', {
         message: error.message || 'Unable to join the room',
+      })
+    }
+  })
+
+  socket.on('room:fill_bots', async () => {
+    try {
+      const room = await roomService.fillOpenRoomWithBots(socket.user.id)
+      logger.info(`User ${socket.user.username} filled room ${room.id}`)
+      await finishRoomSeat(room)
+    } catch (error) {
+      logger.error('Failed to add bot players', error)
+      socket.emit('room_error', {
+        message: error.message || 'Unable to add bot players',
       })
     }
   })
@@ -547,6 +571,12 @@ const registerHandlers = (io, socket) => {
       engine.playCard(socket.user.id, cardIndex, declaredColor)
       broadcastGameState(io, gameId, engine)
       await checkGameEnd(gameId, engine)
+      botTurns.scheduleBotTurn({
+        io,
+        gameId,
+        broadcastGameState,
+        checkGameEnd,
+      })
     } catch (err) {
       socket.emit('game_error', { message: err.message })
     }
@@ -568,6 +598,12 @@ const registerHandlers = (io, socket) => {
       })
       broadcastGameState(io, gameId, engine)
       await checkGameEnd(gameId, engine)
+      botTurns.scheduleBotTurn({
+        io,
+        gameId,
+        broadcastGameState,
+        checkGameEnd,
+      })
     } catch (err) {
       socket.emit('game_error', { message: err.message })
     }
@@ -584,6 +620,12 @@ const registerHandlers = (io, socket) => {
       engine.pass(socket.user.id)
       broadcastGameState(io, gameId, engine)
       await checkGameEnd(gameId, engine)
+      botTurns.scheduleBotTurn({
+        io,
+        gameId,
+        broadcastGameState,
+        checkGameEnd,
+      })
     } catch (err) {
       socket.emit('game_error', { message: err.message })
     }

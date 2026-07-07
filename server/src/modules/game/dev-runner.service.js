@@ -1,5 +1,8 @@
 const prisma = require('#db/prisma')
-const { COLORS } = require('#modules/game/game.constants')
+const {
+  pickDeclaredColor,
+  playNextAction,
+} = require('#modules/game/bot-player.service')
 
 const DEV_PLAYERS = {
   uno: {
@@ -59,56 +62,6 @@ const ensureDevPlayer = async (name) => {
       avatarUrl: true,
     },
   })
-}
-
-const pickDeclaredColor = (hand) => {
-  const counts = {}
-  hand.forEach((card) => {
-    if (card.color === COLORS.WILD) return
-    counts[card.color] = (counts[card.color] ?? 0) + 1
-  })
-  const ranked = Object.entries(counts).sort(
-    (left, right) => right[1] - left[1],
-  )
-  return ranked[0]?.[0] ?? COLORS.RED
-}
-
-const playNextAction = (engine) => {
-  const { currentPlayer } = engine.getState()
-  const hand = engine.getHand(currentPlayer)
-
-  if (engine.hasDrawnThisTurn) {
-    const drawnIndex = hand.length - 1
-    const drawnCard = hand[drawnIndex]
-    engine.playCard(
-      currentPlayer,
-      drawnIndex,
-      drawnCard.color === COLORS.WILD ? pickDeclaredColor(hand) : null,
-    )
-    return
-  }
-
-  const playableIndex = hand.findIndex((card) => engine.canPlayCard(card))
-  if (playableIndex === -1) {
-    const result = engine.drawCard(currentPlayer)
-    if (result.playable) {
-      const nextHand = engine.getHand(currentPlayer)
-      const drawnCard = nextHand[nextHand.length - 1]
-      engine.playCard(
-        currentPlayer,
-        nextHand.length - 1,
-        drawnCard.color === COLORS.WILD ? pickDeclaredColor(nextHand) : null,
-      )
-    }
-    return
-  }
-
-  const cardToPlay = hand[playableIndex]
-  engine.playCard(
-    currentPlayer,
-    playableIndex,
-    cardToPlay.color === COLORS.WILD ? pickDeclaredColor(hand) : null,
-  )
 }
 
 module.exports = {

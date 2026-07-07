@@ -7,6 +7,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 
 const roomService = require('#modules/room/room.service')
 const roomRepository = require('#modules/room/room.repository')
+const botPlayers = require('#modules/game/bot-player.service')
 const {
   ALLOWED_CAPACITIES,
   MAX_OPEN_ROOMS,
@@ -252,5 +253,102 @@ describe('createRoom', () => {
       () => roomService.createRoom(user, { capacity: 2 }),
       /Leave your current room/,
     )
+  })
+})
+
+describe('fillOpenRoomWithBots', () => {
+  const ownerUserId = 41
+  const owner = { id: ownerUserId, username: 'owner' }
+  const openRoom = {
+    id: 77,
+    name: "owner's room",
+    capacity: 3,
+    status: 'OPEN',
+    ownerId: ownerUserId,
+    owner,
+    players: [{ user: owner }],
+  }
+  const botOne = {
+    id: 501,
+    username: 'bot-uno',
+    displayName: 'Uno',
+    avatarUrl: null,
+  }
+  const botTwo = {
+    id: 502,
+    username: 'bot-skip',
+    displayName: 'Skip',
+    avatarUrl: null,
+  }
+
+  afterEach(() => mock.restoreAll())
+
+  it('fills the owner room through the normal seat mutation path', async () => {
+    mock.method(roomRepository, 'findOpenRoomByUserId', async () => openRoom)
+    mock.method(botPlayers, 'getBotPoolSize', () => 2)
+    mock.method(botPlayers, 'ensureBotPlayers', async () => [botOne, botTwo])
+    mock.method(roomRepository, 'findActiveRoomByUserId', async () => null)
+    const addMock = mock.method(
+      roomRepository,
+      'addPlayerToRoom',
+      async (roomId, userId) => {
+        assert.strictEqual(roomId, 77)
+        const players =
+          userId === botOne.id
+            ? [{ user: owner }, { user: botOne }]
+            : [{ user: owner }, { user: botOne }, { user: botTwo }]
+        return {
+          room: {
+            ...openRoom,
+            players,
+          },
+        }
+      },
+    )
+
+    const dto = await roomService.fillOpenRoomWithBots(ownerUserId)
+
+    assert.strictEqual(addMock.mock.callCount(), 2)
+    assert.deepStrictEqual(
+      dto.players.map((player) => player.userId),
+      [ownerUserId, botOne.id, botTwo.id],
+    )
+  })
+
+  it('rejects when the caller is seated but does not own the room', async () => {
+    mock.method(roomRepository, 'findOpenRoomByUserId', async () => ({
+      ...openRoom,
+      ownerId: 99,
+    }))
+
+    await assert.rejects(
+      () => roomService.fillOpenRoomWithBots(ownerUserId),
+      /Only the room owner/,
+    )
+  })
+
+  it('skips bot users that are already seated in another active room', async () => {
+    mock.method(roomRepository, 'findOpenRoomByUserId', async () => openRoom)
+    mock.method(botPlayers, 'getBotPoolSize', () => 2)
+    mock.method(botPlayers, 'ensureBotPlayers', async () => [botOne, botTwo])
+    mock.method(roomRepository, 'findActiveRoomByUserId', async (userId) =>
+      userId === botOne.id ? { id: 88 } : null,
+    )
+    const addMock = mock.method(
+      roomRepository,
+      'addPlayerToRoom',
+      async (roomId, userId) => ({
+        room: {
+          ...openRoom,
+          players: [{ user: owner }, { user: { ...botTwo, id: userId } }],
+        },
+      }),
+    )
+
+    await assert.rejects(
+      () => roomService.fillOpenRoomWithBots(ownerUserId),
+      /No bot seats/,
+    )
+    assert.strictEqual(addMock.mock.callCount(), 1)
   })
 })

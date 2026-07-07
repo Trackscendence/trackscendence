@@ -160,6 +160,9 @@ const WaitingRoom = () => {
     useGameStore.getState().createRoom(size)
     setPhase('seated')
   }
+  const handleFillWithBots = () => {
+    useGameStore.getState().fillRoomWithBots()
+  }
 
   // Not seated yet: offer Quick Start once we know no room is open, otherwise
   // hold on the loader while the room list settles.
@@ -220,7 +223,9 @@ const WaitingRoom = () => {
         slots={slots}
         isMatched={isMatched}
         neededMore={neededMore}
+        canFillWithBots={isOwner && neededMore > 0 && !isMatched}
         isOverlayVisible={isOverlayVisible}
+        onFillWithBots={handleFillWithBots}
         onLeaveRoom={handleLeaveRoom}
       />
       <OwnerLeaveModal

@@ -3,6 +3,10 @@ import { socket } from '@/services/socket'
 import { DEV_GAME_ID } from '@/dev/DevControls/constants'
 import useGameStore from './useGameStore'
 import useNotificationStore from './useNotificationStore'
+import {
+  attachSocketSessionListeners,
+  detachSocketSessionListeners,
+} from './socketSessionListeners'
 
 const handleConnect = () => {
   useSocketStore.getState().setConnected(true)
@@ -44,6 +48,19 @@ const handleRoomError = (data) =>
 // watches roomClosed and returns to the lobby.
 const handleRoomClosed = () => useGameStore.getState().setRoomClosed(true)
 
+const socketSessionHandlers = {
+  connect: handleConnect,
+  disconnect: handleDisconnect,
+  lobby_update: handleLobbyUpdate,
+  game_start: handleGameStart,
+  game_state_update: handleGameStateUpdate,
+  game_over: handleGameOver,
+  game_error: handleGameError,
+  rooms_update: handleRoomsUpdate,
+  room_error: handleRoomError,
+  'room:closed': handleRoomClosed,
+}
+
 const useSocketStore = create((set) => ({
   isConnected: false,
 
@@ -53,34 +70,13 @@ const useSocketStore = create((set) => ({
     // The server authenticates the socket handshake from `socket.auth.token`,
     // so set it before connecting.
     socket.auth = token ? { token } : {}
-
-    socket.on('connect', handleConnect)
-    socket.on('disconnect', handleDisconnect)
-
-    socket.on('lobby_update', handleLobbyUpdate)
-    socket.on('game_start', handleGameStart)
-    socket.on('game_state_update', handleGameStateUpdate)
-    socket.on('game_over', handleGameOver)
-    socket.on('game_error', handleGameError)
-    socket.on('rooms_update', handleRoomsUpdate)
-    socket.on('room_error', handleRoomError)
-    socket.on('room:closed', handleRoomClosed)
+    attachSocketSessionListeners(socket, socketSessionHandlers)
 
     socket.connect()
   },
 
   disconnect: () => {
-    socket.off('connect', handleConnect)
-    socket.off('disconnect', handleDisconnect)
-
-    socket.off('lobby_update', handleLobbyUpdate)
-    socket.off('game_start', handleGameStart)
-    socket.off('game_state_update', handleGameStateUpdate)
-    socket.off('game_over', handleGameOver)
-    socket.off('game_error', handleGameError)
-    socket.off('rooms_update', handleRoomsUpdate)
-    socket.off('room_error', handleRoomError)
-    socket.off('room:closed', handleRoomClosed)
+    detachSocketSessionListeners(socket, socketSessionHandlers)
 
     socket.disconnect()
     socket.auth = {}

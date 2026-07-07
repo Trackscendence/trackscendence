@@ -15,27 +15,29 @@ import AppLayout from '@/layouts/AppLayout'
 import AuthLayout from '@/layouts/AuthLayout'
 import ProfileLayout from '@/layouts/ProfileLayout'
 import ToastViewport from '@/components/ToastViewport'
-import Login from '@/pages/Login'
-import OAuth42Callback from '@/pages/OAuth42Callback'
-import Signup from '@/pages/Signup'
-import ForgotPassword from '@/pages/ForgotPassword'
-import ResetPassword from '@/pages/ResetPassword'
-import ChangePassword from '@/pages/ChangePassword'
-import SignupSuccess from '@/pages/SignupSuccess'
-import Leaderboard from '@/pages/Leaderboard'
-import Profile from '@/pages/Profile'
-import Game from '@/pages/Game'
-import Outcome from '@/pages/Outcome'
-import Lobby from '@/pages/Lobby'
-import WaitingRoom from '@/pages/WaitingRoom'
-import Session from '@/pages/Session'
-import User from '@/pages/User'
-import PrivacyPolicy from '@/pages/Privacy'
-import TermsOfService from '@/pages/TermsOfService'
 import RoleRoute from '@/router/RoleRoute'
 import { USER_ROLES } from '@/utils/authorization'
-import AdminAccess from '@/pages/AdminAccess'
-import SettingsPage from './pages/SettingsPage'
+
+const AdminAccess = lazy(() => import('@/pages/AdminAccess'))
+const ChangePassword = lazy(() => import('@/pages/ChangePassword'))
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'))
+const Game = lazy(() => import('@/pages/Game'))
+const Leaderboard = lazy(() => import('@/pages/Leaderboard'))
+const Lobby = lazy(() => import('@/pages/Lobby'))
+const Login = lazy(() => import('@/pages/Login'))
+const OAuth42Callback = lazy(() => import('@/pages/OAuth42Callback'))
+const Outcome = lazy(() => import('@/pages/Outcome'))
+const PrivacyPolicy = lazy(() => import('@/pages/Privacy'))
+const Profile = lazy(() => import('@/pages/Profile'))
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'))
+const Session = lazy(() => import('@/pages/Session'))
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
+const Signup = lazy(() => import('@/pages/Signup'))
+const SignupSuccess = lazy(() => import('@/pages/SignupSuccess'))
+const TermsOfService = lazy(() => import('@/pages/TermsOfService'))
+const User = lazy(() => import('@/pages/User'))
+const WaitingRoom = lazy(() => import('@/pages/WaitingRoom'))
+
 // Guarded with `import.meta.env.DEV` DIRECTLY (not the aliased DEV_MODE): Vite
 // replaces this literal inline before it scans for dynamic imports, so in a
 // production build the false branch and its import() are eliminated — no dev
@@ -137,52 +139,54 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <Routes>
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/signup/success" element={<SignupSuccess />} />
-          <Route path="/oauth/42/callback" element={<OAuth42Callback />} />
-        </Route>
-
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
-
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<WaitingRoom />} />
-          <Route path="/lobby" element={<Lobby />} />
-          <Route path="/game" element={<Game />} />
-          <Route path="/results" element={<Outcome />} />
-          <Route element={<ProfileLayout />}>
-            <Route path="/profile" element={<Profile />} />
-            <Route
-              path="/users/me"
-              element={<Navigate to="/profile" replace />}
-            />
-            <Route path="/users/:username" element={<User />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/settings" element={<SettingsPage />} />
+      <Suspense fallback={<LoadingSpinner message="Loading page" />}>
+        <Routes>
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/signup/success" element={<SignupSuccess />} />
+            <Route path="/oauth/42/callback" element={<OAuth42Callback />} />
           </Route>
 
-          <Route path="/change-password" element={<ChangePassword />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
 
-          <Route element={<AppLayout />}>
-            <Route path="/session" element={<Session />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<WaitingRoom />} />
+            <Route path="/lobby" element={<Lobby />} />
             <Route path="/game" element={<Game />} />
-            <Route element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]} />}>
-              <Route path="/admin" element={<AdminAccess />} />
+            <Route path="/results" element={<Outcome />} />
+            <Route element={<ProfileLayout />}>
+              <Route path="/profile" element={<Profile />} />
+              <Route
+                path="/users/me"
+                element={<Navigate to="/profile" replace />}
+              />
+              <Route path="/users/:username" element={<User />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
-            <Route
-              path="/two-factor"
-              element={<Navigate to="/settings" replace />}
-            />
-          </Route>
-        </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+            <Route path="/change-password" element={<ChangePassword />} />
+
+            <Route element={<AppLayout />}>
+              <Route path="/session" element={<Session />} />
+              <Route path="/game" element={<Game />} />
+              <Route element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]} />}>
+                <Route path="/admin" element={<AdminAccess />} />
+              </Route>
+              <Route
+                path="/two-factor"
+                element={<Navigate to="/settings" replace />}
+              />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
       <ToastViewport
         notifications={notifications}
         onDismiss={dismissNotification}

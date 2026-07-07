@@ -1,13 +1,16 @@
 import chatPanelIcon from '@/assets/game/chat-panel.svg'
 
-const ChatPanelButton = () => {
+const ChatPanelButton = ({ disabled = false, isOpen = false, onClick }) => {
   return (
     <button
-      aria-label="Open chat panel"
-      className="focus-visible:ring-offset-surface-warm absolute right-5 bottom-5 z-20 size-[45px] transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none"
+      aria-expanded={isOpen}
+      aria-label={isOpen ? 'Close game chat' : 'Open game chat'}
+      className="focus-visible:ring-offset-surface-warm absolute right-5 bottom-20 z-20 size-[45px] transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100"
+      disabled={disabled}
+      onClick={onClick}
       type="button"
     >
-      <img alt="Open chat panel" className="size-full" src={chatPanelIcon} />
+      <img alt="" className="size-full" src={chatPanelIcon} />
     </button>
   )
 }

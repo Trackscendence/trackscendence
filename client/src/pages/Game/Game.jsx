@@ -4,8 +4,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
 import { DEV_GAME_ID } from '@/dev/DevControls/constants'
-import ChatPanelButton from './_components/ChatPanelButton'
-import ExitGameButton from './_components/ExitGameButton'
+import GameScreen from './_components/GameScreen'
 import GameTable from './_components/GameTable'
 import LiveGameTable from './_components/LiveGameTable'
 import mapServerGameState from './_utils/mapServerGameState'
@@ -17,14 +16,6 @@ const noop = () => undefined
 // Breathing room between the final broadcast and the results screen, so the
 // winning move is seen landing instead of being cut off mid-animation.
 const GAME_OVER_NAVIGATE_DELAY_MS = 1200
-
-const GameScreen = ({ children }) => (
-  <main className="bg-surface-warm relative min-h-[100svh]">
-    <ExitGameButton />
-    <ChatPanelButton />
-    {children}
-  </main>
-)
 
 const Game = () => {
   const navigate = useNavigate()
@@ -65,7 +56,7 @@ const Game = () => {
   // branch from production bundles.
   if (import.meta.env.DEV && searchParams.get('source') === 'mock') {
     return (
-      <GameScreen>
+      <GameScreen currentUserId={user?.id}>
         <GameTable
           {...getMockGameFromSearchParams(searchParams)}
           onDrawPileClick={noop}
@@ -83,7 +74,7 @@ const Game = () => {
     Boolean(user && gameState) && (!gameId || gameState.gameId === gameId)
   if (!hasStateForThisGame) {
     return (
-      <GameScreen>
+      <GameScreen currentUserId={user?.id}>
         <LoadingSpinner
           className="bg-surface-warm text-black"
           message="Waiting for the game"
@@ -112,14 +103,14 @@ const Game = () => {
 
   if (isSimulatedGame) {
     return (
-      <GameScreen>
+      <GameScreen currentUserId={user.id}>
         <GameTable {...table} onDrawPileClick={noop} onUnoClick={noop} />
       </GameScreen>
     )
   }
 
   return (
-    <GameScreen>
+    <GameScreen currentUserId={user.id} gameId={gameState.gameId}>
       <LiveGameTable gameId={gameState.gameId} table={table} />
     </GameScreen>
   )

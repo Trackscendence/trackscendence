@@ -14,11 +14,11 @@ const AuthLayout = () => {
 
   return (
     <div className="bg-surface-warm flex min-h-screen flex-col text-[#081934]">
-      <header className="flex items-center justify-between px-6 py-4">
+      <header className="flex items-start justify-between">
         <button
           onClick={() => navigate(-1)}
           aria-label="Go back"
-          className="text-[#969595] transition hover:text-[#696969]"
+          className="flex size-11 items-start justify-start text-[#969595] transition hover:text-[#696969] focus-visible:ring-2 focus-visible:ring-[#081934] focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -37,7 +37,7 @@ const AuthLayout = () => {
         </button>
         <Link
           to={nav.to}
-          className="flex h-[27px] w-[138px] items-center justify-center rounded bg-[#51AFF1] text-xs font-semibold tracking-widest text-white"
+          className="flex h-11 w-[138px] items-center justify-center rounded bg-[#51AFF1] text-xs font-semibold tracking-widest text-white transition-colors hover:bg-[#2F9EEA] focus-visible:ring-2 focus-visible:ring-[#081934] focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           {nav.label}
         </Link>

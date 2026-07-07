@@ -1,0 +1,1 @@
+export { getSeatIntentKey } from './seatIntent'

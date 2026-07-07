@@ -67,7 +67,10 @@ const handleRoomError = (data) =>
   useGameStore.getState().setRoomError(data.message)
 // The owner ended the room this player was seated in (#221); the waiting room
 // watches roomClosed and returns to the lobby.
-const handleRoomClosed = () => useGameStore.getState().setRoomClosed(true)
+const handleRoomClosed = (data) => {
+  const roomId = Number(data?.roomId)
+  useGameStore.getState().setRoomClosed(Number.isFinite(roomId) ? roomId : true)
+}
 const handleChatMessage = (data) =>
   useChatStore.getState().receiveRoomMessage(data)
 const handlePrivateChatMessage = (data) =>

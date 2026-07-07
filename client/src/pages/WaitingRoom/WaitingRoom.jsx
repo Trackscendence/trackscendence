@@ -52,6 +52,8 @@ const WaitingRoom = () => {
     if (!token) return undefined
     const {
       listRooms,
+      watchRooms,
+      unwatchRooms,
       leaveRoom,
       leaveLobby,
       setRoomClosed,
@@ -60,6 +62,7 @@ const WaitingRoom = () => {
     } = useGameStore.getState()
     cancelDeferredRoomExit({ timerRef: leaveTimerRef })
     setRoomClosed(false)
+    watchRooms()
     listRooms()
     // Arriving from the lobby with an explicit intent: emit the seat here so
     // it survives this effect's mount/cleanup/remount (StrictMode) — the
@@ -98,6 +101,7 @@ const WaitingRoom = () => {
         }, ROOM_DECIDE_MS)
     return () => {
       if (decideTimer) clearTimeout(decideTimer)
+      unwatchRooms()
       scheduleDeferredRoomExit({
         timerRef: leaveTimerRef,
         leaveRoom,

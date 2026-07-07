@@ -20,6 +20,8 @@
  * the two at game end (winner/status/endedAt) before flushing to PostgreSQL.
  */
 
+const logger = require('#utils/logger')
+
 // --- Persistent game state (Redis-swappable) --------------------------------
 
 const activeGames = new Map()
@@ -32,6 +34,12 @@ const activeEngines = new Map()
  */
 const saveGame = async (gameId, state) => {
   activeGames.set(gameId, state)
+  // The map size rides along on every mutation so `LOG_LEVEL=debug` makes a
+  // stuck-growing store (the classic leak) visible as it happens.
+  logger.debug(`game.store save ${gameId}`, {
+    status: state?.status,
+    activeGames: activeGames.size,
+  })
 }
 
 /**
@@ -49,6 +57,7 @@ const getGame = async (gameId) => {
  */
 const deleteGame = async (gameId) => {
   activeGames.delete(gameId)
+  logger.debug(`game.store delete ${gameId}`, { activeGames: activeGames.size })
 }
 
 /**
@@ -83,6 +92,9 @@ const findActiveGameByUser = async (userId, filter = {}) => {
  */
 const setEngine = (gameId, engine) => {
   activeEngines.set(gameId, engine)
+  logger.debug(`game.store setEngine ${gameId}`, {
+    activeEngines: activeEngines.size,
+  })
 }
 
 /**
@@ -100,6 +112,9 @@ const getEngine = (gameId) => {
  */
 const deleteEngine = (gameId) => {
   activeEngines.delete(gameId)
+  logger.debug(`game.store deleteEngine ${gameId}`, {
+    activeEngines: activeEngines.size,
+  })
 }
 
 module.exports = {

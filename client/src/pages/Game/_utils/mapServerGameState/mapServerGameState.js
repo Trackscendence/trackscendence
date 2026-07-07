@@ -98,7 +98,21 @@ const mapServerGameState = ({
   })
   const myHand = state.myHand ?? []
   const topCard = toCard(state.topCard, 'top')
+
+  // Whose turn the banner names. Null once there is a winner (the banner hides
+  // at game over). turnExpiresAt is the server deadline the countdown ticks to;
+  // it is null on a bot's turn and while paused, so the banner drops the timer.
+  const activePlayerName = state.winner
+    ? null
+    : state.currentPlayer === ownUserId
+      ? ownIdentity.name
+      : (opponents.find((opponent) => opponent.id === state.currentPlayer)
+          ?.username ?? null)
+
   return {
+    isMyTurn,
+    activePlayerName,
+    turnExpiresAt: state.turnExpiresAt ?? null,
     currentPlayer: {
       id: ownUserId,
       username: ownIdentity.name,

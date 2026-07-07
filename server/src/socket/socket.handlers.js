@@ -15,6 +15,15 @@ const { runExclusiveRoomAction } = require('./room-action-guard')
 // scoped on purpose: the timer must survive the socket that scheduled it and
 // be cancellable from the player's next connection.
 const pendingAbandons = new Map()
+
+// Games frozen while a disconnected player rides out their reconnect grace,
+// keyed by gameId -> Map<userId, reconnect deadline ms>. Module scoped so a
+// pause raised on one player's socket is seen by every other player's handlers,
+// which refuse moves until everyone is back. Emptied on resume, dropped when
+// the game ends.
+const pausedGames = new Map()
+
+const isGamePaused = (gameId) => pausedGames.has(gameId)
 const pendingDevRunsByRoom = new Map()
 const devRoomExpirations = new Map()
 const devGameTimers = new Map()
@@ -102,6 +111,7 @@ const abandonActiveGame = async (io, userId) => {
   if (!abandonedGame) return
   stopDevGameRun(abandonedGame.id)
   botTurns.clearBotTurnTimer(abandonedGame.id)
+  pausedGames.delete(abandonedGame.id)
 
   let rematch = false
   try {
@@ -215,7 +225,11 @@ const registerHandlers = (io, socket) => {
   gameStore
     .findActiveGameByUser(socket.user.id, { status: 'IN_PROGRESS' })
     .then((game) => {
-      if (game) socket.join(`game:${game.id}`)
+      if (!game) return
+      socket.join(`game:${game.id}`)
+      // Coming back within the grace window lifts the pause this player's drop
+      // raised; the game resumes once the last missing player is back.
+      resumeGameForUser(game.id, socket.user.id)
     })
     .catch((error) => logger.error('Failed to rejoin game room', error))
 
@@ -275,6 +289,48 @@ const registerHandlers = (io, socket) => {
     } catch (error) {
       logger.error('Failed to close room for finished game', error)
     }
+  }
+
+  // Tells the table who it is waiting for and until when, so every remaining
+  // player renders the same countdown. The deadline is the soonest of the
+  // waiting players' reconnect windows, since the first to expire ends the game.
+  const broadcastPaused = (gameId, waiting) => {
+    io.to(`game:${gameId}`).emit('game_paused', {
+      gameId,
+      userIds: [...waiting.keys()],
+      deadline: Math.min(...waiting.values()),
+    })
+  }
+
+  // Freezes a game while a dropped player rides out their reconnect grace
+  // (Situation 2): bot turns are held and moves are refused (isGamePaused) until
+  // everyone is back. Additive, so a second drop just joins the same pause.
+  const pauseGameForUser = (gameId, userId, deadline) => {
+    let waiting = pausedGames.get(gameId)
+    if (!waiting) {
+      waiting = new Map()
+      pausedGames.set(gameId, waiting)
+    }
+    waiting.set(userId, deadline)
+    botTurns.clearBotTurnTimer(gameId)
+    broadcastPaused(gameId, waiting)
+  }
+
+  // Lifts one player's pause. The game only resumes once the last waited-for
+  // player is back: bot turns are rescheduled (a bot may hold the turn) and the
+  // table is told to unfreeze. While others are still missing the countdown just
+  // refreshes to the next soonest deadline.
+  const resumeGameForUser = (gameId, userId) => {
+    const waiting = pausedGames.get(gameId)
+    if (!waiting || !waiting.delete(userId)) return
+
+    if (waiting.size > 0) {
+      broadcastPaused(gameId, waiting)
+      return
+    }
+    pausedGames.delete(gameId)
+    io.to(`game:${gameId}`).emit('game_resumed', { gameId })
+    botTurns.scheduleBotTurn({ io, gameId, broadcastGameState, checkGameEnd })
   }
 
   const maybeStartDevRun = (roomId, match) => {
@@ -569,6 +625,13 @@ const registerHandlers = (io, socket) => {
       )
     }, config.GAME_RECONNECT_GRACE_MS)
     pendingAbandons.set(userId, graceTimer)
+    // Freeze the table for the players left behind and show them the countdown
+    // until this player either reconnects or the grace above expires.
+    pauseGameForUser(
+      activeGame.id,
+      userId,
+      Date.now() + config.GAME_RECONNECT_GRACE_MS,
+    )
   })
 
   // Resync (#201): a refreshed or late-mounting page holds a gameId but
@@ -622,6 +685,11 @@ const registerHandlers = (io, socket) => {
 
     const engine = gameStore.getEngine(gameId)
     if (!engine) return socket.emit('game_error', { message: 'Game not found' })
+    if (isGamePaused(gameId)) {
+      return socket.emit('game_error', {
+        message: 'Waiting for a player to reconnect',
+      })
+    }
 
     try {
       engine.playCard(socket.user.id, cardIndex, declaredColor)
@@ -644,6 +712,11 @@ const registerHandlers = (io, socket) => {
 
     const engine = gameStore.getEngine(gameId)
     if (!engine) return socket.emit('game_error', { message: 'Game not found' })
+    if (isGamePaused(gameId)) {
+      return socket.emit('game_error', {
+        message: 'Waiting for a player to reconnect',
+      })
+    }
 
     try {
       const result = engine.drawCard(socket.user.id)
@@ -671,6 +744,11 @@ const registerHandlers = (io, socket) => {
 
     const engine = gameStore.getEngine(gameId)
     if (!engine) return socket.emit('game_error', { message: 'Game not found' })
+    if (isGamePaused(gameId)) {
+      return socket.emit('game_error', {
+        message: 'Waiting for a player to reconnect',
+      })
+    }
 
     try {
       engine.pass(socket.user.id)

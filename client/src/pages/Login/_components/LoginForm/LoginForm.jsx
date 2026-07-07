@@ -6,7 +6,7 @@ import Input from '@/components/Input'
 import { validateLoginInput } from '@/services/auth.validations'
 
 const LoginForm = ({ onSuccess, initialTwoFactorState = null }) => {
-  const { login, completeTwoFactorLogin } = useAuthStore()
+  const { completeTwoFactorLogin, login } = useAuthStore.getState()
   const [form, setForm] = useState({ identifier: '', password: '' })
   const [twoFactorForm, setTwoFactorForm] = useState({
     code: '',

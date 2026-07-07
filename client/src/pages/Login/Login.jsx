@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import FortyTwoButton from '@/components/FortyTwoButton'
@@ -17,12 +17,28 @@ const Login = () => {
   const isAuthProvidersLoading = useAuthStore(
     (state) => state.isAuthProvidersLoading,
   )
+  // `startFortyTwoLogin` is a full-page navigation the browser only performs
+  // once the server answers with its 302, so the click otherwise looks dead.
+  // Flipping this on click gives immediate feedback (spinner + disabled
+  // buttons) until the page is replaced.
+  const [isConnectingFortyTwo, setIsConnectingFortyTwo] = useState(false)
+  // The 2FA challenge is a continuation of one login in progress, so the
+  // alternative sign-in options are hidden while it shows. Seed from the OAuth
+  // challenge so the block never flashes before LoginForm reports its step.
+  const [isTwoFactorStep, setIsTwoFactorStep] = useState(
+    Boolean(location.state?.twoFactorChallenge),
+  )
 
   // Re-check provider availability whenever the login screen is shown, so the
   // 42 button recovers if the startup probe missed.
   useEffect(() => {
     useAuthStore.getState().loadAuthProviders()
   }, [])
+
+  useEffect(() => {
+    if (!isConnectingFortyTwo) return
+    useAuthStore.getState().startFortyTwoLogin()
+  }, [isConnectingFortyTwo])
 
   const from = location.state?.from?.pathname || '/'
   const params = new URLSearchParams(location.search)
@@ -51,46 +67,55 @@ const Login = () => {
 
         <LoginForm
           initialTwoFactorState={location.state?.twoFactorChallenge || null}
+          onTwoFactorActiveChange={setIsTwoFactorStep}
           onSuccess={() => navigate(from, { replace: true })}
         />
 
-        <div className="my-5 flex items-center gap-4">
-          <div className="h-px flex-1 bg-black" />
-          <span className="text-sm font-medium text-black">OR</span>
-          <div className="h-px flex-1 bg-black" />
-        </div>
+        {!isTwoFactorStep ? (
+          <>
+            <div className="my-5 flex items-center gap-4">
+              <div className="h-px flex-1 bg-black" />
+              <span className="text-sm font-medium text-black">OR</span>
+              <div className="h-px flex-1 bg-black" />
+            </div>
 
-        <GuestLoginButton onSuccess={() => navigate(from, { replace: true })} />
+            <GuestLoginButton
+              disabled={isConnectingFortyTwo}
+              onSuccess={() => navigate(from, { replace: true })}
+            />
 
-        <div className="mt-3">
-          <FortyTwoButton
-            comingSoon={!isAuthProvidersLoading && !isFortyTwoLoginEnabled}
-            isChecking={isAuthProvidersLoading && !isFortyTwoLoginEnabled}
-            onClick={
-              isFortyTwoLoginEnabled
-                ? () => useAuthStore.getState().startFortyTwoLogin()
-                : undefined
-            }
-          />
-        </div>
+            <div className="mt-3">
+              <FortyTwoButton
+                comingSoon={!isAuthProvidersLoading && !isFortyTwoLoginEnabled}
+                isChecking={isAuthProvidersLoading && !isFortyTwoLoginEnabled}
+                isConnecting={isConnectingFortyTwo}
+                onClick={
+                  isFortyTwoLoginEnabled
+                    ? () => setIsConnectingFortyTwo(true)
+                    : undefined
+                }
+              />
+            </div>
 
-        <p className="mt-5 text-center text-sm text-[#081934]">
-          New player?{' '}
-          <Link
-            className="font-semibold text-[#0196FF] hover:text-[#0080e0]"
-            to="/signup"
-          >
-            Sign up
-          </Link>
-        </p>
-        <p className="mt-3 text-center text-sm text-[#081934]">
-          <Link
-            className="font-semibold text-[#0196FF] hover:text-[#0080e0]"
-            to="/forgot-password"
-          >
-            Forgot your password?
-          </Link>
-        </p>
+            <p className="mt-5 text-center text-sm text-[#081934]">
+              New player?{' '}
+              <Link
+                className="font-semibold text-[#0196FF] hover:text-[#0080e0]"
+                to="/signup"
+              >
+                Sign up
+              </Link>
+            </p>
+            <p className="mt-3 text-center text-sm text-[#081934]">
+              <Link
+                className="font-semibold text-[#0196FF] hover:text-[#0080e0]"
+                to="/forgot-password"
+              >
+                Forgot your password?
+              </Link>
+            </p>
+          </>
+        ) : null}
       </div>
     </div>
   )

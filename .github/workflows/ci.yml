@@ -104,6 +104,31 @@ jobs:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
           JWT_SECRET: ci-jwt-secret
 
+  bundle-budget:
+    name: Client Bundle Budget
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: ./client/package-lock.json
+
+      - name: Install Client Dependencies
+        working-directory: ./client
+        run: npm ci
+
+      # E8: fail the build if the initial-route JS exceeds the budget so a
+      # bundle regression is caught here instead of shipping silently. The
+      # script (benchmarks/e1-bundle.mjs) builds the client, follows the Vite
+      # manifest's static-import graph for /login, and exits non-zero over budget.
+      - name: Check Initial-Route Bundle Budget
+        run: node benchmarks/e1-bundle.mjs --budget-kb=170
+
   docker-check:
     name: Validate Docker Build
     runs-on: ubuntu-latest

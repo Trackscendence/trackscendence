@@ -5,8 +5,10 @@ process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test'
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 
+const gameRepository = require('#modules/game/game.repository')
 const {
   buildGameResultPayload,
+  getLeaderboard,
   parseLeaderboardQuery,
 } = require('#modules/game/game.service')
 
@@ -92,6 +94,42 @@ describe('parseLeaderboardQuery', () => {
     } catch (error) {
       assert.strictEqual(error.statusCode, 400)
       assert.strictEqual(error.payload.details.length, 3)
+    }
+  })
+})
+
+describe('getLeaderboard', () => {
+  it('honors limit=5 so the profile leaderboard fetch stays bounded', async () => {
+    const originalGetLeaderboard = gameRepository.getLeaderboard
+    const originalCount = gameRepository.countLeaderboardPlayers
+    let capturedLimit
+
+    gameRepository.getLeaderboard = async ({ limit }) => {
+      capturedLimit = limit
+
+      // The repository clamps rows to the requested page size; emulate a full page.
+      return Array.from({ length: limit }, (_, index) => ({
+        userId: index + 1,
+        username: `player${index + 1}`,
+        displayName: null,
+        totalWins: 0,
+        totalScore: 0,
+        gamesPlayed: 0,
+        winRate: 0,
+      }))
+    }
+    gameRepository.countLeaderboardPlayers = async () => 25
+
+    try {
+      const result = await getLeaderboard({ limit: '5' })
+
+      assert.strictEqual(capturedLimit, 5)
+      assert.strictEqual(result.pagination.limit, 5)
+      assert.ok(result.leaderboard.length <= 5)
+      assert.strictEqual(result.leaderboard.length, 5)
+    } finally {
+      gameRepository.getLeaderboard = originalGetLeaderboard
+      gameRepository.countLeaderboardPlayers = originalCount
     }
   })
 })

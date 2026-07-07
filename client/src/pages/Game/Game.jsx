@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import useAuthStore from '@/stores/useAuthStore'
@@ -62,6 +62,27 @@ const Game = () => {
     requestGameState(gameId)
   }, [gameId, gameOutcome])
 
+  // Map the server snapshot onto GameTable props. Hoisted above the early
+  // returns below because hooks must run unconditionally; it null-guards the
+  // pre-snapshot states. A new gameState reference arrives every turn, so this
+  // still recomputes once per game_state_update — its value is skipping the
+  // recompute when Game re-renders for an unrelated slice (pausedGame,
+  // gameOutcome), not memoizing across turns.
+  const table = useMemo(() => {
+    if (!user || !gameState) return null
+    const isSimulatedGame =
+      import.meta.env.DEV && gameState.gameId === DEV_GAME_ID
+    return mapServerGameState({
+      state: gameState,
+      matchPlayers: gamePlayers,
+      ownUserId: user.id,
+      ownUsername: user.username,
+      ownDisplayName: user.displayName,
+      ownAvatarUrl: user.avatarUrl,
+      isSpectator: isSimulatedGame,
+    })
+  }, [gameState, gamePlayers, user])
+
   // Mock table for design work, reachable only in dev builds through the
   // Rig's data-source switch (which adds ?source=mock). Vite erases this
   // branch from production bundles.
@@ -101,16 +122,6 @@ const Game = () => {
   // tree-shakes away with it.
   const isSimulatedGame =
     import.meta.env.DEV && gameState.gameId === DEV_GAME_ID
-
-  const table = mapServerGameState({
-    state: gameState,
-    matchPlayers: gamePlayers,
-    ownUserId: user.id,
-    ownUsername: user.username,
-    ownDisplayName: user.displayName,
-    ownAvatarUrl: user.avatarUrl,
-    isSpectator: isSimulatedGame,
-  })
 
   if (isSimulatedGame) {
     return (

@@ -109,6 +109,11 @@ const optionalConfigs = {
   // out a brief network drop, then ends if the player never comes back.
   GAME_RECONNECT_GRACE_MS: parseNumber('GAME_RECONNECT_GRACE_MS', 90 * 1000),
 
+  // How long a player has to act on their turn before the server force-draws
+  // one card for them and passes, so an idle or AFK player cannot stall the
+  // game. The client shows a live countdown to this deadline. Tunable.
+  TURN_TIMER_MS: parseNumber('TURN_TIMER_MS', 15 * 1000),
+
   // Prisma connection pool (audit B4). Prisma's implicit default is
   // num_cpus*2+1; we set it explicitly so it is visible and overridable. On a
   // container os.cpus() can report host cores rather than the CPU quota, so

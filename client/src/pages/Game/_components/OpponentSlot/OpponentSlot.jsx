@@ -20,7 +20,7 @@ const OpponentSlot = ({ isActive = false, orientation = 'top', player }) => {
     <div className={`flex gap-4 ${layoutClass}`}>
       <div className={`flex shrink-0 items-center gap-3 ${labelClass}`}>
         <span
-          className={`rounded-full p-1 ${isActive ? 'ring-4 ring-[#EA5A2A]/40' : ''}`}
+          className={`rounded-full p-1 ${isActive ? 'shadow-[0_0_22px_6px_rgba(255,176,79,0.35)] ring-4 ring-[#4ADE80]' : ''}`}
         >
           <OpponentAvatar player={player} />
         </span>

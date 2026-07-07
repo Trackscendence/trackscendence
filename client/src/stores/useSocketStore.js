@@ -71,6 +71,17 @@ const handleGameError = (data) => {
   useGameStore.getState().setGameError(message)
   useNotificationStore.getState().push(message, 'error')
 }
+// Someone was caught not calling UNO. The game_state_update reconciles the
+// penalized hand; this is just the "you were caught" / "nice catch" flavor.
+const handleUnoCaught = (data) => {
+  const myId = useAuthStore.getState().user?.id
+  const notify = useNotificationStore.getState().push
+  if (data?.targetUserId === myId) {
+    notify('Caught! You forgot to call UNO. Draw 2.', 'error')
+  } else if (data?.byUserId === myId) {
+    notify('Nice catch! Your opponent draws 2.', 'success')
+  }
+}
 const handleRoomsUpdate = (data) => useGameStore.getState().setRooms(data)
 const handleRoomError = (data) =>
   useGameStore.getState().setRoomError(data.message)
@@ -106,6 +117,7 @@ const socketSessionHandlers = {
   game_over: handleGameOver,
   game_paused: handleGamePaused,
   game_resumed: handleGameResumed,
+  uno_caught: handleUnoCaught,
   active_game: handleActiveGame,
   game_error: handleGameError,
   rooms_update: handleRoomsUpdate,

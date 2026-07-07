@@ -91,8 +91,9 @@ const Game = () => {
       <GameScreen currentUserId={user?.id}>
         <GameTable
           {...getMockGameFromSearchParams(searchParams)}
+          onCallUno={noop}
+          onCatchUno={noop}
           onDrawPileClick={noop}
-          onUnoClick={noop}
         />
       </GameScreen>
     )
@@ -126,7 +127,12 @@ const Game = () => {
   if (isSimulatedGame) {
     return (
       <GameScreen currentUserId={user.id}>
-        <GameTable {...table} onDrawPileClick={noop} onUnoClick={noop} />
+        <GameTable
+          {...table}
+          onCallUno={noop}
+          onCatchUno={noop}
+          onDrawPileClick={noop}
+        />
       </GameScreen>
     )
   }

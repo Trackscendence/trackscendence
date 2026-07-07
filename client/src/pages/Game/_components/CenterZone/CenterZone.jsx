@@ -9,14 +9,40 @@ import Uno from './_components/Uno'
 // scales the hand and opponents to match).
 const FLANKER = 'flex w-[154px] shrink-0'
 
+// Bottom (my) side: a call button until I call, then a safe badge.
+const renderOwnUno = (own, onCallUno) => {
+  if (!own) return null
+  if (own.called) return <Uno />
+  return (
+    <Uno
+      arrow
+      onClick={onCallUno}
+      title="Call UNO before your opponent plays"
+    />
+  )
+}
+
+// Top (opponent) side: a catch button until they call, then a passive warning.
+const renderOpponentUno = (opponent, onCatchUno) => {
+  if (!opponent) return null
+  if (opponent.called) return <Uno />
+  return (
+    <Uno
+      label="CATCH!"
+      onClick={() => onCatchUno(opponent.targetId)}
+      title="They forgot UNO — catch them for a 2-card penalty"
+    />
+  )
+}
+
 const CenterZone = ({
   canDraw,
   deckSize,
   direction,
-  isOpponentUno,
-  isOwnUno,
+  uno,
+  onCallUno,
+  onCatchUno,
   onDrawPileClick,
-  onUnoClick,
   pendingDraw,
   topCard,
 }) => {
@@ -32,9 +58,9 @@ const CenterZone = ({
       <DiscardPile pendingDraw={pendingDraw} topCard={topCard} />
       <div className={`${FLANKER} justify-start`}>
         <DirectionIndicator
-          bottomOverlay={isOwnUno ? <Uno onUnoClick={onUnoClick} /> : null}
+          bottomOverlay={renderOwnUno(uno?.own ?? null, onCallUno)}
           direction={direction}
-          topOverlay={isOpponentUno ? <Uno /> : null}
+          topOverlay={renderOpponentUno(uno?.opponent ?? null, onCatchUno)}
         />
       </div>
     </div>

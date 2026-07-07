@@ -14,7 +14,8 @@ const LiveGameTable = ({ gameId, table }) => {
   const [pendingWildIndex, setPendingWildIndex] = useState(null)
 
   // Store actions are stable singleton refs, so they are safe useCallback deps.
-  const { playCard, drawCard, passTurn } = useGameStore.getState()
+  const { playCard, drawCard, passTurn, callUno, catchUno } =
+    useGameStore.getState()
 
   // The `table` prop is a fresh object every turn. Read it through a ref so the
   // handlers below can stay referentially stable across turns (their identity
@@ -48,7 +49,11 @@ const LiveGameTable = ({ gameId, table }) => {
     () => passTurn(gameId),
     [passTurn, gameId],
   )
-  const handleUnoClick = useCallback(() => undefined, [])
+  const handleCallUno = useCallback(() => callUno(gameId), [callUno, gameId])
+  const handleCatchUno = useCallback(
+    (targetUserId) => catchUno(gameId, targetUserId),
+    [catchUno, gameId],
+  )
 
   const handleColorPick = (declaredColor) => {
     playCard(gameId, pendingWildIndex, declaredColor)
@@ -59,10 +64,11 @@ const LiveGameTable = ({ gameId, table }) => {
     <>
       <GameTable
         {...table}
+        onCallUno={handleCallUno}
         onCardClick={handleCardClick}
+        onCatchUno={handleCatchUno}
         onDrawPileClick={handleDrawPileClick}
         onPassClick={handlePassClick}
-        onUnoClick={handleUnoClick}
       />
       {pendingWildIndex !== null && (
         <WildColorPicker

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
@@ -7,6 +7,11 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import QuickStartModal from '@/components/QuickStartModal'
 import WaitingRoomView from './_components/WaitingRoomView'
 import OwnerLeaveModal from './_components/OwnerLeaveModal'
+import {
+  cancelDeferredRoomExit,
+  scheduleDeferredRoomExit,
+} from './_utils/deferredRoomExit'
+import { getSeatIntentKey } from './_utils/seatIntent'
 
 // Once a match forms, hold on "All players here", reveal the overlay after a
 // beat, then hand off to the game table — mirrors the design's 1.3s + fade.
@@ -32,6 +37,8 @@ const WaitingRoom = () => {
   const roomClosed = useGameStore((state) => state.roomClosed)
   const [isOverlayVisible, setIsOverlayVisible] = useState(false)
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
+  const handledSeatIntentKeyRef = useRef(null)
+  const leaveTimerRef = useRef(null)
   // 'deciding' while the room list loads, then 'choosing' (Quick Start) when no
   // room is open. Once seated, the room itself drives the view.
   const [phase, setPhase] = useState('deciding')
@@ -52,6 +59,7 @@ const WaitingRoom = () => {
       seatRoom,
       joinRoomById,
     } = useGameStore.getState()
+    cancelDeferredRoomExit({ timerRef: leaveTimerRef })
     setRoomClosed(false)
     listRooms()
     // Arriving from the lobby with an explicit intent: emit the seat here so
@@ -59,7 +67,9 @@ const WaitingRoom = () => {
     // cleanup's room:leave would otherwise undo a seat emitted by the lobby.
     // The reactive `rooms` then renders the room once the server confirms it,
     // so there is no decide timer and Quick Start never shows.
-    if (seatIntent) {
+    const seatIntentKey = getSeatIntentKey(seatIntent)
+    if (seatIntentKey && handledSeatIntentKeyRef.current !== seatIntentKey) {
+      handledSeatIntentKeyRef.current = seatIntentKey
       if (seatIntent.type === 'join') joinRoomById(seatIntent.roomId)
       else seatRoom(seatIntent.capacity)
     }
@@ -90,8 +100,11 @@ const WaitingRoom = () => {
         }, ROOM_DECIDE_MS)
     return () => {
       if (decideTimer) clearTimeout(decideTimer)
-      leaveRoom()
-      leaveLobby()
+      scheduleDeferredRoomExit({
+        timerRef: leaveTimerRef,
+        leaveRoom,
+        leaveLobby,
+      })
     }
   }, [token, seatIntent])
 

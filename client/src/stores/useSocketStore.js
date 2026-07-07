@@ -55,6 +55,16 @@ const handlePrivateChatMessage = (data) =>
   useChatStore
     .getState()
     .receivePrivateMessage(data, useAuthStore.getState().user?.id)
+const handleChatRooms = (data) => {
+  if (Array.isArray(data?.rooms)) {
+    useChatStore.getState().syncChatRooms(data.rooms)
+  }
+}
+const handleChatError = (data) => {
+  useNotificationStore
+    .getState()
+    .push(data?.message || 'Unable to send chat message', 'error')
+}
 
 const socketSessionHandlers = {
   connect: handleConnect,
@@ -69,6 +79,8 @@ const socketSessionHandlers = {
   'room:closed': handleRoomClosed,
   'chat:message': handleChatMessage,
   'chat:private_message': handlePrivateChatMessage,
+  'chat:rooms': handleChatRooms,
+  'chat:error': handleChatError,
 }
 
 const useSocketStore = create((set) => ({

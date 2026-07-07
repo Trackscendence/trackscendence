@@ -1,4 +1,6 @@
-export const apiBaseUrl = `${(import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')}/v1`
+const env = import.meta.env || {}
+
+export const apiBaseUrl = `${(env.VITE_API_URL || '/api').replace(/\/$/, '')}/v1`
 
 const SESSION_ERROR_MESSAGES = new Set([
   'Authentication required',

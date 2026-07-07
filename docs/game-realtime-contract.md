@@ -123,6 +123,28 @@ Resync request (page refresh, reconnect). The server replays `game_start`
 followed by a `game_state_update` for the caller, and re-joins their socket to
 the game room. Rejected with `game_error` if the caller is not in that game.
 
+## Game chat
+
+Matched players are already joined to `game:<gameId>` when the match starts and
+again after `game:state` resync. The in-game chat uses the shared room-message
+event with that game room as the recipient.
+
+Client to server:
+
+```
+{ recipient: 'game:<gameId>', message: string }
+```
+
+Server to client:
+
+```
+{ recipient: 'game:<gameId>', message: string, user: { id: number, username: string } }
+```
+
+The server drops the message unless the sending socket is currently in the game
+room. Messages are live only; the client keeps a bounded local history and
+clears it when the game screen unmounts.
+
 ## Deviations from physical UNO
 
 These are intentional and also recorded in `docs/game-rules.md`:

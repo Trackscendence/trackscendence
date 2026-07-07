@@ -56,6 +56,36 @@ Generate a secret with:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
+#### Persistent uploads volume (required)
+
+Avatar uploads are written to disk at `/app/uploads` (see `UPLOADS_ROOT_DIR` in
+`server/src/modules/users/users.avatar.js`). Railway container filesystems are
+ephemeral, so without a volume every redeploy wipes the uploaded files while the
+database keeps its `avatarUrl` references, and every avatar 404s afterwards.
+Locally this never shows up because `compose.yaml` mounts the `server_uploads`
+named volume at the same path.
+
+Attach a volume to the `server` service, in each deployed environment:
+
+```
+railway volume add -m /app/uploads   # run with the server service linked
+```
+
+Or in the dashboard: the `server` service, New Volume, mount path `/app/uploads`.
+The app creates the `avatars/` subdirectory on boot, so no other setup is needed.
+
+Note this ties the `server` service to a single instance (Railway volumes are not
+shared across replicas). That is acceptable for now; moving avatars to object
+storage is the path to horizontal scale later.
+
+After the volume is attached, clear any avatar references that were already lost
+to earlier redeploys so those users show the initials fallback instead of a
+broken image:
+
+```
+railway run npm --prefix server run prune:avatars   # add --dry-run first to preview
+```
+
 ### client (public)
 
 | Variable       | Value                     |

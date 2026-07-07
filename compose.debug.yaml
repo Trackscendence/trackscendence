@@ -1,0 +1,25 @@
+# Backend debugger overlay. Layer it on top of the dev stack:
+#
+#   docker compose -f compose.yaml -f compose.dev.yaml -f compose.debug.yaml up
+#   (or: npm run compose:debug)
+#
+# then attach a debugger to localhost:9229 (VS Code "Attach to Node", or open
+# chrome://inspect). This overrides only the server: the inspector runs the
+# backend directly instead of under `node --watch`, because an auto-restarting
+# watcher tears down the process — and the debug session attached to it — on
+# every save. Install and migrate stay best-effort/retried so a debug boot is
+# just as resilient as the normal dev boot.
+services:
+  server:
+    command: >-
+      sh -c "npm install --prefer-offline --no-audit --no-fund
+      || (sleep 3 && npm install --prefer-offline --no-audit --no-fund)
+      || echo 'npm install failed after retries; continuing with existing node_modules';
+      npm run prisma:generate
+      && (npx prisma migrate deploy
+      || (sleep 3 && npx prisma migrate deploy)
+      || (sleep 5 && npx prisma migrate deploy))
+      && npx prisma db seed
+      && exec node --inspect=0.0.0.0:9229 index.js"
+    ports:
+      - '9229:9229'

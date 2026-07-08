@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import useAuthStore from '@/stores/useAuthStore'
 import { changePassword } from '@/services/auth'
+import usePasswordOperation from '@/hooks/usePasswordOperation'
 import Button from '@/components/Button'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
@@ -11,13 +12,16 @@ const ChangePasswordForm = ({ onSuccess }) => {
     newPassword: '',
     confirmPassword: '',
   })
-  const [error, setError] = useState('')
-  const [validationDetails, setValidationDetails] = useState([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { submit, reset, fail, error, validationDetails, isSubmitting } =
+    usePasswordOperation(({ currentPassword, newPassword }) =>
+      changePassword(
+        { currentPassword, newPassword },
+        useAuthStore.getState().token,
+      ),
+    )
 
   const handleChange = (event) => {
-    setError('')
-    setValidationDetails([])
+    reset()
     setForm((current) => ({
       ...current,
       [event.target.name]: event.target.value,
@@ -26,36 +30,17 @@ const ChangePasswordForm = ({ onSuccess }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    setError('')
-    setValidationDetails([])
 
     if (form.newPassword !== form.confirmPassword) {
-      setError('Passwords do not match')
+      fail('Passwords do not match')
       return
     }
 
-    setIsSubmitting(true)
-
-    try {
-      const { token } = useAuthStore.getState()
-      await changePassword(
-        {
-          currentPassword: form.currentPassword,
-          newPassword: form.newPassword,
-        },
-        token,
-      )
-      onSuccess()
-    } catch (requestError) {
-      const details = Array.isArray(requestError.payload?.details)
-        ? requestError.payload.details
-        : []
-
-      setValidationDetails(details)
-      setError(details.length > 0 ? '' : requestError.message)
-    } finally {
-      setIsSubmitting(false)
-    }
+    const { ok } = await submit({
+      currentPassword: form.currentPassword,
+      newPassword: form.newPassword,
+    })
+    if (ok) onSuccess()
   }
 
   return (

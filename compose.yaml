@@ -28,6 +28,20 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+    # Gate nginx (below) on the server being genuinely ready, mirroring the dev
+    # overlay. Without it the client only waits for the container to *start*
+    # (service_started), so /api, /uploads, and /websocket/ return 502 during
+    # the server's boot — which includes `prisma migrate deploy`. /api/v1/health
+    # runs a real `SELECT 1`, so "healthy" means the proxy target can serve.
+    # busybox wget ships in node:22-alpine.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://localhost:3001/api/v1/health || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 60s
 
   client:
     build:
@@ -44,7 +58,8 @@ services:
       - '${CLIENT_PORT}:8080'
       - '${CLIENT_HTTPS_PORT:-8443}:8443'
     depends_on:
-      - server
+      server:
+        condition: service_healthy
 
   mailpit:
     image: axllent/mailpit

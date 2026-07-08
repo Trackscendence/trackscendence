@@ -44,7 +44,12 @@ test('keeps stale public profile responses from replacing the current profile', 
 
   assert.equal(state.publicProfile.username, 'fast')
   assert.equal(state.isLoading, false)
-  assert.equal(leaderboardLoads, 1)
+  // The leaderboard now loads in parallel with the profile (fired before the
+  // await, not after), so each navigation triggers it. Two overlapping loads
+  // fire it twice; that is harmless because the leaderboard is global idempotent
+  // data (same top-N regardless of which profile is viewed). The guarantee that
+  // matters is below: the stale profile response must not overwrite the current.
+  assert.equal(leaderboardLoads, 2)
 
   resolveSlow({
     publicProfile: { id: 1, username: 'slow' },
@@ -54,5 +59,8 @@ test('keeps stale public profile responses from replacing the current profile', 
 
   assert.equal(state.publicProfile.username, 'fast')
   assert.equal(state.isLoading, false)
-  assert.equal(leaderboardLoads, 1)
+  // Each load fires the leaderboard once, at invocation before its await, so the
+  // total stays at 2. The stale (slow) resolution only reaches the stale guard
+  // and returns without touching state or firing again.
+  assert.equal(leaderboardLoads, 2)
 })

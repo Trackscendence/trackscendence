@@ -59,12 +59,12 @@ const GameChatPanel = ({ currentUserId, gameId, onClose }) => {
       </header>
       <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length > 0 ? (
-          groupMessagesByUser(messages).map((group) => {
+          groupMessagesByUser(messages).map((group, groupIndex) => {
             const isOwnMessage = String(group.id) === String(currentUserId)
             return (
               <li
                 className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-                key={group.id}
+                key={`${group.id}-${groupIndex}`}
               >
                 <div
                   className={`max-w-[78%] rounded-md px-4 py-2 text-sm ${
@@ -75,7 +75,7 @@ const GameChatPanel = ({ currentUserId, gameId, onClose }) => {
                 >
                   <p className="font-semibold">{group.username}</p>
                   {group.messages.map((message) => (
-                    <p className="mt-1 break-words" key={message.id}>
+                    <p className="wrap-break-words mt-1" key={message.id}>
                       {message.message}
                     </p>
                   ))}

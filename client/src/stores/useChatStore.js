@@ -1,4 +1,8 @@
 import { create } from 'zustand'
+// Relative import (not the @/ alias) so this store stays loadable under the
+// node-based test runner, which does not resolve the bundler alias. tokenStorage
+// is dependency-free, so it pulls in nothing else.
+import { getStoredToken } from '../services/tokenStorage.js'
 import useNotificationStore from './useNotificationStore.js'
 
 export const GENERAL_CHAT_ROOM_ID = 'channel:#general'
@@ -7,7 +11,6 @@ export const GAME_ROOM_PREFIX = 'game:'
 export const CHAT_ROOM_PREFIX = 'chat:'
 
 const MAX_MESSAGES_PER_ROOM = 100
-const AUTH_TOKEN_KEY = 'trackscendence.auth.token'
 
 const getDefaultRooms = () => ({
   [GENERAL_CHAT_ROOM_ID]: {
@@ -105,10 +108,7 @@ const appendMessageToRoom = (state, roomId, message) => {
   }
 }
 
-const getActiveToken = () => {
-  if (typeof localStorage === 'undefined') return null
-  return localStorage.getItem(AUTH_TOKEN_KEY)
-}
+const getActiveToken = () => getStoredToken()
 
 const requireToken = () => {
   const token = getActiveToken()

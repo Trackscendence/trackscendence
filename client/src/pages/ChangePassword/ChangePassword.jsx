@@ -1,10 +1,13 @@
 import BackButton from '@/components/BackButton'
-import { AUTH_TOKEN_KEY } from '@/services/auth'
+import useAuthStore from '@/stores/useAuthStore'
 import ChangePasswordForm from './_components/ChangePasswordForm'
 
 const ChangePassword = () => {
   const handleSuccess = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY)
+    // Changing the password bumps the server tokenVersion, invalidating the
+    // current token — clear the session through the auth store rather than
+    // reaching into token storage from a page.
+    useAuthStore.getState().clearSession()
     window.location.replace('/login?passwordChanged=1')
   }
 

@@ -1,15 +1,17 @@
 import { create } from 'zustand'
 import {
-  AUTH_TOKEN_KEY,
+  clearStoredToken,
   completeFortyTwoLogin as completeFortyTwoLoginRequest,
   completeTwoFactorLogin as completeTwoFactorLoginRequest,
   fetchAuthProviders,
   fetchCurrentUser,
   getFortyTwoLoginUrl,
+  getStoredToken,
   login as loginRequest,
   loginAsGuest as loginAsGuestRequest,
   logout as logoutRequest,
   register as registerRequest,
+  setStoredToken,
   upgradeGuestAccount as upgradeGuestAccountRequest,
 } from '@/services/auth'
 import { loadAuthProvidersWithRetry } from './authProvidersProbe'
@@ -19,7 +21,7 @@ const applyAuthenticatedResult = (set, result) => {
     return result
   }
 
-  localStorage.setItem(AUTH_TOKEN_KEY, result.token)
+  setStoredToken(result.token)
   set({ token: result.token, user: result.user, isAuthenticated: true })
 
   return result
@@ -32,9 +34,9 @@ let providersProbe = null
 
 const useAuthStore = create((set, get) => ({
   user: null,
-  token: localStorage.getItem(AUTH_TOKEN_KEY),
+  token: getStoredToken(),
   isAuthenticated: false,
-  isLoading: Boolean(localStorage.getItem(AUTH_TOKEN_KEY)),
+  isLoading: Boolean(getStoredToken()),
   // The server reports which OAuth providers it has credentials for, so the
   // 42 button enables itself exactly where the flow can actually work. It
   // starts in a checking state until the first successful probe.
@@ -64,7 +66,7 @@ const useAuthStore = create((set, get) => ({
   init: async () => {
     get().loadAuthProviders()
 
-    const storedToken = localStorage.getItem(AUTH_TOKEN_KEY)
+    const storedToken = getStoredToken()
 
     if (!storedToken) {
       set({ isLoading: false })
@@ -75,7 +77,7 @@ const useAuthStore = create((set, get) => ({
       const { user } = await fetchCurrentUser(storedToken)
       set({ token: storedToken, user, isAuthenticated: true, isLoading: false })
     } catch {
-      localStorage.removeItem(AUTH_TOKEN_KEY)
+      clearStoredToken()
       set({ token: null, user: null, isAuthenticated: false, isLoading: false })
     }
   },
@@ -95,7 +97,7 @@ const useAuthStore = create((set, get) => ({
   },
 
   upgradeGuestAccount: async (payload) => {
-    const activeToken = get().token || localStorage.getItem(AUTH_TOKEN_KEY)
+    const activeToken = get().token || getStoredToken()
 
     if (!activeToken) {
       throw new Error('Authentication required')
@@ -120,8 +122,8 @@ const useAuthStore = create((set, get) => ({
   },
 
   logout: async () => {
-    const activeToken = get().token || localStorage.getItem(AUTH_TOKEN_KEY)
-    localStorage.removeItem(AUTH_TOKEN_KEY)
+    const activeToken = get().token || getStoredToken()
+    clearStoredToken()
     set({ token: null, user: null, isAuthenticated: false })
 
     if (activeToken) {
@@ -134,13 +136,13 @@ const useAuthStore = create((set, get) => ({
   },
 
   clearSession: () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY)
+    clearStoredToken()
     set({ token: null, user: null, isAuthenticated: false, isLoading: false })
   },
 
   handleSessionExpired: (expiredToken) => {
     if (expiredToken && get().token !== expiredToken) return
-    localStorage.removeItem(AUTH_TOKEN_KEY)
+    clearStoredToken()
     set({ token: null, user: null, isAuthenticated: false })
   },
 
@@ -152,7 +154,7 @@ const useAuthStore = create((set, get) => ({
   },
 
   refreshUser: async () => {
-    const activeToken = get().token || localStorage.getItem(AUTH_TOKEN_KEY)
+    const activeToken = get().token || getStoredToken()
 
     if (!activeToken) {
       set({ token: null, user: null, isAuthenticated: false })

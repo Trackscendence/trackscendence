@@ -12,15 +12,19 @@ const WILD_COLORS = [
 const WildColorPicker = ({ onCancel, onPick }) => {
   return (
     <Modal isOpen onClose={onCancel} title="Choose a color">
-      <div className="flex items-center justify-center gap-4">
+      <div className="grid grid-cols-2 place-items-center gap-3 overflow-visible sm:grid-cols-4 sm:gap-2">
         {WILD_COLORS.map(({ engineColor, label, swatchClass }) => (
-          <button
-            aria-label={`Play as ${label.toLowerCase()}`}
-            className={`h-14 w-14 rounded-full border-2 border-black/20 ${swatchClass} transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none`}
+          <div
+            className="grid h-[72px] w-[72px] place-items-center"
             key={engineColor}
-            onClick={() => onPick(engineColor)}
-            type="button"
-          />
+          >
+            <button
+              aria-label={`Play as ${label.toLowerCase()}`}
+              className={`h-14 w-14 rounded-full border-2 border-black/20 ${swatchClass} transform-gpu transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:hover:scale-100`}
+              onClick={() => onPick(engineColor)}
+              type="button"
+            />
+          </div>
         ))}
       </div>
     </Modal>

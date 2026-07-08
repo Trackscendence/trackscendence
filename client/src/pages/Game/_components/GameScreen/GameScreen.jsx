@@ -4,7 +4,7 @@ import ChatPanelButton from '../ChatPanelButton'
 import ExitGameButton from '../ExitGameButton'
 import GameChatPanel from '../GameChatPanel'
 
-const GameScreen = ({ children, currentUserId, gameId }) => {
+const GameScreen = ({ children, gameId }) => {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const clearRoomMessages = useChatStore((state) => state.clearRoomMessages)
   const gameRoomId = gameId ? getGameRoomId(gameId) : null
@@ -26,11 +26,7 @@ const GameScreen = ({ children, currentUserId, gameId }) => {
         onClick={() => setIsChatOpen((current) => !current)}
       />
       {gameId && isChatOpen ? (
-        <GameChatPanel
-          currentUserId={currentUserId}
-          gameId={gameId}
-          onClose={() => setIsChatOpen(false)}
-        />
+        <GameChatPanel gameId={gameId} onClose={() => setIsChatOpen(false)} />
       ) : null}
       {children}
     </main>

@@ -88,7 +88,7 @@ const Game = () => {
   // branch from production bundles.
   if (import.meta.env.DEV && searchParams.get('source') === 'mock') {
     return (
-      <GameScreen currentUserId={user?.id}>
+      <GameScreen>
         <GameTable
           {...getMockGameFromSearchParams(searchParams)}
           onCallUno={noop}
@@ -107,7 +107,7 @@ const Game = () => {
     Boolean(user && gameState) && (!gameId || gameState.gameId === gameId)
   if (!hasStateForThisGame) {
     return (
-      <GameScreen currentUserId={user?.id}>
+      <GameScreen>
         <LoadingSpinner
           className="bg-surface-warm text-black"
           message="Waiting for the game"
@@ -126,7 +126,7 @@ const Game = () => {
 
   if (isSimulatedGame) {
     return (
-      <GameScreen currentUserId={user.id}>
+      <GameScreen>
         <GameTable
           {...table}
           onCallUno={noop}
@@ -149,7 +149,7 @@ const Game = () => {
     : []
 
   return (
-    <GameScreen currentUserId={user.id} gameId={gameState.gameId}>
+    <GameScreen gameId={gameState.gameId}>
       <LiveGameTable gameId={gameState.gameId} table={table} />
       {pausedGame ? (
         <GamePausedOverlay names={pausedNames} deadline={pausedGame.deadline} />

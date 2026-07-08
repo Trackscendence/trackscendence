@@ -58,6 +58,11 @@ export const createCurrentProfileLoader = ({
       })
       lastLoadedAt = now()
       lastLoadedUserId = data.currentProfile?.id ?? authUserId
+      // Load the full friends list off the critical path: the profile already
+      // painted with its seeded friends preview, so this only corrects the
+      // count and fills the friends tab. The leaderboard is already fetching
+      // from before the try above.
+      get().refreshFriendContext()
     } catch (error) {
       if (requestId !== currentProfileRequestId) return
 

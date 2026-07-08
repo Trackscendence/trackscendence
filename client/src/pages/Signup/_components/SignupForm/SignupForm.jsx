@@ -16,11 +16,9 @@ const SignupForm = ({ onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [showTerms, setShowTerms] = useState(false)
-  const [termsViewed, setTermsViewed] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
 
   const [showPrivacy, setShowPrivacy] = useState(false)
-  const [privacyViewed, setPrivacyViewed] = useState(false)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
 
   const handleChange = (event) => {
@@ -121,7 +119,6 @@ const SignupForm = ({ onSuccess }) => {
           <input
             type="checkbox"
             checked={termsAccepted}
-            disabled={!termsViewed}
             onChange={(event) => setTermsAccepted(event.target.checked)}
           />
           <span>I agree to the Terms of Service</span>
@@ -141,7 +138,6 @@ const SignupForm = ({ onSuccess }) => {
           <input
             type="checkbox"
             checked={privacyAccepted}
-            disabled={!privacyViewed}
             onChange={(event) => setPrivacyAccepted(event.target.checked)}
           />
           <span>I agree to the Privacy Policy</span>
@@ -172,10 +168,7 @@ const SignupForm = ({ onSuccess }) => {
 
       <Modal
         isOpen={showTerms}
-        onClose={() => {
-          setTermsViewed(true)
-          setShowTerms(false)
-        }}
+        onClose={() => setShowTerms(false)}
         title="Terms of Service"
       >
         <div className="space-y-4 text-sm leading-6">
@@ -186,10 +179,7 @@ const SignupForm = ({ onSuccess }) => {
           <Button
             type="button"
             variant="blue"
-            onClick={() => {
-              setTermsViewed(true)
-              setShowTerms(false)
-            }}
+            onClick={() => setShowTerms(false)}
           >
             Close
           </Button>
@@ -198,10 +188,7 @@ const SignupForm = ({ onSuccess }) => {
 
       <Modal
         isOpen={showPrivacy}
-        onClose={() => {
-          setPrivacyViewed(true)
-          setShowPrivacy(false)
-        }}
+        onClose={() => setShowPrivacy(false)}
         title="Privacy Policy"
       >
         <div className="space-y-4 text-sm leading-6">
@@ -212,10 +199,7 @@ const SignupForm = ({ onSuccess }) => {
           <Button
             type="button"
             variant="blue"
-            onClick={() => {
-              setPrivacyViewed(true)
-              setShowPrivacy(false)
-            }}
+            onClick={() => setShowPrivacy(false)}
           >
             Close
           </Button>

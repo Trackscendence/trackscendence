@@ -18,6 +18,18 @@ location / {
     try_files $uri $uri/ /index.html;
 }
 
+# Never cache the SPA entry point. Vite fingerprints every JS/CSS asset, so a
+# rebuild only changes which hashed files index.html points at — but if the
+# browser holds a cached index.html it keeps requesting the old hashes and the
+# app stays pinned to a stale build (#355). nginx sends no Cache-Control for
+# HTML by default, which lets browsers heuristically cache it; force a
+# revalidate instead. The ETag makes each revalidation a cheap 304 when the
+# build has not changed. Applies to the try_files fallback too, since that
+# internal redirect re-enters location matching on /index.html.
+location = /index.html {
+    add_header Cache-Control "no-cache" always;
+}
+
 # Reverse proxy to backend API.
 # BACKEND_HOST / BACKEND_PORT are substituted at container start by the
 # nginx image's envsubst step. Defaults (server:3001) match Docker Compose;
@@ -66,8 +78,9 @@ location /websocket/ {
     proxy_set_header X-Forwarded-Proto $scheme;
 }
 
-# Cache static assets
+# Cache fingerprinted static assets forever. One explicit header, not
+# `expires 1y` plus a second add_header — that combination emitted two
+# Cache-Control lines. `immutable` tells the browser never to revalidate.
 location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
 }

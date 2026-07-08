@@ -1,7 +1,8 @@
 import { create } from 'zustand'
-// Relative import (not the @/ alias) so this store stays loadable under the
-// node-based test runner, which does not resolve the bundler alias. tokenStorage
-// is dependency-free, so it pulls in nothing else.
+// Relative imports (not the @/ alias) so this store stays loadable under the
+// node test runner, which does not resolve the bundler alias. Both socketEvents
+// and tokenStorage are dependency-free, so they pull in nothing else.
+import { SOCKET_EVENTS } from '../services/socketEvents.js'
 import { getStoredToken } from '../services/tokenStorage.js'
 import useNotificationStore from './useNotificationStore.js'
 
@@ -125,7 +126,7 @@ const getChatService = () => import('@/services/chat')
 const joinSocketChatRoom = async (roomId) => {
   const { socket } = await import('@/services/socket')
   if (socket.connected && roomId) {
-    socket.emit('chat:room_join', { roomId })
+    socket.emit(SOCKET_EVENTS.CHAT_ROOM_JOIN, { roomId })
   }
 }
 

@@ -47,10 +47,20 @@ const makeDeps = ({
         syncChatRooms: rec('syncChatRooms'),
       }),
     },
+    directMessageStore: {
+      getState: () => ({
+        receiveMessage: rec('receiveDirectMessage'),
+      }),
+    },
     authStore: {
       getState: () => ({ user: userId == null ? null : { id: userId } }),
     },
     notificationStore: { getState: () => ({ push: rec('push') }) },
+    socialNotificationStore: {
+      getState: () => ({
+        loadNotifications: rec('loadSocialNotifications'),
+      }),
+    },
     dispatchActiveGame: rec('dispatchActiveGame'),
     isDevGame,
   }
@@ -209,6 +219,8 @@ test('chat events route to the chat store, passing the current user id on privat
 
   assert.deepEqual(calls.receiveRoomMessage, [[{ text: 'hi' }]])
   assert.deepEqual(calls.receivePrivateMessage, [[{ text: 'psst' }, 42]])
+  assert.deepEqual(calls.receiveDirectMessage, [[{ text: 'psst' }, 42]])
+  assert.deepEqual(calls.loadSocialNotifications, [[]])
   assert.deepEqual(calls.syncChatRooms, [[[{ id: 'r1' }]]])
 })
 

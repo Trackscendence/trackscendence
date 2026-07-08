@@ -8,10 +8,15 @@ export const listFriendRequests = (token) => {
   return request('/friends/requests', { token })
 }
 
-export const sendFriendRequest = (targetUserId, token) => {
+export const sendFriendRequest = (targetUserIdOrPayload, token, message) => {
+  const body =
+    typeof targetUserIdOrPayload === 'object'
+      ? targetUserIdOrPayload
+      : { message, targetUserId: targetUserIdOrPayload }
+
   return request('/friends/request', {
     method: 'POST',
-    body: { targetUserId },
+    body,
     token,
   })
 }

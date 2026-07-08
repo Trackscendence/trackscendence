@@ -2,7 +2,12 @@
 // settings gear instead, so there is no own-profile action state here.
 const getProfileActionState = ({ relationship }) => {
   if (relationship?.status === 'FRIENDS') {
-    return { isDisabled: true, label: 'Friends', variant: 'orangeOutline' }
+    return {
+      isDisabled: false,
+      kind: 'message',
+      label: 'Message',
+      variant: 'orange',
+    }
   }
 
   if (relationship?.status === 'PENDING_OUTGOING') {
@@ -21,7 +26,12 @@ const getProfileActionState = ({ relationship }) => {
     return { isDisabled: true, label: 'Unavailable', variant: 'orangeOutline' }
   }
 
-  return { isDisabled: false, label: 'Add friend', variant: 'orange' }
+  return {
+    isDisabled: false,
+    kind: 'message',
+    label: 'Message',
+    variant: 'orange',
+  }
 }
 
 export default {

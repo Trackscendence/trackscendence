@@ -12,8 +12,10 @@ export const createSocketSessionHandlers = ({
   socketStore,
   gameStore,
   chatStore,
+  directMessageStore,
   authStore,
   notificationStore,
+  socialNotificationStore,
   dispatchActiveGame,
   isDevGame,
 }) => {
@@ -105,8 +107,11 @@ export const createSocketSessionHandlers = ({
     [SOCKET_EVENTS.ROOM_CLOSED]: handleRoomClosed,
     [SOCKET_EVENTS.CHAT_MESSAGE]: (data) =>
       chatStore.getState().receiveRoomMessage(data),
-    [SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE]: (data) =>
-      chatStore.getState().receivePrivateMessage(data, currentUserId()),
+    [SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE]: (data) => {
+      chatStore.getState().receivePrivateMessage(data, currentUserId())
+      directMessageStore?.getState().receiveMessage(data, currentUserId())
+      socialNotificationStore?.getState().loadNotifications()
+    },
     [SOCKET_EVENTS.CHAT_ROOMS]: (data) => {
       if (Array.isArray(data?.rooms)) {
         chatStore.getState().syncChatRooms(data.rooms)

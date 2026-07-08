@@ -68,7 +68,7 @@ export const createProfileActions = (set, get) => ({
     set(await loadFriendContext(token))
   },
 
-  sendFriendRequest: async () => {
+  sendFriendRequest: async (message = '') => {
     const token = getActiveToken()
     const profile = get().publicProfile
     const notifications = useNotificationStore.getState()
@@ -84,13 +84,15 @@ export const createProfileActions = (set, get) => ({
 
     try {
       set({
-        ...(await requestFriendship({ profileId: profile.id, token })),
+        ...(await requestFriendship({ message, profileId: profile.id, token })),
         isSubmitting: false,
       })
       notifications.push('Friend request sent', 'success')
+      return true
     } catch (error) {
       notifications.push(error.message, 'error')
       set({ actionError: '', isSubmitting: false })
+      return false
     }
   },
 

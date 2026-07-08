@@ -65,8 +65,8 @@ export const loadPublicProfileData = async ({ token, username }) => {
   }
 }
 
-export const requestFriendship = async ({ profileId, token }) => {
-  await sendFriendRequest(profileId, token)
+export const requestFriendship = async ({ message, profileId, token }) => {
+  await sendFriendRequest({ message, targetUserId: profileId }, token)
 
   return {
     relationship: { status: 'PENDING_OUTGOING' },

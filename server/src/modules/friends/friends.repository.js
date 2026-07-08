@@ -4,6 +4,7 @@ const publicUserSelect = {
   id: true,
   username: true,
   displayName: true,
+  avatarUrl: true,
 }
 
 const friendshipSelect = {
@@ -11,6 +12,7 @@ const friendshipSelect = {
   requesterId: true,
   addresseeId: true,
   status: true,
+  requestMessage: true,
   blockedById: true,
   createdAt: true,
   updatedAt: true,
@@ -55,11 +57,12 @@ const findRelationshipBetweenUsers = (firstUserId, secondUserId) => {
   })
 }
 
-const createFriendRequest = (requesterId, addresseeId) => {
+const createFriendRequest = ({ addresseeId, requestMessage, requesterId }) => {
   return prisma.friendship.create({
     data: {
-      requesterId,
       addresseeId,
+      requestMessage,
+      requesterId,
     },
     select: friendshipSelect,
   })

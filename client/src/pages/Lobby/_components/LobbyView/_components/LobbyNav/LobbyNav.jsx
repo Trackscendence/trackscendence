@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
 import Logo from '@/components/Logo'
+import SocialNavActions from '@/components/SocialNavActions'
 import AccountMenu from './_components/AccountMenu'
 
 const LobbyNav = ({ user, onCreateRoom }) => {
@@ -11,13 +12,15 @@ const LobbyNav = ({ user, onCreateRoom }) => {
     <header className="flex items-center justify-between border-b border-black/10 bg-white px-8 py-3">
       <Logo />
       <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={onCreateRoom}
-          className="flex items-center gap-2 rounded-[14px] bg-[#E86D2F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#c95b24]"
-        >
-          + Room
-        </button>
+        {onCreateRoom ? (
+          <button
+            type="button"
+            onClick={onCreateRoom}
+            className="flex items-center gap-2 rounded-[14px] bg-[#E86D2F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#c95b24]"
+          >
+            + Room
+          </button>
+        ) : null}
         <Link
           to="/users/me"
           aria-label="Your profile"
@@ -34,6 +37,7 @@ const LobbyNav = ({ user, onCreateRoom }) => {
             <span className="text-xs text-[#2E2D2D]">{accountLabel}</span>
           </span>
         </Link>
+        <SocialNavActions />
         <AccountMenu />
       </div>
     </header>

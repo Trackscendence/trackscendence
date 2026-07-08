@@ -4,8 +4,10 @@ import { SOCKET_EVENTS } from '@/services/socketEvents'
 import { DEV_GAME_ID } from '@/dev/DevControls/constants'
 import useAuthStore from './useAuthStore'
 import useChatStore, { isPrivateRoomId } from './useChatStore'
+import useDirectMessageStore from './useDirectMessageStore'
 import useGameStore from './useGameStore'
 import useNotificationStore from './useNotificationStore'
+import useSocialNotificationStore from './useSocialNotificationStore'
 import { createSocketSessionHandlers } from './socketSessionHandlers'
 import {
   attachSocketSessionListeners,
@@ -58,8 +60,10 @@ const sessionHandlers = createSocketSessionHandlers({
   socketStore: useSocketStore,
   gameStore: useGameStore,
   chatStore: useChatStore,
+  directMessageStore: useDirectMessageStore,
   authStore: useAuthStore,
   notificationStore: useNotificationStore,
+  socialNotificationStore: useSocialNotificationStore,
   dispatchActiveGame: (gameId) =>
     window.dispatchEvent(
       new CustomEvent('trackscendence:active-game', {

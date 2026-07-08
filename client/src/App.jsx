@@ -26,6 +26,7 @@ const Game = lazy(() => import('@/pages/Game'))
 const Leaderboard = lazy(() => import('@/pages/Leaderboard'))
 const Lobby = lazy(() => import('@/pages/Lobby'))
 const Login = lazy(() => import('@/pages/Login'))
+const Messages = lazy(() => import('@/pages/Messages'))
 const OAuth42Callback = lazy(() => import('@/pages/OAuth42Callback'))
 const Outcome = lazy(() => import('@/pages/Outcome'))
 const PrivacyPolicy = lazy(() => import('@/pages/Privacy'))
@@ -241,6 +242,7 @@ const App = () => {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<WaitingRoom />} />
             <Route path="/lobby" element={<Lobby />} />
+            <Route path="/messages" element={<Messages />} />
             <Route path="/game" element={<Game />} />
             <Route path="/results" element={<Outcome />} />
             <Route element={<ProfileLayout />}>

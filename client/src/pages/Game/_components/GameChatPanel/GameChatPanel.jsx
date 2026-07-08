@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import useChatStore, { getGameRoomId } from '@/stores/useChatStore'
 import useSocketStore from '@/stores/useSocketStore'
 
@@ -41,6 +41,11 @@ const GameChatPanel = ({ currentUserId, gameId, onClose }) => {
       return groups
     }, [])
 
+  const groupedMessages = useMemo(
+    () => groupMessagesByUser(messages),
+    [messages],
+  )
+
   return (
     <section
       aria-label="Game chat"
@@ -59,7 +64,7 @@ const GameChatPanel = ({ currentUserId, gameId, onClose }) => {
       </header>
       <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length > 0 ? (
-          groupMessagesByUser(messages).map((group, groupIndex) => {
+          groupedMessages.map((group, groupIndex) => {
             const isOwnMessage = String(group.id) === String(currentUserId)
             return (
               <li

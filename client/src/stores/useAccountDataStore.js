@@ -3,11 +3,11 @@ import {
   deleteAccount as deleteAccountRequest,
   exportAccountData as exportAccountDataRequest,
 } from '@/services/users'
-import { AUTH_TOKEN_KEY } from '@/services/auth'
+import { getStoredToken } from '@/services/auth'
 import useAuthStore from './useAuthStore'
 
 const getActiveToken = () => {
-  return useAuthStore.getState().token || localStorage.getItem(AUTH_TOKEN_KEY)
+  return useAuthStore.getState().token || getStoredToken()
 }
 
 const useAccountDataStore = create((set, get) => ({

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { requestPasswordReset } from '@/services/auth'
+import usePasswordOperation from '@/hooks/usePasswordOperation'
 import Button from '@/components/Button'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
@@ -8,30 +9,15 @@ import Input from '@/components/Input'
 const ForgotPassword = () => {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
-  const [validationDetails, setValidationDetails] = useState([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { submit, reset, error, validationDetails, isSubmitting } =
+    usePasswordOperation(requestPasswordReset)
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    setError('')
-    setValidationDetails([])
     setMessage('')
-    setIsSubmitting(true)
 
-    try {
-      const result = await requestPasswordReset({ email })
-      setMessage(result.message)
-    } catch (requestError) {
-      const details = Array.isArray(requestError.payload?.details)
-        ? requestError.payload.details
-        : []
-
-      setValidationDetails(details)
-      setError(details.length > 0 ? '' : requestError.message)
-    } finally {
-      setIsSubmitting(false)
-    }
+    const { ok, result } = await submit({ email })
+    if (ok) setMessage(result.message)
   }
 
   return (
@@ -55,8 +41,7 @@ const ForgotPassword = () => {
               autoComplete="email"
               value={email}
               onChange={(event) => {
-                setError('')
-                setValidationDetails([])
+                reset()
                 setEmail(event.target.value)
               }}
               required

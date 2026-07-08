@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '@/services/auth'
+import usePasswordOperation from '@/hooks/usePasswordOperation'
 import Button from '@/components/Button'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
@@ -12,14 +13,12 @@ const ResetPasswordForm = ({ onSuccess }) => {
     newPassword: '',
     confirmPassword: '',
   }))
-  const [error, setError] = useState('')
-  const [validationDetails, setValidationDetails] = useState([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { submit, reset, fail, error, validationDetails, isSubmitting } =
+    usePasswordOperation(resetPassword)
   const isTokenError = error === 'Invalid or expired token'
 
   const handleChange = (event) => {
-    setError('')
-    setValidationDetails([])
+    reset()
     setForm((current) => ({
       ...current,
       [event.target.name]: event.target.value,
@@ -28,29 +27,17 @@ const ResetPasswordForm = ({ onSuccess }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    setError('')
-    setValidationDetails([])
 
     if (form.newPassword !== form.confirmPassword) {
-      setError('Passwords do not match')
+      fail('Passwords do not match')
       return
     }
 
-    setIsSubmitting(true)
-
-    try {
-      await resetPassword({ token: form.token, newPassword: form.newPassword })
-      onSuccess()
-    } catch (requestError) {
-      const details = Array.isArray(requestError.payload?.details)
-        ? requestError.payload.details
-        : []
-
-      setValidationDetails(details)
-      setError(details.length > 0 ? '' : requestError.message)
-    } finally {
-      setIsSubmitting(false)
-    }
+    const { ok } = await submit({
+      token: form.token,
+      newPassword: form.newPassword,
+    })
+    if (ok) onSuccess()
   }
 
   return (

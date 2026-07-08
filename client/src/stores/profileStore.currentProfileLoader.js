@@ -41,6 +41,12 @@ export const createCurrentProfileLoader = ({
 
     set({ error: '', isLoading: true })
 
+    // Start the leaderboard fetch alongside the profile fan-out (not after it
+    // resolves) so the sidebar and the header land together instead of the
+    // leaderboard arriving as a later second render. Placed after the freshness
+    // early-return above so a cached remount does not refire it.
+    get().loadLeaderboard()
+
     try {
       const data = await loadCurrentProfileData(token)
 
@@ -52,7 +58,6 @@ export const createCurrentProfileLoader = ({
       })
       lastLoadedAt = now()
       lastLoadedUserId = data.currentProfile?.id ?? authUserId
-      get().loadLeaderboard()
     } catch (error) {
       if (requestId !== currentProfileRequestId) return
 

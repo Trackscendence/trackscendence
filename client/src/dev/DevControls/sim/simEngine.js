@@ -9,8 +9,7 @@ const STANDARD_COLORS = ['RED', 'YELLOW', 'GREEN', 'BLUE']
 const NUMBER_VALUES = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 const ACTION_VALUES = ['SKIP', 'REVERSE', 'DRAW_TWO']
 
-// The standard 108-card deck: per color one 0, two of each 1-9, two of each
-// action; plus 4 Wild and 4 Wild Draw Four.
+// The 112-card deck: standard UNO plus this game's 4 Wild Draw Three cards.
 const buildDeck = () => {
   const deck = []
   STANDARD_COLORS.forEach((color) => {
@@ -26,6 +25,7 @@ const buildDeck = () => {
   })
   for (let copy = 0; copy < 4; copy += 1) {
     deck.push({ type: 'WILD', color: 'WILD', value: 'WILD' })
+    deck.push({ type: 'WILD', color: 'WILD', value: 'WILD_DRAW_THREE' })
     deck.push({ type: 'WILD', color: 'WILD', value: 'WILD_DRAW_FOUR' })
   }
   return deck
@@ -135,6 +135,12 @@ class SimEngine {
       this.nextTurn()
       const targetId = this.playerOrder[this.currentPlayerIndex]
       this.hands.get(targetId).push(this._drawOne(), this._drawOne())
+    } else if (cardToPlay.value === 'WILD_DRAW_THREE') {
+      this.nextTurn()
+      const targetId = this.playerOrder[this.currentPlayerIndex]
+      this.hands
+        .get(targetId)
+        .push(this._drawOne(), this._drawOne(), this._drawOne())
     } else if (cardToPlay.value === 'WILD_DRAW_FOUR') {
       this.nextTurn()
       const targetId = this.playerOrder[this.currentPlayerIndex]

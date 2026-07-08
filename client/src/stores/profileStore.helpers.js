@@ -41,18 +41,19 @@ export const loadLeaderboardContext = async (token) => {
   }
 }
 
-// The leaderboard aggregation is intentionally left out of these fetches so the
-// profile and friends resolve without waiting on it. The store loads it off the
-// critical path via loadLeaderboardContext once the profile has rendered.
+// Only /users/me is on the critical path. It already returns a short friends
+// preview (up to 6) which seeds the sidebar immediately, so the profile paints
+// without blocking on the full /friends list. The leaderboard and the full
+// friends list both load off the critical path once the profile has rendered
+// (loadLeaderboard / refreshFriendContext), which also corrects the friends
+// count and populates the friends tab.
 export const loadCurrentProfileData = async (token) => {
-  const [profileResult, friendContext] = await Promise.all([
-    getProfile(token),
-    loadFriendContext(token),
-  ])
+  const profileResult = await getProfile(token)
+
   return {
     currentProfile: profileResult.user,
     relationship: profileResult.relationship,
-    ...friendContext,
+    friends: profileResult.user.friends || [],
   }
 }
 

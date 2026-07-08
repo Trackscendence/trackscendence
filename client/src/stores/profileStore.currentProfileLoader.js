@@ -52,7 +52,11 @@ export const createCurrentProfileLoader = ({
       })
       lastLoadedAt = now()
       lastLoadedUserId = data.currentProfile?.id ?? authUserId
+      // Both load off the critical path (the profile already painted with its
+      // seeded friends preview): the leaderboard aggregation, and the full
+      // friends list that corrects the count and fills the friends tab.
       get().loadLeaderboard()
+      get().refreshFriendContext()
     } catch (error) {
       if (requestId !== currentProfileRequestId) return
 

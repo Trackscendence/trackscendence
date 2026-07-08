@@ -1,0 +1,49 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    "client": {
+      "entry": [
+        "src/main.jsx",
+        "src/**/*.test.js",
+        "vite.config.js",
+        "eslint.config.js"
+      ],
+      "project": ["src/**/*.{js,jsx}"]
+    },
+    "server": {
+      "entry": [
+        "index.js",
+        "src/docs/swagger.js",
+        "src/**/*.test.js",
+        "prisma/seed.js",
+        "prisma/seed.bench.js",
+        "benchmarks/**/*.js"
+      ],
+      "project": ["app.js", "src/**/*.js", "utils/**/*.js"]
+    }
+  },
+  "ignoreDependencies": [
+    "tailwindcss",
+    "@tailwindcss/typography",
+    "prettier-plugin-tailwindcss",
+    "concurrently",
+    "husky",
+    "lint-staged",
+    "@commitlint/cli",
+    "cspell",
+    "prettier",
+    "cross-env",
+    "swagger-jsdoc",
+    "swagger-ui-express"
+  ],
+  "ignoreBinaries": [
+    "prisma",
+    "commitlint",
+    "lint-staged",
+    "prettier",
+    "cspell",
+    "husky",
+    "cross-env",
+    "concurrently"
+  ]
+}

@@ -118,6 +118,11 @@ model Game {
   players     GamePlayer[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+
+  // Recent-match history (profile page) filters GamePlayer by userId then orders
+  // by Game.endedAt desc. Index the sort column so the join does not fall back to
+  // a sort with no index as the games table grows.
+  @@index([endedAt])
 }
 
 model GamePlayer {

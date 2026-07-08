@@ -109,10 +109,22 @@ const mapServerGameState = ({
       : (opponents.find((opponent) => opponent.id === state.currentPlayer)
           ?.username ?? null)
 
+  // The open UNO window, from this player's point of view. `own` means I am the
+  // one on a single card (call button, or a safe badge once called); `opponent`
+  // means someone else is, and I may catch them until they call. A spectator is
+  // never the owner, so it only ever sees the opponent side.
+  const serverUno = isSpectator ? null : state.unoState
+  const uno = !serverUno
+    ? null
+    : serverUno.playerId === ownUserId
+      ? { own: { called: serverUno.called } }
+      : { opponent: { targetId: serverUno.playerId, called: serverUno.called } }
+
   return {
     isMyTurn,
     activePlayerName,
     turnExpiresAt: state.turnExpiresAt ?? null,
+    uno,
     currentPlayer: {
       id: ownUserId,
       username: ownIdentity.name,

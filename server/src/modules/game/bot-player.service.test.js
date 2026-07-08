@@ -222,3 +222,75 @@ describe('bot player helpers', () => {
     assert.deepStrictEqual(passes, [[11]])
   })
 })
+
+describe('bot UNO helpers (#353)', () => {
+  const fakeEngine = (unoState, log) => ({
+    getState: () => ({ unoState }),
+    callUno: (id) => log.push(['call', id]),
+    catchUno: (id) => log.push(['catch', id]),
+  })
+
+  it('self-calls UNO when on one card and not yet called', () => {
+    const log = []
+    const called = botPlayers.callUnoIfNeeded(
+      fakeEngine({ playerId: 900, called: false }, log),
+      900,
+    )
+    assert.strictEqual(called, true)
+    assert.deepStrictEqual(log, [['call', 900]])
+  })
+
+  it('does not self-call with no window or when already called', () => {
+    const log = []
+    assert.strictEqual(
+      botPlayers.callUnoIfNeeded(fakeEngine(null, log), 900),
+      false,
+    )
+    assert.strictEqual(
+      botPlayers.callUnoIfNeeded(
+        fakeEngine({ playerId: 900, called: true }, log),
+        900,
+      ),
+      false,
+    )
+    assert.deepStrictEqual(log, [])
+  })
+
+  it('catches a forgetful human when the roll is within probability', () => {
+    botPlayers.rememberBotUsers([{ id: 900, username: 'bot-uno' }])
+    const log = []
+    const caught = botPlayers.maybeCatchUno(
+      fakeEngine({ playerId: 5, called: false }, log),
+      () => 0.1,
+    )
+    assert.strictEqual(caught, 5)
+    assert.deepStrictEqual(log, [['catch', 5]])
+  })
+
+  it('skips the catch on a missed roll, an already-called player, or a bot target', () => {
+    botPlayers.rememberBotUsers([{ id: 900, username: 'bot-uno' }])
+    const log = []
+    assert.strictEqual(
+      botPlayers.maybeCatchUno(
+        fakeEngine({ playerId: 5, called: false }, log),
+        () => 0.95,
+      ),
+      null,
+    )
+    assert.strictEqual(
+      botPlayers.maybeCatchUno(
+        fakeEngine({ playerId: 5, called: true }, log),
+        () => 0.1,
+      ),
+      null,
+    )
+    assert.strictEqual(
+      botPlayers.maybeCatchUno(
+        fakeEngine({ playerId: 900, called: false }, log),
+        () => 0.1,
+      ),
+      null,
+    )
+    assert.deepStrictEqual(log, [])
+  })
+})

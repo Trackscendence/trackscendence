@@ -35,14 +35,16 @@ const GameTable = ({
   deckSize,
   direction,
   isMyTurn,
+  onCallUno,
   onCardClick,
+  onCatchUno,
   onDrawPileClick,
   onPassClick,
-  onUnoClick,
   opponents,
   pendingDraw,
   topCard,
   turnExpiresAt,
+  uno,
 }) => {
   const topOpponents = getOpponentsBySeat(opponents, TOP_SEATS)
   const leftOpponent = getOpponentBySeat(opponents, 'left')
@@ -86,14 +88,12 @@ const GameTable = ({
             canDraw={canDraw}
             deckSize={deckSize}
             direction={direction}
-            isOpponentUno={opponents.some(
-              (opponent) => opponent.cardCount === 1,
-            )}
-            isOwnUno={currentPlayer.cards.length === 1}
+            onCallUno={onCallUno}
+            onCatchUno={onCatchUno}
             onDrawPileClick={onDrawPileClick}
-            onUnoClick={onUnoClick}
             pendingDraw={pendingDraw}
             topCard={topCard}
+            uno={uno}
           />
           <div className="absolute top-full left-1/2 mt-2 -translate-x-1/2">
             <TurnBanner

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
@@ -16,7 +16,18 @@ const Outcome = () => {
   const [searchParams] = useSearchParams()
   const user = useAuthStore((state) => state.user)
   const leaderboard = useGameStore((state) => state.leaderboard)
-  const gameOutcome = useGameStore((state) => state.gameOutcome)
+
+  // Snapshot the result once instead of subscribing. The Lobby / Play Again
+  // buttons call clearGame(), which nulls gameOutcome; a live subscription
+  // would re-render this still-mounted page, hit the "no outcome" fallback
+  // below, and redirect to '/' before the button's own navigate('/lobby')
+  // lands — so the Lobby button ended up in the waiting room. game_over writes
+  // the result before the Game page routes here, so reading it once is enough.
+  const [outcome] = useState(
+    () =>
+      useGameStore.getState().gameOutcome ??
+      (import.meta.env.DEV ? searchParams.get('outcome') : null),
+  )
 
   useEffect(() => {
     const loadLeaderboard = async () => {
@@ -35,8 +46,6 @@ const Outcome = () => {
 
   // Landing here without a finished game (typed URL, stale tab) has nothing
   // to show — go back to the waiting room instead of faking a win.
-  const outcome =
-    gameOutcome ?? (import.meta.env.DEV ? searchParams.get('outcome') : null)
   if (!outcome) return <Navigate to="/" replace />
 
   const copy = getOutcomeCopy(outcome)

@@ -1,4 +1,7 @@
 import { create } from 'zustand'
+// Relative import (not the @/ alias) so this store stays loadable under the node
+// test runner; socketEvents is a dependency-free constants file.
+import { SOCKET_EVENTS } from '../services/socketEvents.js'
 import useNotificationStore from './useNotificationStore.js'
 
 export const GENERAL_CHAT_ROOM_ID = 'channel:#general'
@@ -125,7 +128,7 @@ const getChatService = () => import('@/services/chat')
 const joinSocketChatRoom = async (roomId) => {
   const { socket } = await import('@/services/socket')
   if (socket.connected && roomId) {
-    socket.emit('chat:room_join', { roomId })
+    socket.emit(SOCKET_EVENTS.CHAT_ROOM_JOIN, { roomId })
   }
 }
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { socket } from '@/services/socket'
+import { SOCKET_EVENTS } from '@/services/socketEvents'
 import { getLeaderboard } from '@/services/game'
 import useAuthStore from '@/stores/useAuthStore'
 import {
@@ -162,12 +163,12 @@ const useGameStore = create((set) => ({
       }
     }),
 
-  joinLobby: () => socket.emit('join_lobby'),
+  joinLobby: () => socket.emit(SOCKET_EVENTS.JOIN_LOBBY),
   // Tells the server to drop us from the matchmaking queue and resets the
   // local waiting-room state. The socket itself stays connected — it is owned
   // by the app session (App.jsx), not by the lobby page.
   leaveLobby: () => {
-    socket.emit('leave_lobby')
+    socket.emit(SOCKET_EVENTS.LEAVE_LOBBY)
     set({ lobbyCount: 0, match: null })
   },
   clearGame: () =>
@@ -184,31 +185,31 @@ const useGameStore = create((set) => ({
   // a default room. The game starts once the room fills.
   seatRoom: (capacity) => {
     set({ suppressOwnRoom: false })
-    socket.emit('room:seat', capacity != null ? { capacity } : {})
+    socket.emit(SOCKET_EVENTS.ROOM_SEAT, capacity != null ? { capacity } : {})
   },
   // Explicit create from the lobby or the first-player quick-start picker.
   // This always asks the server to open a room owned by this player.
   createRoom: (capacity) => {
     set({ suppressOwnRoom: false })
-    socket.emit('room:create', capacity != null ? { capacity } : {})
+    socket.emit(SOCKET_EVENTS.ROOM_CREATE, capacity != null ? { capacity } : {})
   },
   // Join a specific open room by id (the lobby grid's join button).
   joinRoomById: (roomId) => {
     set({ suppressOwnRoom: false })
-    socket.emit('room:join', { roomId })
+    socket.emit(SOCKET_EVENTS.ROOM_JOIN, { roomId })
   },
-  fillRoomWithBots: () => socket.emit('room:fill_bots'),
+  fillRoomWithBots: () => socket.emit(SOCKET_EVENTS.ROOM_FILL_BOTS),
   // Leaving unseats just this player; ending closes the whole room (owner
   // only, enforced server-side). Both optimistically drop the player's own
   // room from the local grid so the lobby never lingers on a room they just
   // left while the authoritative rooms_update is in flight (#221).
   leaveRoom: () => {
-    socket.emit('room:leave')
+    socket.emit(SOCKET_EVENTS.ROOM_LEAVE)
     set({ suppressOwnRoom: true })
     useGameStore.getState().dropOwnRoom()
   },
   endRoom: () => {
-    socket.emit('room:end')
+    socket.emit(SOCKET_EVENTS.ROOM_END)
     set((state) => {
       const ownUserId = useAuthStore.getState().user?.id
       return {
@@ -231,37 +232,42 @@ const useGameStore = create((set) => ({
         ),
       }
     }),
-  listRooms: () => socket.emit('room:list'),
+  listRooms: () => socket.emit(SOCKET_EVENTS.ROOM_LIST),
 
   // Subscribe to room-list broadcasts while a room-grid page (lobby, waiting
   // room) is mounted; the flag lets a socket reconnect re-join the `rooms` room,
   // since a fresh transport starts outside every server-side room.
   watchRooms: () => {
     set({ watchingRooms: true })
-    socket.emit('rooms:watch')
+    socket.emit(SOCKET_EVENTS.ROOMS_WATCH)
   },
   unwatchRooms: () => {
     set({ watchingRooms: false })
-    socket.emit('rooms:unwatch')
+    socket.emit(SOCKET_EVENTS.ROOMS_UNWATCH)
   },
 
   // Intentional forfeit from the in-game exit: end the game for everyone. The
   // server tears it down and reopens the room for the players left behind; this
   // client heads to the lobby (handleGameOver reads the resulting game_over).
-  leaveGame: () => socket.emit('game:leave'),
+  leaveGame: () => socket.emit(SOCKET_EVENTS.GAME_LEAVE),
 
   playCard: (gameId, cardIndex, declaredColor) =>
-    socket.emit('game:play_card', { gameId, cardIndex, declaredColor }),
-  drawCard: (gameId) => socket.emit('game:draw_card', { gameId }),
-  passTurn: (gameId) => socket.emit('game:pass_turn', { gameId }),
+    socket.emit(SOCKET_EVENTS.GAME_PLAY_CARD, {
+      gameId,
+      cardIndex,
+      declaredColor,
+    }),
+  drawCard: (gameId) => socket.emit(SOCKET_EVENTS.GAME_DRAW_CARD, { gameId }),
+  passTurn: (gameId) => socket.emit(SOCKET_EVENTS.GAME_PASS_TURN, { gameId }),
   // Call UNO on your own last card, or catch an opponent who forgot to. Both
   // resolve on the server, which replies with a fresh game_state_update.
-  callUno: (gameId) => socket.emit('game:call_uno', { gameId }),
+  callUno: (gameId) => socket.emit(SOCKET_EVENTS.GAME_CALL_UNO, { gameId }),
   catchUno: (gameId, targetUserId) =>
-    socket.emit('game:catch_uno', { gameId, targetUserId }),
+    socket.emit(SOCKET_EVENTS.GAME_CATCH_UNO, { gameId, targetUserId }),
   // Ask the server to replay the current state of a running game (page
   // refresh, reconnect). The reply arrives as a normal game_state_update.
-  requestGameState: (gameId) => socket.emit('game:state', { gameId }),
+  requestGameState: (gameId) =>
+    socket.emit(SOCKET_EVENTS.GAME_STATE_REQUEST, { gameId }),
 }))
 
 export default useGameStore

@@ -47,10 +47,20 @@ const makeDeps = ({
         syncChatRooms: rec('syncChatRooms'),
       }),
     },
+    directMessageStore: {
+      getState: () => ({
+        receiveMessage: rec('receiveDirectMessage'),
+      }),
+    },
     authStore: {
       getState: () => ({ user: userId == null ? null : { id: userId } }),
     },
     notificationStore: { getState: () => ({ push: rec('push') }) },
+    socialNotificationStore: {
+      getState: () => ({
+        loadNotifications: rec('loadSocialNotifications'),
+      }),
+    },
     dispatchActiveGame: rec('dispatchActiveGame'),
     isDevGame,
   }
@@ -209,6 +219,8 @@ test('chat events route to the chat store, passing the current user id on privat
 
   assert.deepEqual(calls.receiveRoomMessage, [[{ text: 'hi' }]])
   assert.deepEqual(calls.receivePrivateMessage, [[{ text: 'psst' }, 42]])
+  assert.deepEqual(calls.receiveDirectMessage, [[{ text: 'psst' }, 42]])
+  assert.deepEqual(calls.loadSocialNotifications, [[]])
   assert.deepEqual(calls.syncChatRooms, [[[{ id: 'r1' }]]])
 })
 
@@ -222,4 +234,28 @@ test('room:closed coerces a numeric roomId and falls back to true', () => {
   const missing = makeDeps()
   createSocketSessionHandlers(missing.deps)[SOCKET_EVENTS.ROOM_CLOSED]({})
   assert.deepEqual(missing.calls.setRoomClosed, [[true]])
+})
+
+test('session-data events are dropped once the session has ended (#391)', () => {
+  const { deps, calls } = makeDeps({ userId: 42 })
+  const handlers = createSocketSessionHandlers({
+    ...deps,
+    hasActiveSession: () => false,
+  })
+
+  handlers[SOCKET_EVENTS.LOBBY_UPDATE]({ count: 3 })
+  handlers[SOCKET_EVENTS.GAME_STATE_UPDATE]({ gameId: 'g1' })
+  handlers[SOCKET_EVENTS.ROOMS_UPDATE]([{ id: 1 }])
+  handlers[SOCKET_EVENTS.CHAT_MESSAGE]({ text: 'late' })
+  handlers[SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE]({ text: 'late psst' })
+
+  assert.equal(calls.setLobbyCount, undefined)
+  assert.equal(calls.setGameState, undefined)
+  assert.equal(calls.setRooms, undefined)
+  assert.equal(calls.receiveRoomMessage, undefined)
+  assert.equal(calls.receivePrivateMessage, undefined)
+
+  // Transport-state events stay live so isConnected remains accurate.
+  handlers[SOCKET_EVENTS.DISCONNECT]()
+  assert.deepEqual(calls.setConnected, [[false]])
 })

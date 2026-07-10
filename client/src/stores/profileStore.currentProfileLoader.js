@@ -7,6 +7,9 @@ export const createCurrentProfileLoader = ({
   emptyFriendContext,
   get,
   getAuthUserId,
+  // Session guard (#391): injected so a response from a session that ended or
+  // changed mid-flight is dropped. Defaults to pass-through for tests.
+  isTokenActive = () => true,
   loadCurrentProfileData,
   now = () => Date.now(),
   requireToken,
@@ -51,6 +54,7 @@ export const createCurrentProfileLoader = ({
       const data = await loadCurrentProfileData(token)
 
       if (requestId !== currentProfileRequestId) return
+      if (!isTokenActive(token)) return
 
       set({
         ...data,
@@ -65,6 +69,7 @@ export const createCurrentProfileLoader = ({
       get().refreshFriendContext()
     } catch (error) {
       if (requestId !== currentProfileRequestId) return
+      if (!isTokenActive(token)) return
 
       set({
         currentProfile: null,

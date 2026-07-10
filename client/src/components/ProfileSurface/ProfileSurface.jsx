@@ -11,15 +11,21 @@ const ProfileSurface = ({
   isSubmitting,
   leaderboard = [],
   onFriendRequest,
+  onMessage,
   profile,
   relationship,
 }) => {
   const [activeTab, setActiveTab] = useState('overview')
   const visibleFriends = isOwnProfile ? friends : profile.friends || []
 
-  // The owner's header links to /settings for edits; only the friend-request
-  // button routes through here, so this always sends a friend request.
-  const handlePrimaryAction = () => void onFriendRequest()
+  const handlePrimaryAction = (action) => {
+    if (action.kind === 'message') {
+      void onMessage?.()
+      return
+    }
+
+    void onFriendRequest?.()
+  }
 
   return (
     <div className="w-full bg-white">

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import test from 'node:test'
+import test, { beforeEach } from 'node:test'
 import useChatStore, {
   GENERAL_CHAT_ROOM_ID,
   getChatRoomId,
@@ -7,6 +7,22 @@ import useChatStore, {
   getPrivateRoomId,
   isPrivateRoomId,
 } from './useChatStore.js'
+import { resetSessionStores } from './createSessionStore.js'
+import { setStoredToken, clearStoredToken } from '../services/tokenStorage.js'
+
+// node has no localStorage, so back tokenStorage with an in-memory shim. The
+// socket message handlers are session-guarded (#391), so tests run against a
+// signed-in session unless they clear it on purpose.
+const storage = new Map()
+globalThis.localStorage = globalThis.localStorage || {
+  getItem: (key) => (storage.has(key) ? storage.get(key) : null),
+  setItem: (key, value) => storage.set(key, String(value)),
+  removeItem: (key) => storage.delete(key),
+}
+
+beforeEach(() => {
+  setStoredToken('session-token')
+})
 
 test('starts in the general chat room', () => {
   useChatStore.getState().reset()
@@ -206,4 +222,40 @@ test('stores and clears game-room messages', () => {
   useChatStore.getState().clearRoomMessages(roomId)
 
   assert.equal(useChatStore.getState().messages[roomId], undefined)
+})
+
+test('session teardown clears chat data back to defaults', () => {
+  useChatStore.getState().reset()
+  useChatStore.getState().receiveRoomMessage({
+    message: 'previous user chatter',
+    user: { id: 2, username: 'player2' },
+  })
+
+  resetSessionStores()
+
+  const state = useChatStore.getState()
+  assert.deepEqual(state.messages[GENERAL_CHAT_ROOM_ID], [])
+  assert.deepEqual(Object.keys(state.rooms), [GENERAL_CHAT_ROOM_ID])
+})
+
+test('socket chat messages are dropped once the session has ended', () => {
+  useChatStore.getState().reset()
+  clearStoredToken()
+
+  useChatStore.getState().receiveRoomMessage({
+    message: 'late room message after logout',
+    user: { id: 2, username: 'player2' },
+  })
+  useChatStore.getState().receivePrivateMessage(
+    {
+      recipient: getPrivateRoomId(3),
+      message: 'late private message after logout',
+      user: { id: 8, username: 'friend8' },
+    },
+    3,
+  )
+
+  const state = useChatStore.getState()
+  assert.deepEqual(state.messages[GENERAL_CHAT_ROOM_ID], [])
+  assert.equal(state.messages[getPrivateRoomId(8)], undefined)
 })

@@ -12,12 +12,27 @@ export const createSocketSessionHandlers = ({
   socketStore,
   gameStore,
   chatStore,
+  directMessageStore,
   authStore,
   notificationStore,
+  socialNotificationStore,
   dispatchActiveGame,
   isDevGame,
+  // Session guard (#391): a late socket event after teardown must not write
+  // into stores that were just cleared for the next user. Injected so the
+  // routing stays unit-testable; defaults to pass-through.
+  hasActiveSession = () => true,
 }) => {
   const currentUserId = () => authStore.getState().user?.id
+
+  // Wraps every session-data handler; connect/disconnect stay unguarded since
+  // they only track transport state.
+  const forActiveSession =
+    (handler) =>
+    (...args) => {
+      if (!hasActiveSession()) return
+      handler(...args)
+    }
 
   const handleConnect = () => {
     socketStore.getState().setConnected(true)
@@ -75,9 +90,10 @@ export const createSocketSessionHandlers = ({
     [SOCKET_EVENTS.CONNECT]: handleConnect,
     [SOCKET_EVENTS.DISCONNECT]: () =>
       socketStore.getState().setConnected(false),
-    [SOCKET_EVENTS.LOBBY_UPDATE]: (data) =>
+    [SOCKET_EVENTS.LOBBY_UPDATE]: forActiveSession((data) =>
       gameStore.getState().setLobbyCount(data.count),
-    [SOCKET_EVENTS.GAME_START]: (data) => {
+    ),
+    [SOCKET_EVENTS.GAME_START]: forActiveSession((data) => {
       const { setMatch, setGamePlayers, setGameOutcome, setPausedGame } =
         gameStore.getState()
       setMatch(data)
@@ -87,36 +103,47 @@ export const createSocketSessionHandlers = ({
       setGameOutcome(null)
       // A brand-new game is never mid-pause, so drop any leftover overlay.
       setPausedGame(null)
-    },
-    [SOCKET_EVENTS.GAME_STATE_UPDATE]: (data) =>
+    }),
+    [SOCKET_EVENTS.GAME_STATE_UPDATE]: forActiveSession((data) =>
       gameStore.getState().setGameState(data),
-    [SOCKET_EVENTS.GAME_OVER]: (data) =>
+    ),
+    [SOCKET_EVENTS.GAME_OVER]: forActiveSession((data) =>
       gameStore.getState().handleGameOver(data),
-    [SOCKET_EVENTS.GAME_PAUSED]: (data) =>
+    ),
+    [SOCKET_EVENTS.GAME_PAUSED]: forActiveSession((data) =>
       gameStore.getState().setPausedGame(data),
-    [SOCKET_EVENTS.GAME_RESUMED]: () =>
+    ),
+    [SOCKET_EVENTS.GAME_RESUMED]: forActiveSession(() =>
       gameStore.getState().setPausedGame(null),
-    [SOCKET_EVENTS.UNO_CAUGHT]: handleUnoCaught,
-    [SOCKET_EVENTS.ACTIVE_GAME]: handleActiveGame,
-    [SOCKET_EVENTS.GAME_ERROR]: handleGameError,
-    [SOCKET_EVENTS.ROOMS_UPDATE]: (data) => gameStore.getState().setRooms(data),
-    [SOCKET_EVENTS.ROOM_ERROR]: (data) =>
+    ),
+    [SOCKET_EVENTS.UNO_CAUGHT]: forActiveSession(handleUnoCaught),
+    [SOCKET_EVENTS.ACTIVE_GAME]: forActiveSession(handleActiveGame),
+    [SOCKET_EVENTS.GAME_ERROR]: forActiveSession(handleGameError),
+    [SOCKET_EVENTS.ROOMS_UPDATE]: forActiveSession((data) =>
+      gameStore.getState().setRooms(data),
+    ),
+    [SOCKET_EVENTS.ROOM_ERROR]: forActiveSession((data) =>
       gameStore.getState().setRoomError(data.message),
-    [SOCKET_EVENTS.ROOM_CLOSED]: handleRoomClosed,
-    [SOCKET_EVENTS.CHAT_MESSAGE]: (data) =>
+    ),
+    [SOCKET_EVENTS.ROOM_CLOSED]: forActiveSession(handleRoomClosed),
+    [SOCKET_EVENTS.CHAT_MESSAGE]: forActiveSession((data) =>
       chatStore.getState().receiveRoomMessage(data),
-    [SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE]: (data) =>
-      chatStore.getState().receivePrivateMessage(data, currentUserId()),
-    [SOCKET_EVENTS.CHAT_ROOMS]: (data) => {
+    ),
+    [SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE]: forActiveSession((data) => {
+      chatStore.getState().receivePrivateMessage(data, currentUserId())
+      directMessageStore?.getState().receiveMessage(data, currentUserId())
+      socialNotificationStore?.getState().loadNotifications()
+    }),
+    [SOCKET_EVENTS.CHAT_ROOMS]: forActiveSession((data) => {
       if (Array.isArray(data?.rooms)) {
         chatStore.getState().syncChatRooms(data.rooms)
       }
-    },
-    [SOCKET_EVENTS.CHAT_ERROR]: (data) => {
+    }),
+    [SOCKET_EVENTS.CHAT_ERROR]: forActiveSession((data) => {
       notificationStore
         .getState()
         .push(data?.message || 'Unable to send chat message', 'error')
-    },
+    }),
   }
 }
 

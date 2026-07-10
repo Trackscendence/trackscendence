@@ -1,5 +1,8 @@
 export const createPublicProfileLoader = ({
   get,
+  // Session guard (#391): injected so a response from a session that ended or
+  // changed mid-flight is dropped. Defaults to pass-through for tests.
+  isTokenActive = () => true,
   loadPublicProfileData,
   requireToken,
   set,
@@ -23,6 +26,7 @@ export const createPublicProfileLoader = ({
     try {
       const profileData = await loadPublicProfileData({ token, username })
       if (requestId !== publicProfileRequestId) return
+      if (!isTokenActive(token)) return
 
       set({
         ...profileData,
@@ -30,6 +34,7 @@ export const createPublicProfileLoader = ({
       })
     } catch (error) {
       if (requestId !== publicProfileRequestId) return
+      if (!isTokenActive(token)) return
 
       set({
         error: error.message,

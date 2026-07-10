@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
-import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import QuickStartModal from '@/components/QuickStartModal'
 import LobbyView from './_components/LobbyView'
 
@@ -39,18 +38,9 @@ const Lobby = () => {
 
   if (!user) return null
 
-  const identity = getPlayerIdentity(user)
-
   return (
     <>
       <LobbyView
-        user={{
-          username: user.username,
-          displayName: identity.name,
-          email: user.email,
-          initials: identity.initials,
-          avatarUrl: identity.avatarUrl,
-        }}
         rooms={rooms}
         onCreateRoom={handleCreateRoom}
         onJoinRoom={handleJoinRoom}

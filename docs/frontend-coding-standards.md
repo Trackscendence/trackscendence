@@ -609,6 +609,13 @@ import Button from '../../../components/Button'
 2. `@/` aliased imports (components, stores, hooks, services, utils)
 3. Local relative imports (`./` or `../ ` within the same module)
 
+**Exception: node-tested modules.** The client test runner is `node --test`,
+which cannot resolve the `@/` alias. A module that must load under it (a store
+with unit tests, or a helper those stores import, e.g. `services/tokenStorage`,
+`stores/sessionGuard`, `stores/createSessionStore`) uses relative imports at the
+top level and loads `@/` services lazily via `import('@/...')` inside actions.
+Mark the exception with a short comment at the import. Everything else uses `@/`.
+
 ---
 
 ## 14. Naming

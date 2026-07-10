@@ -4,6 +4,7 @@ import useAuthStore from '@/stores/useAuthStore'
 import AccountSettings from './_components/AccountSettings'
 import DataExportSettings from './_components/DataExportSettings'
 import DeleteAccountSettings from './_components/DeleteAccountSettings'
+import NotificationSettings from './_components/NotificationSettings'
 import SettingsCard from './_components/SettingsCard'
 import SettingsSidebar from './_components/SettingsSidebar'
 import TwoFactorSettings from './_components/TwoFactorSettings'
@@ -27,7 +28,7 @@ const NAV_ITEMS = [
     key: 'notifications',
     label: 'Notifications',
     description: 'Alerts & digests',
-    enabled: false,
+    enabled: true,
   },
   {
     key: 'privacy',
@@ -63,6 +64,10 @@ const SECTION_COPY = {
     title: 'Privacy',
     description: 'Review consent records and export your account data.',
   },
+  notifications: {
+    title: 'Notifications',
+    description: 'Choose where social alerts should surface.',
+  },
   danger: {
     title: 'Danger Zone',
     description: 'Delete your account and anonymize stored personal details.',
@@ -76,6 +81,10 @@ const renderSettingsSection = ({ activeKey, navigate, setActiveKey, user }) => {
 
   if (activeKey === 'privacy') {
     return <DataExportSettings user={user} />
+  }
+
+  if (activeKey === 'notifications') {
+    return <NotificationSettings />
   }
 
   if (activeKey === 'danger') {

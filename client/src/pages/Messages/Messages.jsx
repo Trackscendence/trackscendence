@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Settings } from 'lucide-react'
-import Logo from '@/components/Logo'
-import SocialNavActions from '@/components/SocialNavActions'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import AppHeader from '@/components/AppHeader'
 import useAuthStore from '@/stores/useAuthStore'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
 import useNotificationStore from '@/stores/useNotificationStore'
 import useSocketStore from '@/stores/useSocketStore'
 import ConversationList from './_components/ConversationList'
 import MessageThread from './_components/MessageThread'
-
-const getName = (user) => user?.displayName || user?.username || 'Player'
 
 const Messages = () => {
   const navigate = useNavigate()
@@ -118,27 +114,7 @@ const Messages = () => {
 
   return (
     <div className="bg-surface-warm flex min-h-screen flex-col text-[#3d1200]">
-      <header className="flex items-center justify-between border-b border-black/10 bg-white px-8 py-3">
-        <Logo />
-        <div className="flex items-center gap-4">
-          {user ? (
-            <Link
-              to="/profile"
-              className="text-sm font-black text-[#3d1200] transition hover:text-[#e86d2f]"
-            >
-              {getName(user)}
-            </Link>
-          ) : null}
-          <SocialNavActions />
-          <Link
-            aria-label="Open settings"
-            to="/settings"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#ffbf80] focus:ring-2 focus:ring-[#3d1200]/25 focus:outline-none"
-          >
-            <Settings aria-hidden="true" className="h-5 w-5" />
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="flex flex-1 px-6 py-6">
         <div className="mx-auto grid h-[calc(100vh-8.25rem)] w-full max-w-[1240px] grid-cols-1 overflow-hidden rounded-lg border border-[#e6c9a8] bg-white shadow-[0_18px_45px_rgba(61,18,0,0.08)] lg:grid-cols-[360px_minmax(0,1fr)]">

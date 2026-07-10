@@ -4,6 +4,8 @@ const ConflictException = require('#exceptions/conflict.exception')
 const ForbiddenException = require('#exceptions/forbidden.exception')
 const NotFoundException = require('#exceptions/not-found.exception')
 const friendsRepository = require('#modules/friends/friends.repository')
+const messagesService = require('#modules/messages/messages.service')
+const notificationsService = require('#modules/notifications/notifications.service')
 
 const FRIENDSHIP_STATUS = {
   PENDING: 'PENDING',
@@ -17,6 +19,7 @@ const FRIEND_RESPONSE_ACTION = {
 }
 
 const PRISMA_INT_MAX = 2147483647
+const FRIEND_REQUEST_MESSAGE_MAX_LENGTH = 500
 
 const DELETE_RELATIONSHIP_ACTION = {
   REMOVE_ACCEPTED: 'removeAccepted',
@@ -55,9 +58,30 @@ const parsePositiveInteger = (value, fieldName) => {
   return number
 }
 
-const validateFriendRequestInput = ({ targetUserId } = {}) => {
+const getTrimmedString = (value) => {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+const validateRequestMessage = (message) => {
+  const normalizedMessage = getTrimmedString(message)
+
+  if (!normalizedMessage) return null
+
+  if (normalizedMessage.length > FRIEND_REQUEST_MESSAGE_MAX_LENGTH) {
+    throw new BadRequestException('Invalid request data', {
+      details: [
+        `message must be at most ${FRIEND_REQUEST_MESSAGE_MAX_LENGTH} characters`,
+      ],
+    })
+  }
+
+  return normalizedMessage
+}
+
+const validateFriendRequestInput = ({ message, targetUserId } = {}) => {
   return {
     targetUserId: parsePositiveInteger(targetUserId, 'targetUserId'),
+    requestMessage: validateRequestMessage(message),
   }
 }
 
@@ -88,6 +112,7 @@ const toFriendUser = (user) => ({
   id: user.id,
   username: user.username,
   displayName: user.displayName,
+  avatarUrl: user.avatarUrl,
 })
 
 const getFriendUserFromRelationship = (relationship, currentUserId) => {
@@ -107,11 +132,13 @@ const toFriendSummary = (relationship, currentUserId) => {
 
 const toIncomingRequestSummary = (relationship) => ({
   user: toFriendUser(relationship.requester),
+  message: relationship.requestMessage,
   requestedAt: relationship.createdAt,
 })
 
 const toOutgoingRequestSummary = (relationship) => ({
   user: toFriendUser(relationship.addressee),
+  message: relationship.requestMessage,
   requestedAt: relationship.createdAt,
 })
 
@@ -211,7 +238,7 @@ const throwRelationshipConflict = (relationship, currentUserId) => {
 }
 
 const sendFriendRequest = async (user, payload) => {
-  const { targetUserId } = validateFriendRequestInput(payload)
+  const { requestMessage, targetUserId } = validateFriendRequestInput(payload)
 
   if (targetUserId === user.id) {
     throw new BadRequestException(
@@ -233,15 +260,23 @@ const sendFriendRequest = async (user, payload) => {
   }
 
   try {
-    const request = await friendsRepository.createFriendRequest(
-      user.id,
-      targetUserId,
-    )
+    const request = await friendsRepository.createFriendRequest({
+      addresseeId: targetUserId,
+      requestMessage,
+      requesterId: user.id,
+    })
+
+    await notificationsService.createFriendRequestNotification({
+      actorId: user.id,
+      message: requestMessage,
+      userId: targetUserId,
+    })
 
     return {
       message: 'Friend request sent successfully',
       request: {
         user: toFriendUser(request.addressee),
+        message: request.requestMessage,
         status: request.status,
         requestedAt: request.createdAt,
       },
@@ -291,10 +326,23 @@ const respondToFriendRequest = async (user, payload) => {
           lockedRelationship.id,
           tx,
         )
+        const conversation =
+          await messagesService.createConversationFromAcceptedRequest(
+            accepted,
+            { db: tx },
+          )
+        await notificationsService.createFriendAcceptedNotification(
+          {
+            actorId: user.id,
+            userId: accepted.requesterId,
+          },
+          { db: tx },
+        )
 
         return {
           message: 'Friend request accepted successfully',
           friendship: toFriendSummary(accepted, user.id),
+          conversationId: conversation.id,
         }
       }
 
@@ -376,4 +424,6 @@ module.exports = {
   listFriends,
   respondToFriendRequest,
   sendFriendRequest,
+  toIncomingRequestSummary,
+  validateRequestMessage,
 }

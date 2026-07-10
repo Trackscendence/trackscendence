@@ -1,5 +1,6 @@
 const friendsRepository = require('#modules/friends/friends.repository')
 const chatRoomService = require('#modules/chat/chat-room.service')
+const messagesService = require('#modules/messages/messages.service')
 const logger = require('#utils/logger')
 
 const PRIVATE_ROOM_PREFIX = 'user:'
@@ -24,6 +25,8 @@ const parsePrivateRecipientId = (recipient) => {
 const buildChatUser = (user) => ({
   id: user.id,
   username: user.username,
+  displayName: user.displayName,
+  avatarUrl: user.avatarUrl,
 })
 
 const buildChatPayload = ({ message, recipient, socket }) => ({
@@ -54,7 +57,11 @@ const assertCanSendPrivateMessage = async ({
 const registerChatHandlers = (
   io,
   socket,
-  { repository = friendsRepository, chatRooms = chatRoomService } = {},
+  {
+    chatRooms = chatRoomService,
+    directMessages = messagesService,
+    repository = friendsRepository,
+  } = {},
 ) => {
   chatRooms
     .listActiveSocketRoomsForUser(socket.user.id)
@@ -169,7 +176,19 @@ const registerChatHandlers = (
         return
       }
 
-      const payload = buildChatPayload({ message, recipient, socket })
+      const savedMessage = await directMessages.sendMessageToRecipient(
+        socket.user,
+        {
+          message,
+          recipientId,
+        },
+        { friendshipRepository: repository },
+      )
+      const payload = {
+        ...savedMessage,
+        recipient,
+        user: savedMessage.user || buildChatUser(socket.user),
+      }
       io.to(`${PRIVATE_ROOM_PREFIX}${socket.user.id}`).emit(
         'chat:private_message',
         payload,

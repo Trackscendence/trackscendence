@@ -1,12 +1,14 @@
-import { create } from 'zustand'
 import { searchUsers } from '@/services/users'
 import useAuthStore from '@/stores/useAuthStore'
+import { createSessionStore } from './createSessionStore'
+import { isActiveToken } from './sessionGuard'
 
 // Monotonic id for searches so a slow, older request cannot overwrite the
-// result of a newer one.
+// result of a newer one. The session guard below is the cross-session
+// complement: it drops a response whose session ended mid-flight (#391).
 let searchRequestId = 0
 
-const useUserSearchStore = create((set) => ({
+const getDefaultState = () => ({
   results: [],
   pagination: null,
   isSearching: false,
@@ -14,6 +16,12 @@ const useUserSearchStore = create((set) => ({
   // Distinguishes "no matches" from "nothing searched yet" so the UI only
   // shows an empty state after a real search.
   hasSearched: false,
+})
+
+// Session store (#391): holds the previous user's search query results, so it
+// is cleared by resetSessionStores() at teardown.
+const useUserSearchStore = createSessionStore((set) => ({
+  ...getDefaultState(),
 
   search: async ({ q = '', page = 1 } = {}) => {
     const requestId = ++searchRequestId
@@ -22,6 +30,7 @@ const useUserSearchStore = create((set) => ({
     try {
       const response = await searchUsers({ q, page }, token)
       if (requestId !== searchRequestId) return
+      if (!isActiveToken(token)) return
       set({
         results: response?.users ?? [],
         pagination: response?.pagination ?? null,
@@ -30,6 +39,7 @@ const useUserSearchStore = create((set) => ({
       })
     } catch (error) {
       if (requestId !== searchRequestId) return
+      if (!isActiveToken(token)) return
       set({
         isSearching: false,
         error: error?.message || 'Search failed',
@@ -45,6 +55,8 @@ const useUserSearchStore = create((set) => ({
       error: null,
       hasSearched: false,
     }),
+
+  reset: () => set(getDefaultState()),
 }))
 
 export default useUserSearchStore

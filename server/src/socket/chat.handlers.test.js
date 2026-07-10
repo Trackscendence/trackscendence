@@ -22,6 +22,8 @@ const createIo = () => {
   }
 }
 
+const now = new Date('2026-07-09T12:00:00.000Z')
+
 const createSocket = ({ rooms = [] } = {}) => {
   const handlers = {}
   const emissions = []
@@ -29,7 +31,7 @@ const createSocket = ({ rooms = [] } = {}) => {
     emissions,
     handlers,
     rooms: new Set(['channel:#general', 'user:1', ...rooms]),
-    user: { id: 1, username: 'sender' },
+    user: { id: 1, username: 'sender', displayName: null, avatarUrl: null },
     emit: (event, payload) => {
       emissions.push({ event, payload })
     },
@@ -63,9 +65,28 @@ const createChatRooms = (overrides = {}) => ({
   ...overrides,
 })
 
+const createDirectMessages = (overrides = {}) => ({
+  sendMessageToRecipient: async (user, { message, recipientId }) => ({
+    id: 22,
+    conversationId: 11,
+    senderId: user.id,
+    recipientId,
+    message,
+    createdAt: now,
+    user: {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+    },
+  }),
+  ...overrides,
+})
+
 const registerTestChatHandlers = (io, socket, options = {}) => {
   registerChatHandlers(io, socket, {
     chatRooms: createChatRooms(options.chatRooms),
+    directMessages: createDirectMessages(options.directMessages),
     repository: options.repository,
   })
 }
@@ -104,7 +125,12 @@ describe('registerChatHandlers', () => {
         payload: {
           message: 'hello room',
           recipient: 'channel:#general',
-          user: { id: 1, username: 'sender' },
+          user: {
+            id: 1,
+            username: 'sender',
+            displayName: null,
+            avatarUrl: null,
+          },
         },
       },
     ])
@@ -127,7 +153,12 @@ describe('registerChatHandlers', () => {
         payload: {
           message: 'draw before you pass',
           recipient: 'game:game-1',
-          user: { id: 1, username: 'sender' },
+          user: {
+            id: 1,
+            username: 'sender',
+            displayName: null,
+            avatarUrl: null,
+          },
         },
       },
     ])
@@ -151,21 +182,65 @@ describe('registerChatHandlers', () => {
         event: 'chat:private_message',
         room: 'user:1',
         payload: {
+          id: 22,
+          conversationId: 11,
+          senderId: 1,
+          recipientId: 2,
+          createdAt: now,
           message: 'hello friend',
           recipient: 'user:2',
-          user: { id: 1, username: 'sender' },
+          user: {
+            id: 1,
+            username: 'sender',
+            displayName: null,
+            avatarUrl: null,
+          },
         },
       },
       {
         event: 'chat:private_message',
         room: 'user:2',
         payload: {
+          id: 22,
+          conversationId: 11,
+          senderId: 1,
+          recipientId: 2,
+          createdAt: now,
           message: 'hello friend',
           recipient: 'user:2',
-          user: { id: 1, username: 'sender' },
+          user: {
+            id: 1,
+            username: 'sender',
+            displayName: null,
+            avatarUrl: null,
+          },
         },
       },
     ])
+  })
+
+  it('does not persist private messages to non-friends', async () => {
+    const io = createIo()
+    const socket = createSocket()
+    let persisted = false
+    const repository = {
+      findRelationshipBetweenUsers: async () => null,
+    }
+    registerTestChatHandlers(io, socket, {
+      directMessages: {
+        sendMessageToRecipient: async () => {
+          persisted = true
+        },
+      },
+      repository,
+    })
+
+    await socket.handlers['chat:private_message']({
+      recipient: 'user:2',
+      message: 'hello stranger',
+    })
+
+    assert.equal(persisted, false)
   })
 
   it('rejects private messages to non-friends', async () => {

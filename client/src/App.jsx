@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useNotificationStore from '@/stores/useNotificationStore'
 import useSocketStore from '@/stores/useSocketStore'
+import { initSessionTeardown } from '@/stores/sessionTeardown'
 import { checkApiHealth } from '@/services/system'
 import {
   getBootRetryDelay,
@@ -26,6 +27,7 @@ const Game = lazy(() => import('@/pages/Game'))
 const Leaderboard = lazy(() => import('@/pages/Leaderboard'))
 const Lobby = lazy(() => import('@/pages/Lobby'))
 const Login = lazy(() => import('@/pages/Login'))
+const Messages = lazy(() => import('@/pages/Messages'))
 const OAuth42Callback = lazy(() => import('@/pages/OAuth42Callback'))
 const Outcome = lazy(() => import('@/pages/Outcome'))
 const PrivacyPolicy = lazy(() => import('@/pages/Privacy'))
@@ -137,6 +139,12 @@ const App = () => {
       window.removeEventListener('trackscendence:session-expired', handler)
   }, [])
 
+  // Session teardown (#391): clears the user-scoped stores synchronously when
+  // the token clears or changes, so the next user never sees the previous
+  // user's data. The subscription fires inside the auth state transition, not
+  // after a render cycle like the socket effect above.
+  useEffect(() => initSessionTeardown(), [])
+
   // A reconnecting client that still has a game in progress is routed back into
   // it, unless it is already on the game page. This is what makes the 90s
   // reconnect window usable after a full tab close: the browser can land the
@@ -241,6 +249,7 @@ const App = () => {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<WaitingRoom />} />
             <Route path="/lobby" element={<Lobby />} />
+            <Route path="/messages" element={<Messages />} />
             <Route path="/game" element={<Game />} />
             <Route path="/results" element={<Outcome />} />
             <Route element={<ProfileLayout />}>

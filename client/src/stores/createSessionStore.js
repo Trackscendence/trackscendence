@@ -20,13 +20,18 @@ export const resetSessionStores = () => {
   resetters.forEach((reset) => reset())
 }
 
+// A missing reset() is a programming error, surfaced outside production only:
+// Vite sets DEV true in dev and false in builds, and under node --test there is
+// no import.meta.env, which also counts as non-production.
+const isNonProduction = () => import.meta.env?.DEV ?? true
+
 export const createSessionStore = (initializer) => {
   const store = create(initializer)
   const { reset } = store.getState()
 
   if (typeof reset === 'function') {
     resetters.add(reset)
-  } else {
+  } else if (isNonProduction()) {
     console.warn(
       'createSessionStore: store has no reset() action and will not be cleared on logout',
     )

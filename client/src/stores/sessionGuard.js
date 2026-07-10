@@ -1,3 +1,6 @@
+// Relative import (not the @/ alias) so this module stays loadable under the
+// node test runner, which does not resolve the bundler alias; tokenStorage is
+// dependency-free. See "node-tested modules" in docs/frontend-coding-standards.
 import { getStoredToken } from '../services/tokenStorage.js'
 
 // Stale-session guard (#391). Async store actions capture the session token

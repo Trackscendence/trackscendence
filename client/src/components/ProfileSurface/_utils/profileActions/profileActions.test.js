@@ -14,7 +14,7 @@ test('a stranger sees an enabled Add a friend action (#395)', () => {
   }
 })
 
-test('a friend gets the friends pair (handshake badge plus mailbox)', () => {
+test('a friend gets the friends pair (handshake status plus mailbox)', () => {
   const action = getProfileActionState({
     relationship: { status: 'FRIENDS' },
   })
@@ -22,21 +22,21 @@ test('a friend gets the friends pair (handshake badge plus mailbox)', () => {
   assert.equal(action.isDisabled, false)
 })
 
-test('an outgoing pending request shows a disabled Request sent state', () => {
+test('an outgoing pending request is a cancellable Request sent control', () => {
   const action = getProfileActionState({
     relationship: { status: 'PENDING_OUTGOING' },
   })
   assert.equal(action.label, 'Request sent')
-  assert.equal(action.isDisabled, true)
-  assert.equal(action.variant, 'orangeOutline')
+  assert.equal(action.kind, 'cancel')
+  assert.equal(action.isDisabled, false)
 })
 
-test('an incoming pending request shows a disabled Request received state', () => {
+test('an incoming pending request offers Accept and Reject on the profile', () => {
   const action = getProfileActionState({
     relationship: { status: 'PENDING_INCOMING' },
   })
-  assert.equal(action.label, 'Request received')
-  assert.equal(action.isDisabled, true)
+  assert.equal(action.kind, 'respond')
+  assert.equal(action.isDisabled, false)
 })
 
 test('a blocked relationship shows a disabled Unavailable state', () => {

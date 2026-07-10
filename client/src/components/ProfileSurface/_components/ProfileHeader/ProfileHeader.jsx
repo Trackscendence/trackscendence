@@ -1,31 +1,19 @@
 import { Link } from 'react-router-dom'
-import { Handshake, Mailbox, Settings, UserPlus } from 'lucide-react'
-import Button from '@/components/Button'
+import { Settings } from 'lucide-react'
 import ProfileAvatar from '../ProfileAvatar'
 import ProfileStatStrip from '../ProfileStatStrip'
 import ProfileTabs from '../ProfileTabs'
-import profileActions from '../../_utils/profileActions'
+import RelationshipActions from '../RelationshipActions'
 import profileFormatters from '../../_utils/profileFormatters'
-
-// The icon carries the relationship stage before the label is read: UserPlus
-// means you can connect, the handshake means you are friends, the mailbox
-// opens the conversation, and waiting states stay plain.
-const actionIcons = {
-  request: UserPlus,
-}
 
 const ProfileHeader = ({
   activeTab,
   isOwnProfile,
-  isSubmitting,
-  onPrimaryAction,
   onTabChange,
   profile,
   relationship,
 }) => {
   const stats = profile.stats || {}
-  const action = profileActions.getProfileActionState({ relationship })
-  const ActionIcon = actionIcons[action.kind]
   const metadata = isOwnProfile ? profile.email : `@${profile.username}`
 
   return (
@@ -55,45 +43,11 @@ const ProfileHeader = ({
             >
               <Settings aria-hidden="true" className="h-5 w-5" />
             </Link>
-          ) : action.kind === 'friends' ? (
-            // The friends pair: the handshake states the relationship, the
-            // mailbox opens the conversation. Both stay button-sized (h-9).
-            <div className="flex shrink-0 items-center gap-2">
-              <span
-                aria-label="You are friends"
-                role="img"
-                title="Friends"
-                className="flex h-9 w-9 items-center justify-center border border-[#e86d2f] text-[#e86d2f]"
-              >
-                <Handshake aria-hidden="true" className="h-5 w-5" />
-              </span>
-              <Button
-                aria-label={`Message ${profileFormatters.getDisplayName(profile)}`}
-                title="Message"
-                className="flex h-9 w-9 items-center justify-center rounded-none !px-0 !py-0"
-                disabled={isSubmitting}
-                fullWidth={false}
-                type="button"
-                variant="orange"
-                onClick={() => onPrimaryAction({ kind: 'message' })}
-              >
-                <Mailbox aria-hidden="true" className="h-5 w-5" />
-              </Button>
-            </div>
           ) : (
-            <Button
-              className="flex h-9 w-full items-center justify-center gap-2 rounded-none sm:w-[138px]"
-              disabled={action.isDisabled || isSubmitting}
-              fullWidth={false}
-              type="button"
-              variant={action.variant}
-              onClick={() => onPrimaryAction(action)}
-            >
-              {ActionIcon && !isSubmitting ? (
-                <ActionIcon aria-hidden="true" className="h-4 w-4" />
-              ) : null}
-              {isSubmitting ? 'Working' : action.label}
-            </Button>
+            <RelationshipActions
+              profile={profile}
+              relationship={relationship}
+            />
           )}
         </div>
 

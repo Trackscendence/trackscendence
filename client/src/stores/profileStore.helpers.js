@@ -1,5 +1,10 @@
 import { getStoredToken } from '@/services/auth'
-import { listFriends, sendFriendRequest } from '@/services/friends'
+import {
+  deleteRelationship,
+  listFriends,
+  respondToFriendRequest,
+  sendFriendRequest,
+} from '@/services/friends'
 import { getLeaderboard } from '@/services/game'
 import {
   deleteAvatar,
@@ -70,6 +75,26 @@ export const requestFriendship = async ({ message, profileId, token }) => {
 
   return {
     relationship: { status: 'PENDING_OUTGOING' },
+  }
+}
+
+export const respondFriendship = async ({ action, profileId, token }) => {
+  const result = await respondToFriendRequest(
+    { action, targetUserId: profileId },
+    token,
+  )
+
+  return {
+    conversationId: result?.conversationId ?? null,
+    relationship: action === 'accept' ? { status: 'FRIENDS' } : null,
+  }
+}
+
+export const removeFriendship = async ({ profileId, token }) => {
+  await deleteRelationship(profileId, token)
+
+  return {
+    relationship: null,
   }
 }
 

@@ -6,7 +6,9 @@ import {
   loadFriendContext,
   loadLeaderboardContext,
   loadPublicProfileData,
+  removeFriendship,
   requestFriendship,
+  respondFriendship,
   saveAvatar,
   saveCurrentProfile,
 } from './profileStore.helpers'
@@ -101,6 +103,83 @@ export const createProfileActions = (set, get) => ({
         isSubmitting: false,
       })
       notifications.push('Friend request sent', 'success')
+      return true
+    } catch (error) {
+      if (!isActiveToken(token)) return false
+      notifications.push(error.message, 'error')
+      set({ actionError: '', isSubmitting: false })
+      return false
+    }
+  },
+
+  // Answer the viewed profile's incoming friend request from the profile
+  // itself. Accept flips the relationship to FRIENDS and refreshes the friends
+  // context; reject clears the pending row so the pair can request again.
+  respondToFriendRequest: async (action) => {
+    const token = getActiveToken()
+    const profile = get().publicProfile
+    const notifications = useNotificationStore.getState()
+
+    if (!token) {
+      notifications.push('Authentication required', 'error')
+      return null
+    }
+
+    if (!profile || get().isSubmitting) return null
+
+    set({ actionError: '', isSubmitting: true })
+
+    try {
+      const result = await respondFriendship({
+        action,
+        profileId: profile.id,
+        token,
+      })
+      if (!isActiveToken(token)) return null
+      set({ relationship: result.relationship, isSubmitting: false })
+      notifications.push(
+        action === 'accept'
+          ? 'Friend request accepted'
+          : 'Friend request rejected',
+        'success',
+      )
+      if (action === 'accept') get().refreshFriendContext()
+      return result
+    } catch (error) {
+      if (!isActiveToken(token)) return null
+      notifications.push(error.message, 'error')
+      set({ actionError: '', isSubmitting: false })
+      return null
+    }
+  },
+
+  // Cancel an outgoing request or unfriend, both through the same delete
+  // endpoint; the relationship returns to none, so the profile shows
+  // "Add a friend" again.
+  removeRelationship: async () => {
+    const token = getActiveToken()
+    const profile = get().publicProfile
+    const wasFriends = get().relationship?.status === 'FRIENDS'
+    const notifications = useNotificationStore.getState()
+
+    if (!token) {
+      notifications.push('Authentication required', 'error')
+      return false
+    }
+
+    if (!profile || get().isSubmitting) return false
+
+    set({ actionError: '', isSubmitting: true })
+
+    try {
+      const result = await removeFriendship({ profileId: profile.id, token })
+      if (!isActiveToken(token)) return false
+      set({ relationship: result.relationship, isSubmitting: false })
+      notifications.push(
+        wasFriends ? 'Friend removed' : 'Friend request cancelled',
+        'success',
+      )
+      if (wasFriends) get().refreshFriendContext()
       return true
     } catch (error) {
       if (!isActiveToken(token)) return false

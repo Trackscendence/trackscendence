@@ -7,24 +7,23 @@
 // state here.
 const getProfileActionState = ({ relationship }) => {
   if (relationship?.status === 'FRIENDS') {
-    return {
-      isDisabled: false,
-      kind: 'friends',
-      label: 'Friends',
-      variant: 'orange',
-    }
+    return { isDisabled: false, kind: 'friends', label: 'Friends' }
   }
 
   if (relationship?.status === 'PENDING_OUTGOING') {
-    return { isDisabled: true, label: 'Request sent', variant: 'orangeOutline' }
+    // Enabled on purpose: the control reads "Request sent" and cancels the
+    // request on click (hover reveals "Cancel request").
+    return {
+      isDisabled: false,
+      kind: 'cancel',
+      label: 'Request sent',
+      variant: 'orangeOutline',
+    }
   }
 
   if (relationship?.status === 'PENDING_INCOMING') {
-    return {
-      isDisabled: true,
-      label: 'Request received',
-      variant: 'orangeOutline',
-    }
+    // The viewer answers the request right here: Accept and Reject buttons.
+    return { isDisabled: false, kind: 'respond', label: 'Request received' }
   }
 
   if (relationship?.status === 'BLOCKED') {

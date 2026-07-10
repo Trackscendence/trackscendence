@@ -52,7 +52,6 @@ const Profile = () => {
         leaderboard={leaderboard}
         profile={currentProfile}
         relationship={relationship}
-        onFriendRequest={useProfileStore.getState().sendFriendRequest}
       />
     </div>
   )

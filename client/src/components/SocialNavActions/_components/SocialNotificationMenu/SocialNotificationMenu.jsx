@@ -98,6 +98,17 @@ const SocialNotificationMenu = () => {
           notification.conversationId,
         )}`,
       )
+      return
+    }
+
+    // A friend request leads to the requester's profile, where the Accept and
+    // Reject controls live (#395).
+    if (
+      notification.type === 'FRIEND_REQUEST' &&
+      notification.actor?.username
+    ) {
+      setIsOpen(false)
+      navigate(`/users/${encodeURIComponent(notification.actor.username)}`)
     }
   }
 
@@ -212,8 +223,12 @@ const SocialNotificationMenu = () => {
                         </span>
                       ) : null}
                     </button>
+                    {/* Only requests with an intro message are answered from
+                        the panel (Accept jumps into the conversation); plain
+                        requests navigate to the profile instead. */}
                     {notification.type === 'FRIEND_REQUEST' &&
                     notification.friendRequestStatus === 'PENDING' &&
+                    notification.message &&
                     notification.actor?.id ? (
                       <span className="mt-3 flex gap-2">
                         <button

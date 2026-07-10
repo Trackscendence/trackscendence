@@ -278,4 +278,9 @@ module.exports = {
   saveGameResult,
   getLeaderboard,
   countLeaderboardPlayers,
+  // Exported for the dev seed (#396): seeded game history must go through the
+  // same stats recompute as the production save path, or the denormalized
+  // user counters drift from the Game/GamePlayer rows.
+  refreshUserRanks,
+  updateLifetimeStatsForUsers,
 }

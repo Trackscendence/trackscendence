@@ -13,6 +13,10 @@
 
 const bcrypt = require('bcrypt')
 const prisma = require('#db/prisma')
+const {
+  refreshUserRanks,
+  updateLifetimeStatsForUsers,
+} = require('#modules/game/game.repository')
 
 // The password every seeded account shares. Log in as `dev` with this.
 const DEV_PASSWORD = 'DevPass123!'
@@ -159,6 +163,12 @@ async function main() {
       },
     })
   }
+
+  // Recompute the denormalized stat counters the profile strip and the
+  // leaderboard read, through the same queries the production save path uses,
+  // so seeded history and seeded stats cannot drift apart (#396).
+  await updateLifetimeStatsForUsers(prisma, seedUserIds)
+  await refreshUserRanks(prisma)
 
   const requesters = []
   for (const requester of REQUESTERS) {

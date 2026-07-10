@@ -46,6 +46,9 @@ const SocialNotificationMenu = () => {
   const acceptFriendRequest = useSocialNotificationStore(
     (state) => state.acceptFriendRequest,
   )
+  const rejectFriendRequest = useSocialNotificationStore(
+    (state) => state.rejectFriendRequest,
+  )
   const isLoading = useSocialNotificationStore((state) => state.isLoading)
   const isSubmitting = useSocialNotificationStore((state) => state.isSubmitting)
   const loadNotifications = useSocialNotificationStore(
@@ -108,6 +111,11 @@ const SocialNotificationMenu = () => {
         `/messages?conversation=${encodeURIComponent(result.conversationId)}`,
       )
     }
+  }
+
+  const rejectRequest = async (event, notification) => {
+    event.stopPropagation()
+    await rejectFriendRequest(notification.actor?.id)
   }
 
   return (
@@ -209,13 +217,24 @@ const SocialNotificationMenu = () => {
                     notification.actor?.id ? (
                       <span className="mt-3 flex gap-2">
                         <button
-                          className="rounded-md bg-[#e86d2f] px-3 py-1.5 text-xs font-black text-white"
+                          className="rounded-md bg-[#e86d2f] px-3 py-1.5 text-xs font-black text-white transition hover:bg-[#c95b24] disabled:cursor-not-allowed disabled:bg-[#dda37e]"
+                          disabled={isSubmitting}
                           type="button"
                           onClick={(event) =>
                             acceptRequest(event, notification)
                           }
                         >
-                          {isSubmitting ? 'Accepting' : 'Accept'}
+                          {isSubmitting ? 'Working' : 'Accept'}
+                        </button>
+                        <button
+                          className="rounded-md border border-[#e86d2f] bg-white px-3 py-1.5 text-xs font-black text-[#e86d2f] transition hover:bg-[#fff8f2] disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={isSubmitting}
+                          type="button"
+                          onClick={(event) =>
+                            rejectRequest(event, notification)
+                          }
+                        >
+                          Reject
                         </button>
                       </span>
                     ) : null}

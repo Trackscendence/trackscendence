@@ -115,6 +115,34 @@ const useSocialNotificationStore = createSessionStore((set) => ({
     }
   },
 
+  rejectFriendRequest: async (targetUserId) => {
+    const notifications = useNotificationStore.getState()
+
+    set({ error: '', isSubmitting: true })
+
+    let token = null
+    try {
+      token = requireToken()
+      const { respondToFriendRequest } = await getFriendsService()
+      const result = await respondToFriendRequest(
+        { action: 'reject', targetUserId },
+        token,
+      )
+      if (!isActiveToken(token)) return null
+      await useSocialNotificationStore.getState().loadNotifications()
+      if (!isActiveToken(token)) return null
+      set({ isSubmitting: false })
+      notifications.push('Friend request rejected', 'success')
+      return result
+    } catch (error) {
+      // A missing token (null) still surfaces; a stale session stays silent.
+      if (token && !isActiveToken(token)) return null
+      set({ error: error.message, isSubmitting: false })
+      notifications.push(error.message, 'error')
+      return null
+    }
+  },
+
   reset: () => set(getDefaultState()),
 }))
 

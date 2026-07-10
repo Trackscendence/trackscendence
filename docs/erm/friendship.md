@@ -80,3 +80,24 @@ On the `User` model, the Prisma relation fields are named:
 - `friendshipsBlockedByUser`
 
 These names are meant to describe the role of the user in the relationship row more clearly than "sent/received friendships".
+
+## UI State Mapping
+
+How the lifecycle above surfaces in the interface (#395). The profile's primary
+action is derived in `ProfileSurface/_utils/profileActions`, and messaging is
+gated on `ACCEPTED` end to end: the mailbox button calls
+`useDirectMessageStore.ensureConversation`, and the server rejects direct
+messages between non-friends.
+
+| Relationship state (viewer's perspective) | Profile shows                                                    | Notification panel        |
+| ----------------------------------------- | ---------------------------------------------------------------- | ------------------------- |
+| No row, or no `PENDING`/`ACCEPTED` status | "Add a friend" button (UserPlus icon), opens the request modal   | —                         |
+| `PENDING`, viewer is the requester        | Disabled "Request sent"                                          | —                         |
+| `PENDING`, viewer is the addressee        | Disabled "Request received"                                      | Accept and Reject buttons |
+| `ACCEPTED`                                | Friends pair: Handshake badge plus Mailbox button (opens the DM) | —                         |
+| `BLOCKED`                                 | Disabled "Unavailable"                                           | —                         |
+
+Accept keeps the request's intro message as the first direct message and can
+navigate straight into the new conversation. Reject deletes the `PENDING` row
+(`respondToFriendRequest` with `action: 'reject'`), so the pair can request
+again later.

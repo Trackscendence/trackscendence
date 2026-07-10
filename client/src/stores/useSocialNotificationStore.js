@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { respondToFriendRequest } from '@/services/friends'
 import { getStoredToken } from '../services/tokenStorage.js'
 import useDirectMessageStore from './useDirectMessageStore.js'
 import useNotificationStore from './useNotificationStore.js'
@@ -20,7 +19,10 @@ const requireToken = () => {
   return token
 }
 
+// Services load lazily so this module stays importable under node --test,
+// which cannot resolve the @/ alias at the top level.
 const getNotificationsService = () => import('@/services/notifications')
+const getFriendsService = () => import('@/services/friends')
 
 const useSocialNotificationStore = create((set) => ({
   ...getDefaultState(),
@@ -82,6 +84,7 @@ const useSocialNotificationStore = create((set) => ({
     set({ error: '', isSubmitting: true })
 
     try {
+      const { respondToFriendRequest } = await getFriendsService()
       const result = await respondToFriendRequest(
         { action: 'accept', targetUserId },
         requireToken(),

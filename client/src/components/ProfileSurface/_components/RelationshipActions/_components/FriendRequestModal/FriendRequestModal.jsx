@@ -45,7 +45,7 @@ const FriendRequestModal = ({ displayName, isOpen, onClose }) => {
           <p className="text-sm leading-6 text-[#6f5439]">
             Say hello to <span className="font-semibold">{displayName}</span>{' '}
             before you play together. A request with a message is easier to
-            recognise and becomes the first message of your conversation.
+            recognize and becomes the first message of your conversation.
           </p>
           <div className="flex justify-end gap-3">
             <Button

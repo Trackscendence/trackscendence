@@ -1,9 +1,9 @@
 import {
   clearAvatar,
-  emptyFriendContext,
+  emptyFriendsAndLeaderboard,
   getActiveToken,
   loadCurrentProfileData,
-  loadFriendContext,
+  loadFriendsList,
   loadLeaderboardContext,
   loadPublicProfileData,
   removeFriendship,
@@ -17,6 +17,7 @@ import { createPublicProfileLoader } from './profileStore.publicProfileLoader'
 import { isActiveToken } from './sessionGuard'
 import useAuthStore from './useAuthStore'
 import useNotificationStore from './useNotificationStore'
+import useSocialNotificationStore from './useSocialNotificationStore'
 
 const requireToken = (set) => {
   const token = getActiveToken()
@@ -49,7 +50,7 @@ export const createProfileActions = (set, get) => ({
   },
 
   loadCurrentProfile: createCurrentProfileLoader({
-    emptyFriendContext,
+    emptyFriendsAndLeaderboard,
     get,
     getAuthUserId: () => useAuthStore.getState().user?.id,
     isTokenActive: isActiveToken,
@@ -66,15 +67,22 @@ export const createProfileActions = (set, get) => ({
     set,
   }),
 
-  refreshFriendContext: async () => {
+  // Never rejects: callers fire this off the critical path (after an accept,
+  // an unfriend, or a chat mount), so a failed refresh just keeps the previous
+  // friends list instead of surfacing as an unhandled rejection.
+  refreshFriends: async () => {
     const token = getActiveToken()
 
     if (!token) return
 
-    const friendContext = await loadFriendContext(token)
-    if (!isActiveToken(token)) return
+    try {
+      const friendsData = await loadFriendsList(token)
+      if (!isActiveToken(token)) return
 
-    set(friendContext)
+      set(friendsData)
+    } catch {
+      // The sidebar keeps the list it already has.
+    }
   },
 
   sendFriendRequest: async (message = '') => {
@@ -143,7 +151,11 @@ export const createProfileActions = (set, get) => ({
           : 'Friend request rejected',
         'success',
       )
-      if (action === 'accept') get().refreshFriendContext()
+      if (action === 'accept') get().refreshFriends()
+      // The bell caches this request's inline actions; reload it so an
+      // already-answered request cannot be answered again from the panel.
+      // loadNotifications handles its own failures.
+      useSocialNotificationStore.getState().loadNotifications()
       return result
     } catch (error) {
       if (!isActiveToken(token)) return null
@@ -179,7 +191,7 @@ export const createProfileActions = (set, get) => ({
         wasFriends ? 'Friend removed' : 'Friend request cancelled',
         'success',
       )
-      if (wasFriends) get().refreshFriendContext()
+      if (wasFriends) get().refreshFriends()
       return true
     } catch (error) {
       if (!isActiveToken(token)) return false

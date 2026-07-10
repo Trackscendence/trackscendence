@@ -15,7 +15,7 @@ import {
 } from '@/services/users'
 import useAuthStore from '@/stores/useAuthStore'
 
-export const emptyFriendContext = {
+export const emptyFriendsAndLeaderboard = {
   friends: [],
   leaderboard: [],
 }
@@ -24,7 +24,7 @@ export const getActiveToken = () => {
   return useAuthStore.getState().token || getStoredToken()
 }
 
-export const loadFriendContext = async (token) => {
+export const loadFriendsList = async (token) => {
   const friendsResult = await listFriends(token)
 
   return {
@@ -50,7 +50,7 @@ export const loadLeaderboardContext = async (token) => {
 // preview (up to 6) which seeds the sidebar immediately, so the profile paints
 // without blocking on the full /friends list. The leaderboard and the full
 // friends list both load off the critical path once the profile has rendered
-// (loadLeaderboard / refreshFriendContext), which also corrects the friends
+// (loadLeaderboard / refreshFriends), which also corrects the friends
 // count and populates the friends tab.
 export const loadCurrentProfileData = async (token) => {
   const profileResult = await getProfile(token)

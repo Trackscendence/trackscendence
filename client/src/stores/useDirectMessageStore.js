@@ -144,8 +144,9 @@ const useDirectMessageStore = createSessionStore((set) => ({
   ensureConversation: async (targetUserId) => {
     const notifications = useNotificationStore.getState()
 
+    let token = null
     try {
-      const token = requireToken()
+      token = requireToken()
       const { getOrCreateConversation } = await getMessagesService()
       const { conversation } = await getOrCreateConversation(
         targetUserId,
@@ -165,6 +166,7 @@ const useDirectMessageStore = createSessionStore((set) => ({
       })
       return conversation
     } catch (error) {
+      if (token && !isActiveToken(token)) return null
       notifications.push(error.message, 'error')
       return null
     }
@@ -211,8 +213,9 @@ const useDirectMessageStore = createSessionStore((set) => ({
   sendMessage: async ({ conversationId, message }) => {
     const notifications = useNotificationStore.getState()
 
+    let token = null
     try {
-      const token = requireToken()
+      token = requireToken()
       const { sendConversationMessage } = await getMessagesService()
       const result = await sendConversationMessage(
         { conversationId, message },
@@ -239,6 +242,7 @@ const useDirectMessageStore = createSessionStore((set) => ({
 
       return result.message
     } catch (error) {
+      if (token && !isActiveToken(token)) return null
       notifications.push(error.message, 'error')
       return null
     }

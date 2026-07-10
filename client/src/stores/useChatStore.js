@@ -228,18 +228,21 @@ const useChatStore = createSessionStore((set) => ({
 
     set({ error: '', isSubmittingRoom: true })
 
+    let token = null
     try {
-      const token = requireToken()
+      token = requireToken()
       const { createRoom, getRooms } = await getChatService()
       const { room } = await createRoom({ name, visibility }, token)
       const { rooms } = await getRooms(token)
       if (!isActiveToken(token)) return null
       useChatStore.getState().syncChatRooms(rooms)
       await joinSocketChatRoom(room.id)
+      if (!isActiveToken(token)) return null
       set({ activeRoom: room.socketRoom, isSubmittingRoom: false })
       notifications.push('Room created', 'success')
       return room
     } catch (error) {
+      if (token && !isActiveToken(token)) return null
       set({ error: error.message, isSubmittingRoom: false })
       notifications.push(error.message, 'error')
       return null
@@ -251,18 +254,21 @@ const useChatStore = createSessionStore((set) => ({
 
     set({ error: '', isSubmittingRoom: true })
 
+    let token = null
     try {
-      const token = requireToken()
+      token = requireToken()
       const { getRooms, joinRoom } = await getChatService()
       const { room: joinedRoom } = await joinRoom(roomId, token)
       const { rooms } = await getRooms(token)
       if (!isActiveToken(token)) return null
       useChatStore.getState().syncChatRooms(rooms)
       await joinSocketChatRoom(joinedRoom.id)
+      if (!isActiveToken(token)) return null
       set({ activeRoom: joinedRoom.socketRoom, isSubmittingRoom: false })
       notifications.push('Room joined', 'success')
       return joinedRoom
     } catch (error) {
+      if (token && !isActiveToken(token)) return null
       set({ error: error.message, isSubmittingRoom: false })
       notifications.push(error.message, 'error')
       return null
@@ -289,8 +295,9 @@ const useChatStore = createSessionStore((set) => ({
 
     set({ error: '', isSubmittingRoom: true })
 
+    let token = null
     try {
-      const token = requireToken()
+      token = requireToken()
       const { getRooms, inviteUserToRoom } = await getChatService()
       const { room: updatedRoom } = await inviteUserToRoom(
         { roomId, targetUserId },
@@ -303,6 +310,7 @@ const useChatStore = createSessionStore((set) => ({
       notifications.push('Invitation sent', 'success')
       return updatedRoom
     } catch (error) {
+      if (token && !isActiveToken(token)) return null
       set({ error: error.message, isSubmittingRoom: false })
       notifications.push(error.message, 'error')
       return null
@@ -314,8 +322,9 @@ const useChatStore = createSessionStore((set) => ({
 
     set({ error: '', isSubmittingRoom: true })
 
+    let token = null
     try {
-      const token = requireToken()
+      token = requireToken()
       const { getRooms, updateRoomMember } = await getChatService()
       const { room: updatedRoom } = await updateRoomMember(
         { isMuted, roomId, targetUserId },
@@ -328,6 +337,7 @@ const useChatStore = createSessionStore((set) => ({
       notifications.push(isMuted ? 'Member muted' : 'Member unmuted', 'success')
       return updatedRoom
     } catch (error) {
+      if (token && !isActiveToken(token)) return null
       set({ error: error.message, isSubmittingRoom: false })
       notifications.push(error.message, 'error')
       return null
@@ -339,8 +349,9 @@ const useChatStore = createSessionStore((set) => ({
 
     set({ error: '', isSubmittingRoom: true })
 
+    let token = null
     try {
-      const token = requireToken()
+      token = requireToken()
       const { getRooms, removeRoomMember } = await getChatService()
       const { room: updatedRoom } = await removeRoomMember(
         { roomId, targetUserId },
@@ -353,6 +364,7 @@ const useChatStore = createSessionStore((set) => ({
       notifications.push('Member removed', 'success')
       return updatedRoom
     } catch (error) {
+      if (token && !isActiveToken(token)) return null
       set({ error: error.message, isSubmittingRoom: false })
       notifications.push(error.message, 'error')
       return null

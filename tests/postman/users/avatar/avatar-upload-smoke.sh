@@ -5,7 +5,7 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 DEFAULT_FILE_PATH="$ROOT_DIR/tests/postman/users/avatar/fixtures/avatar-valid.png"
 FILE_PATH="${1:-$DEFAULT_FILE_PATH}"
-BASE_URL="${2:-http://localhost:8080}"
+BASE_URL="${2:-http://localhost:5173}"
 BASE_URL="${BASE_URL%/}"
 API_BASE_URL="$BASE_URL/api/v1"
 
@@ -182,7 +182,7 @@ print_step "Register test user"
 request_json \
   POST \
   "$API_BASE_URL/auth/register" \
-  "$(printf '{"email":"%s","username":"%s","password":"%s"}' "$EMAIL" "$USERNAME" "$PASSWORD")"
+  "$(printf '{"email":"%s","username":"%s","password":"%s","termsAccepted":true,"privacyAccepted":true}' "$EMAIL" "$USERNAME" "$PASSWORD")"
 assert_status 201
 assert_json_equals 'data.user.email' "$EMAIL"
 assert_json_equals 'data.user.username' "$USERNAME"

@@ -21,9 +21,9 @@
                   "pm.environment.set('runId', runId);",
                   "pm.environment.set('friendPassword', 'Start123!');",
                   "pm.environment.set('friendRequesterEmail', `friend.requester.${runId}@example.com`);",
-                  "pm.environment.set('friendRequesterUsername', `friend_requester_${runId}`);",
+                  "pm.environment.set('friendRequesterUsername', `friendrequester${runId}`);",
                   "pm.environment.set('friendAddresseeEmail', `friend.addressee.${runId}@example.com`);",
-                  "pm.environment.set('friendAddresseeUsername', `friend_addressee_${runId}`);",
+                  "pm.environment.set('friendAddresseeUsername', `friendaddressee${runId}`);",
                   "pm.environment.set('friendMissingUserId', '999999999');",
                   "pm.environment.unset('friendRequesterUserId');",
                   "pm.environment.unset('friendRequesterToken');",
@@ -43,8 +43,8 @@
                   "pm.test('friendship test variables were generated', function () {",
                   "  pm.expect(pm.environment.get('friendRequesterEmail')).to.include('@example.com');",
                   "  pm.expect(pm.environment.get('friendAddresseeEmail')).to.include('@example.com');",
-                  "  pm.expect(pm.environment.get('friendRequesterUsername')).to.include('friend_requester_');",
-                  "  pm.expect(pm.environment.get('friendAddresseeUsername')).to.include('friend_addressee_');",
+                  "  pm.expect(pm.environment.get('friendRequesterUsername')).to.include('friendrequester');",
+                  "  pm.expect(pm.environment.get('friendAddresseeUsername')).to.include('friendaddressee');",
                   "  pm.expect(pm.environment.get('friendMissingUserId')).to.eql('999999999');",
                   "});"
                 ]
@@ -95,7 +95,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{friendRequesterEmail}}\",\n  \"username\": \"{{friendRequesterUsername}}\",\n  \"password\": \"{{friendPassword}}\"\n}",
+              "raw": "{\n  \"email\": \"{{friendRequesterEmail}}\",\n  \"username\": \"{{friendRequesterUsername}}\",\n  \"password\": \"{{friendPassword}}\",\n  \"termsAccepted\": true,\n  \"privacyAccepted\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -178,7 +178,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{friendAddresseeEmail}}\",\n  \"username\": \"{{friendAddresseeUsername}}\",\n  \"password\": \"{{friendPassword}}\"\n}",
+              "raw": "{\n  \"email\": \"{{friendAddresseeEmail}}\",\n  \"username\": \"{{friendAddresseeUsername}}\",\n  \"password\": \"{{friendPassword}}\",\n  \"termsAccepted\": true,\n  \"privacyAccepted\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"

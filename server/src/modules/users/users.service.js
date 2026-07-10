@@ -6,6 +6,7 @@ const {
   deleteAvatarFileByUrl,
   storeAvatarFile,
 } = require('#modules/users/users.avatar')
+const authTokenCache = require('#modules/auth/auth.token-cache')
 const usersRepository = require('#modules/users/users.repository')
 const {
   DEFAULT_PAGE_SIZE,
@@ -341,6 +342,7 @@ const updateCurrentUserProfile = async (viewer, payload) => {
 
   try {
     const user = await usersRepository.updateProfileById(viewer.id, updateData)
+    authTokenCache.invalidate(user.id)
 
     return {
       message: 'Profile updated successfully',
@@ -387,6 +389,7 @@ const uploadCurrentUserAvatar = async (viewer, file) => {
       viewer.id,
       storedAvatar.avatarUrl,
     )
+    authTokenCache.invalidate(user.id)
 
     await cleanupAvatarFile(previousAvatarUrl, viewer.id, 'replace')
 
@@ -411,6 +414,7 @@ const deleteCurrentUserAvatar = async (viewer) => {
 
   try {
     const user = await usersRepository.updateAvatarById(viewer.id, null)
+    authTokenCache.invalidate(user.id)
 
     await cleanupAvatarFile(previousAvatarUrl, viewer.id, 'delete')
 

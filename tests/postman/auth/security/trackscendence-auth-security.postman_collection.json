@@ -20,7 +20,7 @@
                   "const runId = Date.now().toString();",
                   "pm.environment.set('runId', runId);",
                   "pm.environment.set('email', `trackscendence.${runId}@example.com`);",
-                  "pm.environment.set('username', `track_user_${runId}`);",
+                  "pm.environment.set('username', `trackuser${runId}`);",
                   "pm.environment.set('password', 'Start123!');",
                   "pm.environment.set('newPassword', 'Changed123!');",
                   "pm.environment.set('resetPassword', 'Reset123!');",
@@ -49,7 +49,7 @@
                   "});",
                   "pm.test('email and username were generated', function () {",
                   "  pm.expect(pm.environment.get('email')).to.include('@example.com');",
-                  "  pm.expect(pm.environment.get('username')).to.include('track_user_');",
+                  "  pm.expect(pm.environment.get('username')).to.include('trackuser');",
                   "});"
                 ]
               }
@@ -101,7 +101,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{email}}\",\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"termsAccepted\": true,\n  \"privacyAccepted\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1304,7 +1304,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"weak.{{$timestamp}}@example.com\",\n  \"username\": \"weak_user_{{$timestamp}}\",\n  \"password\": \"{{weakPassword}}\"\n}",
+              "raw": "{\n  \"email\": \"weak.{{$timestamp}}@example.com\",\n  \"username\": \"weak_user_{{$timestamp}}\",\n  \"password\": \"{{weakPassword}}\",\n  \"termsAccepted\": true,\n  \"privacyAccepted\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"

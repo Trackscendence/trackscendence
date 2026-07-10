@@ -5,7 +5,83 @@ process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test'
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 
+const authTokenCache = require('#modules/auth/auth.token-cache')
+const userAvatar = require('#modules/users/users.avatar')
+const usersRepository = require('#modules/users/users.repository')
 const { parseUserSearchQuery } = require('#modules/users/users.service')
+
+const buildViewer = (overrides = {}) => ({
+  id: 42,
+  avatarUrl: null,
+  ...overrides,
+})
+
+const buildSelfUser = (overrides = {}) => ({
+  id: 42,
+  email: 'player@example.com',
+  username: 'player42',
+  displayName: null,
+  bio: null,
+  avatarUrl: null,
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  gamesPlayed: 0,
+  wins: 0,
+  losses: 0,
+  rank: null,
+  isGuest: false,
+  role: 'USER',
+  termsAcceptedAt: new Date('2026-01-01T00:00:00.000Z'),
+  privacyAcceptedAt: new Date('2026-01-01T00:00:00.000Z'),
+  twoFactorEnabled: false,
+  twoFactorPendingSecretCiphertext: null,
+  ...overrides,
+})
+
+const withUserServiceStubs = async (stubs, callback) => {
+  const originals = {
+    deleteAvatarFileByUrl: userAvatar.deleteAvatarFileByUrl,
+    invalidate: authTokenCache.invalidate,
+    listPublicFriendsForUser: usersRepository.listPublicFriendsForUser,
+    listRecentMatchesForUser: usersRepository.listRecentMatchesForUser,
+    storeAvatarFile: userAvatar.storeAvatarFile,
+    updateAvatarById: usersRepository.updateAvatarById,
+    updateProfileById: usersRepository.updateProfileById,
+  }
+
+  Object.assign(userAvatar, {
+    deleteAvatarFileByUrl:
+      stubs.deleteAvatarFileByUrl ?? originals.deleteAvatarFileByUrl,
+    storeAvatarFile: stubs.storeAvatarFile ?? originals.storeAvatarFile,
+  })
+  Object.assign(usersRepository, {
+    listPublicFriendsForUser:
+      stubs.listPublicFriendsForUser ?? originals.listPublicFriendsForUser,
+    listRecentMatchesForUser:
+      stubs.listRecentMatchesForUser ?? originals.listRecentMatchesForUser,
+    updateAvatarById: stubs.updateAvatarById ?? originals.updateAvatarById,
+    updateProfileById: stubs.updateProfileById ?? originals.updateProfileById,
+  })
+  authTokenCache.invalidate = stubs.invalidate ?? originals.invalidate
+
+  try {
+    delete require.cache[require.resolve('#modules/users/users.service')]
+    const freshUsersService = require('#modules/users/users.service')
+    return await callback(freshUsersService)
+  } finally {
+    Object.assign(userAvatar, {
+      deleteAvatarFileByUrl: originals.deleteAvatarFileByUrl,
+      storeAvatarFile: originals.storeAvatarFile,
+    })
+    Object.assign(usersRepository, {
+      listPublicFriendsForUser: originals.listPublicFriendsForUser,
+      listRecentMatchesForUser: originals.listRecentMatchesForUser,
+      updateAvatarById: originals.updateAvatarById,
+      updateProfileById: originals.updateProfileById,
+    })
+    authTokenCache.invalidate = originals.invalidate
+    delete require.cache[require.resolve('#modules/users/users.service')]
+  }
+}
 
 describe('parseUserSearchQuery', () => {
   it('trims the term and returns pagination defaults', () => {
@@ -52,5 +128,96 @@ describe('parseUserSearchQuery', () => {
     assert.throws(() => parseUserSearchQuery({ q: 'ser', page: '0' }), {
       statusCode: 400,
     })
+  })
+})
+
+describe('auth cache invalidation after user profile mutations', () => {
+  it('invalidates the auth cache after updating the current profile', async () => {
+    let invalidatedUserId = null
+
+    await withUserServiceStubs(
+      {
+        invalidate: (userId) => {
+          invalidatedUserId = userId
+        },
+        listPublicFriendsForUser: async () => [],
+        listRecentMatchesForUser: async () => [],
+        updateProfileById: async () =>
+          buildSelfUser({
+            displayName: 'Midnight Tactician',
+            bio: 'Plays the long game.',
+          }),
+      },
+      async (usersService) => {
+        const result = await usersService.updateCurrentUserProfile(buildViewer(), {
+          displayName: 'Midnight Tactician',
+          bio: 'Plays the long game.',
+        })
+
+        assert.strictEqual(invalidatedUserId, 42)
+        assert.strictEqual(result.authUser.displayName, 'Midnight Tactician')
+        assert.strictEqual(result.authUser.bio, 'Plays the long game.')
+      },
+    )
+  })
+
+  it('invalidates the auth cache after uploading an avatar', async () => {
+    let invalidatedUserId = null
+
+    await withUserServiceStubs(
+      {
+        invalidate: (userId) => {
+          invalidatedUserId = userId
+        },
+        listPublicFriendsForUser: async () => [],
+        listRecentMatchesForUser: async () => [],
+        storeAvatarFile: async () => ({
+          avatarUrl: '/uploads/avatars/fresh-avatar.png',
+        }),
+        updateAvatarById: async () =>
+          buildSelfUser({
+            avatarUrl: '/uploads/avatars/fresh-avatar.png',
+          }),
+      },
+      async (usersService) => {
+        const result = await usersService.uploadCurrentUserAvatar(
+          buildViewer(),
+          { originalname: 'avatar.png' },
+        )
+
+        assert.strictEqual(invalidatedUserId, 42)
+        assert.strictEqual(
+          result.authUser.avatarUrl,
+          '/uploads/avatars/fresh-avatar.png',
+        )
+      },
+    )
+  })
+
+  it('invalidates the auth cache after deleting an avatar', async () => {
+    let invalidatedUserId = null
+
+    await withUserServiceStubs(
+      {
+        deleteAvatarFileByUrl: async () => {},
+        invalidate: (userId) => {
+          invalidatedUserId = userId
+        },
+        listPublicFriendsForUser: async () => [],
+        listRecentMatchesForUser: async () => [],
+        updateAvatarById: async () =>
+          buildSelfUser({
+            avatarUrl: null,
+          }),
+      },
+      async (usersService) => {
+        const result = await usersService.deleteCurrentUserAvatar(
+          buildViewer({ avatarUrl: '/uploads/avatars/old-avatar.png' }),
+        )
+
+        assert.strictEqual(invalidatedUserId, 42)
+        assert.strictEqual(result.authUser.avatarUrl, null)
+      },
+    )
   })
 })

@@ -1,5 +1,8 @@
-// Only the friend-request button uses this now; the owner's header shows a
-// settings gear instead, so there is no own-profile action state here.
+// Maps the relationship to the profile's primary action (#395). The state
+// machine a visitor walks: Add friend -> Requested (theirs: Request received)
+// -> accepted -> Message. Friends get the message action; everyone else gets
+// the friend-request path or a disabled waiting state. The owner's header
+// shows a settings gear instead, so there is no own-profile state here.
 const getProfileActionState = ({ relationship }) => {
   if (relationship?.status === 'FRIENDS') {
     return {
@@ -28,8 +31,8 @@ const getProfileActionState = ({ relationship }) => {
 
   return {
     isDisabled: false,
-    kind: 'message',
-    label: 'Message',
+    kind: 'request',
+    label: 'Add friend',
     variant: 'orange',
   }
 }

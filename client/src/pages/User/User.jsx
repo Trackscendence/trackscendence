@@ -99,7 +99,7 @@ const User = () => {
       />
       <Modal
         isOpen={isRequestModalOpen}
-        title="Message request"
+        title="Send friend request"
         onClose={() => setIsRequestModalOpen(false)}
       >
         <form className="space-y-4" onSubmit={submitFriendRequestMessage}>

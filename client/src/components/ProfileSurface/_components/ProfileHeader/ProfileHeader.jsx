@@ -1,11 +1,18 @@
 import { Link } from 'react-router-dom'
-import { Settings } from 'lucide-react'
+import { Mail, Settings, UserPlus } from 'lucide-react'
 import Button from '@/components/Button'
 import ProfileAvatar from '../ProfileAvatar'
 import ProfileStatStrip from '../ProfileStatStrip'
 import ProfileTabs from '../ProfileTabs'
 import profileActions from '../../_utils/profileActions'
 import profileFormatters from '../../_utils/profileFormatters'
+
+// The icon carries the relationship stage before the label is read: UserPlus
+// means you can connect, Mail means you can talk, waiting states stay plain.
+const actionIcons = {
+  message: Mail,
+  request: UserPlus,
+}
 
 const ProfileHeader = ({
   activeTab,
@@ -18,6 +25,7 @@ const ProfileHeader = ({
 }) => {
   const stats = profile.stats || {}
   const action = profileActions.getProfileActionState({ relationship })
+  const ActionIcon = actionIcons[action.kind]
   const metadata = isOwnProfile ? profile.email : `@${profile.username}`
 
   return (
@@ -49,13 +57,16 @@ const ProfileHeader = ({
             </Link>
           ) : (
             <Button
-              className="h-9 w-full rounded-none sm:w-[138px]"
+              className="flex h-9 w-full items-center justify-center gap-2 rounded-none sm:w-[138px]"
               disabled={action.isDisabled || isSubmitting}
               fullWidth={false}
               type="button"
               variant={action.variant}
               onClick={() => onPrimaryAction(action)}
             >
+              {ActionIcon && !isSubmitting ? (
+                <ActionIcon aria-hidden="true" className="h-4 w-4" />
+              ) : null}
               {isSubmitting ? 'Working' : action.label}
             </Button>
           )}

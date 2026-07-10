@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import ProfileLink from '@/components/ProfileLink'
 
 const ProfileOnlineFriends = ({ friends = [], onShowFriends }) => {
   const visibleFriends = friends.slice(0, 4)
@@ -20,10 +20,10 @@ const ProfileOnlineFriends = ({ friends = [], onShowFriends }) => {
       ) : (
         <div className="space-y-2.5">
           {visibleFriends.map(({ user }) => (
-            <Link
+            <ProfileLink
               key={user.id}
               className="flex items-center gap-2 transition hover:opacity-75"
-              to={`/users/${user.username}`}
+              username={user.username}
             >
               <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-[#FFB04F] text-[10px] font-bold text-white">
                 {(user.displayName || user.username).slice(0, 2).toUpperCase()}
@@ -32,7 +32,7 @@ const ProfileOnlineFriends = ({ friends = [], onShowFriends }) => {
               <span className="min-w-0 truncate text-sm text-[#3d1200]">
                 {user.displayName || user.username}
               </span>
-            </Link>
+            </ProfileLink>
           ))}
         </div>
       )}

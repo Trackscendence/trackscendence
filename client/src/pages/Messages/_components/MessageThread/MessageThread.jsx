@@ -1,4 +1,5 @@
 import Avatar from '@/components/Avatar'
+import ProfileLink from '@/components/ProfileLink'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import { formatMessageTime } from '@/utils/formatMessageTime'
 import MessageComposer from '../MessageComposer'
@@ -29,7 +30,11 @@ const MessageThread = ({
   return (
     <section className="flex min-h-0 flex-col bg-white">
       <header className="flex items-center justify-between border-b border-[#f0d9bd] px-5 py-4">
-        <div className="flex min-w-0 items-center gap-3">
+        <ProfileLink
+          aria-label={`View ${friend.name}'s profile`}
+          className="flex min-w-0 items-center gap-3 rounded-md transition hover:bg-[#fff4e8] focus:ring-2 focus:ring-[#3d1200]/20 focus:outline-none"
+          username={conversation.friend?.username}
+        >
           <Avatar
             alt={friend.name}
             initials={friend.initials}
@@ -44,7 +49,7 @@ const MessageThread = ({
               {isConnected ? 'Online' : 'Reconnecting'}
             </p>
           </div>
-        </div>
+        </ProfileLink>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-[#fff7ed] px-5 py-5">

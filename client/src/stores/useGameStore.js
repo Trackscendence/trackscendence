@@ -1,8 +1,9 @@
-import { create } from 'zustand'
 import { socket } from '@/services/socket'
 import { SOCKET_EVENTS } from '@/services/socketEvents'
 import { getLeaderboard } from '@/services/game'
 import useAuthStore from '@/stores/useAuthStore'
+import { createSessionStore } from './createSessionStore'
+import { isActiveToken } from './sessionGuard'
 import {
   getOwnRoomIds,
   rememberClosedRoomIds,
@@ -10,10 +11,11 @@ import {
 } from './roomVisibility'
 
 // Monotonic id for leaderboard loads so a slow, older request cannot
-// overwrite the result of a newer one.
+// overwrite the result of a newer one. The session guard in loadLeaderboard is
+// the cross-session complement (#391).
 let leaderboardRequestId = 0
 
-const useGameStore = create((set) => ({
+const getDefaultState = () => ({
   leaderboard: [],
   leaderboardPagination: null,
   isLeaderboardLoading: false,
@@ -69,6 +71,13 @@ const useGameStore = create((set) => ({
   // ends a room. The waiting room compares it with the current room so a late
   // close from the previous room cannot bounce a fresh create flow.
   roomClosed: null,
+})
+
+// Session store (#391): holds the user's game, room, and lobby state, so it is
+// cleared by resetSessionStores() at teardown. Socket writes are gated by the
+// session guard in socketSessionHandlers.
+const useGameStore = createSessionStore((set) => ({
+  ...getDefaultState(),
 
   setLeaderboard: (leaderboard) => set({ leaderboard }),
 
@@ -84,6 +93,7 @@ const useGameStore = create((set) => ({
     try {
       const response = await getLeaderboard(params, token)
       if (requestId !== leaderboardRequestId) return
+      if (!isActiveToken(token)) return
       set({
         leaderboard: response?.leaderboard ?? [],
         leaderboardPagination: response?.pagination ?? null,
@@ -91,6 +101,7 @@ const useGameStore = create((set) => ({
       })
     } catch (error) {
       if (requestId !== leaderboardRequestId) return
+      if (!isActiveToken(token)) return
       set({
         isLeaderboardLoading: false,
         leaderboardError: error?.message || 'Failed to load the leaderboard',
@@ -268,6 +279,8 @@ const useGameStore = create((set) => ({
   // refresh, reconnect). The reply arrives as a normal game_state_update.
   requestGameState: (gameId) =>
     socket.emit(SOCKET_EVENTS.GAME_STATE_REQUEST, { gameId }),
+
+  reset: () => set(getDefaultState()),
 }))
 
 export default useGameStore

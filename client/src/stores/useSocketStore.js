@@ -71,6 +71,9 @@ const sessionHandlers = createSocketSessionHandlers({
       }),
     ),
   isDevGame: (gameId) => import.meta.env.DEV && gameId === DEV_GAME_ID,
+  // Session guard (#391): drop session-data events once the token is gone, so
+  // a late event cannot write into stores that teardown just cleared.
+  hasActiveSession: () => Boolean(useAuthStore.getState().token),
 })
 
 export default useSocketStore

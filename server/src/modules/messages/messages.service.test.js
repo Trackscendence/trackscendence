@@ -95,6 +95,50 @@ describe('messagesService.sendMessageToRecipient', () => {
   })
 })
 
+describe('messagesService.markAllConversationsRead', () => {
+  it('marks every conversation read for the user and reports zero unread', async () => {
+    const readCalls = []
+    const repository = {
+      listConversationsForUser: async () => [
+        { ...conversation, id: 11 },
+        { ...conversation, id: 12 },
+      ],
+      markConversationReadForUser: async (target, userId) => {
+        readCalls.push({ conversationId: target.id, userId })
+        return target
+      },
+    }
+
+    const result = await messagesService.markAllConversationsRead(user(), {
+      repository,
+    })
+
+    assert.equal(result.unreadCount, 0)
+    assert.deepEqual(
+      readCalls.map((call) => call.conversationId),
+      [11, 12],
+    )
+    assert.ok(readCalls.every((call) => call.userId === 1))
+  })
+
+  it('does nothing when the user has no conversations', async () => {
+    let marked = false
+    const repository = {
+      listConversationsForUser: async () => [],
+      markConversationReadForUser: async () => {
+        marked = true
+      },
+    }
+
+    const result = await messagesService.markAllConversationsRead(user(), {
+      repository,
+    })
+
+    assert.equal(result.unreadCount, 0)
+    assert.equal(marked, false)
+  })
+})
+
 describe('messagesService.createConversationFromAcceptedRequest', () => {
   it('copies an intro message into the accepted conversation', async () => {
     let savedMessage = null

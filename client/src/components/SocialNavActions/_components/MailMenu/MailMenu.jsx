@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Mail } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Mail, Plus } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
+import MarkAllReadButton from '@/components/MarkAllReadButton'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
 
 const formatTime = (value) => {
@@ -20,7 +21,9 @@ const MenuButton = ({ count, isOpen, onClick }) => (
     aria-label="Direct messages"
     aria-expanded={isOpen}
     aria-haspopup="menu"
-    className="relative flex h-11 w-11 items-center justify-center rounded-full bg-[#ffb04f] text-[#3d1200] shadow-[0_7px_14px_rgba(122,56,16,0.18)] transition hover:bg-[#ffa238] focus:ring-2 focus:ring-[#3d1200]/25 focus:outline-none"
+    className={`relative flex h-9 w-9 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#ffbf80] focus:ring-2 focus:ring-[#3d1200]/25 focus:outline-none motion-safe:active:scale-95 ${
+      isOpen ? 'bg-[#ffbf80]' : ''
+    }`}
     type="button"
     onClick={onClick}
   >
@@ -60,6 +63,7 @@ const MailMenu = () => {
   const loadConversations = useDirectMessageStore(
     (state) => state.loadConversations,
   )
+  const markAllRead = useDirectMessageStore((state) => state.markAllRead)
 
   useEffect(() => {
     loadConversations()
@@ -111,14 +115,35 @@ const MailMenu = () => {
         >
           <div className="border-b border-[#f0d9bd] px-5 py-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-black text-[#3d1200]">
-                Direct messages
-              </h2>
-              {unreadCount > 0 ? (
-                <span className="rounded-full bg-[#e23f32] px-2 py-0.5 text-xs font-black text-white">
-                  {unreadCount}
-                </span>
-              ) : null}
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-black text-[#3d1200]">
+                  Direct messages
+                </h2>
+                {unreadCount > 0 ? (
+                  <span className="rounded-full bg-[#e23f32] px-2 py-0.5 text-xs font-black text-white">
+                    {unreadCount}
+                  </span>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <MarkAllReadButton
+                  onClick={markAllRead}
+                  disabled={unreadCount === 0}
+                />
+                <Link
+                  aria-label="New message"
+                  title="New message"
+                  to="/messages"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#fff4e8] focus:ring-2 focus:ring-[#3d1200]/20 focus:outline-none"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Plus
+                    aria-hidden="true"
+                    className="h-4 w-4"
+                    strokeWidth={2.4}
+                  />
+                </Link>
+              </div>
             </div>
             <div className="mt-3 grid grid-cols-2 rounded-md bg-[#fff4e8] p-1">
               {['all', 'unread'].map((item) => (

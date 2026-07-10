@@ -107,6 +107,33 @@ const useDirectMessageStore = create((set) => ({
     }
   },
 
+  markAllRead: async () => {
+    const token = getActiveToken()
+    if (!token) return
+
+    const { conversations } = useDirectMessageStore.getState()
+    if (!conversations.some((conversation) => conversation.unreadCount > 0)) {
+      return
+    }
+
+    // Zero the badges immediately, then persist; reload on failure to resync.
+    set((state) => ({
+      conversations: state.conversations.map((conversation) => ({
+        ...conversation,
+        unreadCount: 0,
+      })),
+      unreadCount: 0,
+    }))
+
+    try {
+      const { markAllConversationsRead } = await getMessagesService()
+      await markAllConversationsRead(token)
+    } catch (error) {
+      set({ error: error.message })
+      await useDirectMessageStore.getState().loadConversations()
+    }
+  },
+
   ensureConversation: async (targetUserId) => {
     const notifications = useNotificationStore.getState()
 

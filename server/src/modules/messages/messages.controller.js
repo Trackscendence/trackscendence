@@ -16,6 +16,14 @@ const getOrCreateConversation = async (req, res, next) => {
   }
 }
 
+const markAllConversationsRead = async (req, res, next) => {
+  try {
+    res.json(await messagesService.markAllConversationsRead(req.user))
+  } catch (error) {
+    next(error)
+  }
+}
+
 const listMessages = async (req, res, next) => {
   try {
     res.json(await messagesService.listMessages(req.user, req.params))
@@ -38,5 +46,6 @@ module.exports = {
   getOrCreateConversation,
   listConversations,
   listMessages,
+  markAllConversationsRead,
   sendMessage,
 }

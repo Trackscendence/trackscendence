@@ -14,6 +14,13 @@ export const getOrCreateConversation = (targetUserId, token) => {
   })
 }
 
+export const markAllConversationsRead = (token) => {
+  return request('/messages/conversations/read-all', {
+    method: 'POST',
+    token,
+  })
+}
+
 export const getConversationMessages = (conversationId, token) => {
   return request(
     `/messages/conversations/${encodeSegment(conversationId)}/messages`,

@@ -8,6 +8,10 @@ router.use(requireAuth)
 
 router.get('/conversations', messagesController.listConversations)
 router.post('/conversations', messagesController.getOrCreateConversation)
+router.post(
+  '/conversations/read-all',
+  messagesController.markAllConversationsRead,
+)
 router.get(
   '/conversations/:conversationId/messages',
   messagesController.listMessages,

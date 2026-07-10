@@ -169,6 +169,22 @@ const listConversations = async (
   }
 }
 
+const markAllConversationsRead = async (
+  user,
+  { repository = messagesRepository } = {},
+) => {
+  const conversations = await repository.listConversationsForUser(user.id)
+  const readAt = new Date()
+
+  await Promise.all(
+    conversations.map((conversation) =>
+      repository.markConversationReadForUser(conversation, user.id, readAt),
+    ),
+  )
+
+  return { unreadCount: 0 }
+}
+
 const getOrCreateConversation = async (
   user,
   payload,
@@ -389,6 +405,7 @@ module.exports = {
   getOrCreateConversation,
   listConversations,
   listMessages,
+  markAllConversationsRead,
   sendMessage,
   sendMessageToRecipient,
   toConversationDto,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Bell, Settings } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
+import MarkAllReadButton from '@/components/MarkAllReadButton'
 import useSocialNotificationStore from '@/stores/useSocialNotificationStore'
 
 const getName = (user) => user?.displayName || user?.username || 'Player'
@@ -124,7 +125,9 @@ const SocialNotificationMenu = () => {
         aria-label="Notifications"
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        className="relative flex h-11 w-11 items-center justify-center rounded-full bg-[#ffb04f] text-[#3d1200] shadow-[0_7px_14px_rgba(122,56,16,0.18)] transition hover:bg-[#ffa238] focus:ring-2 focus:ring-[#3d1200]/25 focus:outline-none"
+        className={`relative flex h-9 w-9 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#ffbf80] focus:ring-2 focus:ring-[#3d1200]/25 focus:outline-none motion-safe:active:scale-95 ${
+          isOpen ? 'bg-[#ffbf80]' : ''
+        }`}
         type="button"
         onClick={() => setIsOpen((open) => !open)}
       >
@@ -150,14 +153,20 @@ const SocialNotificationMenu = () => {
                 {unreadCount > 0 ? `${unreadCount} unread` : 'No unread alerts'}
               </p>
             </div>
-            <Link
-              aria-label="Notification settings"
-              to="/settings"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#fff4e8] focus:ring-2 focus:ring-[#3d1200]/20 focus:outline-none"
-              onClick={() => setIsOpen(false)}
-            >
-              <Settings aria-hidden="true" className="h-4 w-4" />
-            </Link>
+            <div className="flex items-center gap-1.5">
+              <MarkAllReadButton
+                onClick={markAllRead}
+                disabled={unreadCount === 0}
+              />
+              <Link
+                aria-label="Notification settings"
+                to="/settings"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#fff4e8] focus:ring-2 focus:ring-[#3d1200]/20 focus:outline-none"
+                onClick={() => setIsOpen(false)}
+              >
+                <Settings aria-hidden="true" className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
 
           <div className="max-h-[420px] overflow-y-auto py-2">
@@ -225,18 +234,6 @@ const SocialNotificationMenu = () => {
               )
             })}
           </div>
-
-          {unreadCount > 0 ? (
-            <div className="border-t border-[#f0d9bd] px-5 py-3">
-              <button
-                type="button"
-                className="text-xs font-black text-[#7a3810] transition hover:text-[#3d1200]"
-                onClick={markAllRead}
-              >
-                Mark all read
-              </button>
-            </div>
-          ) : null}
         </div>
       ) : null}
     </div>

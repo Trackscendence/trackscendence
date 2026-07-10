@@ -1,9 +1,10 @@
-import { create } from 'zustand'
 // Relative imports (not the @/ alias) so this store stays loadable under the
 // node test runner, which does not resolve the bundler alias. Both socketEvents
 // and tokenStorage are dependency-free, so they pull in nothing else.
 import { SOCKET_EVENTS } from '../services/socketEvents.js'
 import { getStoredToken } from '../services/tokenStorage.js'
+import { createSessionStore } from './createSessionStore.js'
+import { isActiveToken } from './sessionGuard.js'
 import useNotificationStore from './useNotificationStore.js'
 
 export const GENERAL_CHAT_ROOM_ID = 'channel:#general'
@@ -130,7 +131,10 @@ const joinSocketChatRoom = async (roomId) => {
   }
 }
 
-const useChatStore = create((set) => ({
+// Session store (#391): holds room and private chat message content, so it is
+// cleared by resetSessionStores() at teardown; socket handlers no-op once the
+// session has ended and async loads guard their post-await writes.
+const useChatStore = createSessionStore((set) => ({
   ...getDefaultState(),
 
   syncFriendRooms: (friends = []) =>
@@ -194,6 +198,8 @@ const useChatStore = create((set) => ({
     }),
   receiveRoomMessage: (data) => {
     if (!data || typeof data.message !== 'string' || !data.user) return
+    // Socket handler: drop late events once the session has ended (#391).
+    if (!getActiveToken()) return
 
     const roomId =
       typeof data.recipient === 'string' ? data.recipient : GENERAL_CHAT_ROOM_ID
@@ -209,9 +215,11 @@ const useChatStore = create((set) => ({
     try {
       const { getRooms } = await getChatService()
       const { rooms } = await getRooms(token)
+      if (!isActiveToken(token)) return
       useChatStore.getState().syncChatRooms(rooms)
       set({ isLoadingRooms: false })
     } catch (error) {
+      if (!isActiveToken(token)) return
       set({ error: error.message, isLoadingRooms: false })
     }
   },
@@ -221,9 +229,11 @@ const useChatStore = create((set) => ({
     set({ error: '', isSubmittingRoom: true })
 
     try {
+      const token = requireToken()
       const { createRoom, getRooms } = await getChatService()
-      const { room } = await createRoom({ name, visibility }, requireToken())
-      const { rooms } = await getRooms(requireToken())
+      const { room } = await createRoom({ name, visibility }, token)
+      const { rooms } = await getRooms(token)
+      if (!isActiveToken(token)) return null
       useChatStore.getState().syncChatRooms(rooms)
       await joinSocketChatRoom(room.id)
       set({ activeRoom: room.socketRoom, isSubmittingRoom: false })
@@ -242,9 +252,11 @@ const useChatStore = create((set) => ({
     set({ error: '', isSubmittingRoom: true })
 
     try {
+      const token = requireToken()
       const { getRooms, joinRoom } = await getChatService()
-      const { room: joinedRoom } = await joinRoom(roomId, requireToken())
-      const { rooms } = await getRooms(requireToken())
+      const { room: joinedRoom } = await joinRoom(roomId, token)
+      const { rooms } = await getRooms(token)
+      if (!isActiveToken(token)) return null
       useChatStore.getState().syncChatRooms(rooms)
       await joinSocketChatRoom(joinedRoom.id)
       set({ activeRoom: joinedRoom.socketRoom, isSubmittingRoom: false })
@@ -265,6 +277,7 @@ const useChatStore = create((set) => ({
     try {
       const { getMessages } = await getChatService()
       const { messages } = await getMessages(roomId, token)
+      if (!isActiveToken(token)) return
       useChatStore.getState().setMessages(room.id, messages)
     } catch {
       // Live chat remains usable if history cannot be loaded.
@@ -277,12 +290,14 @@ const useChatStore = create((set) => ({
     set({ error: '', isSubmittingRoom: true })
 
     try {
+      const token = requireToken()
       const { getRooms, inviteUserToRoom } = await getChatService()
       const { room: updatedRoom } = await inviteUserToRoom(
         { roomId, targetUserId },
-        requireToken(),
+        token,
       )
-      const { rooms } = await getRooms(requireToken())
+      const { rooms } = await getRooms(token)
+      if (!isActiveToken(token)) return null
       useChatStore.getState().syncChatRooms(rooms)
       set({ isSubmittingRoom: false })
       notifications.push('Invitation sent', 'success')
@@ -300,12 +315,14 @@ const useChatStore = create((set) => ({
     set({ error: '', isSubmittingRoom: true })
 
     try {
+      const token = requireToken()
       const { getRooms, updateRoomMember } = await getChatService()
       const { room: updatedRoom } = await updateRoomMember(
         { isMuted, roomId, targetUserId },
-        requireToken(),
+        token,
       )
-      const { rooms } = await getRooms(requireToken())
+      const { rooms } = await getRooms(token)
+      if (!isActiveToken(token)) return null
       useChatStore.getState().syncChatRooms(rooms)
       set({ isSubmittingRoom: false })
       notifications.push(isMuted ? 'Member muted' : 'Member unmuted', 'success')
@@ -323,12 +340,14 @@ const useChatStore = create((set) => ({
     set({ error: '', isSubmittingRoom: true })
 
     try {
+      const token = requireToken()
       const { getRooms, removeRoomMember } = await getChatService()
       const { room: updatedRoom } = await removeRoomMember(
         { roomId, targetUserId },
-        requireToken(),
+        token,
       )
-      const { rooms } = await getRooms(requireToken())
+      const { rooms } = await getRooms(token)
+      if (!isActiveToken(token)) return null
       useChatStore.getState().syncChatRooms(rooms)
       set({ isSubmittingRoom: false })
       notifications.push('Member removed', 'success')
@@ -342,6 +361,8 @@ const useChatStore = create((set) => ({
   receivePrivateMessage: (data, ownUserId) => {
     if (!data?.user || typeof data.recipient !== 'string') return
     if (typeof data.message !== 'string') return
+    // Socket handler: drop late events once the session has ended (#391).
+    if (!getActiveToken()) return
 
     const isOwnMessage = String(data.user.id) === String(ownUserId)
     const roomId = isOwnMessage

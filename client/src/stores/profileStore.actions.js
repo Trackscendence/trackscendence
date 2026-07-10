@@ -12,6 +12,7 @@ import {
 } from './profileStore.helpers'
 import { createCurrentProfileLoader } from './profileStore.currentProfileLoader'
 import { createPublicProfileLoader } from './profileStore.publicProfileLoader'
+import { isActiveToken } from './sessionGuard'
 import useAuthStore from './useAuthStore'
 import useNotificationStore from './useNotificationStore'
 
@@ -40,6 +41,7 @@ export const createProfileActions = (set, get) => ({
     if (!token) return
 
     const { leaderboard } = await loadLeaderboardContext(token)
+    if (!isActiveToken(token)) return
 
     set({ leaderboard })
   },
@@ -48,6 +50,7 @@ export const createProfileActions = (set, get) => ({
     emptyFriendContext,
     get,
     getAuthUserId: () => useAuthStore.getState().user?.id,
+    isTokenActive: isActiveToken,
     loadCurrentProfileData,
     requireToken,
     set,
@@ -55,6 +58,7 @@ export const createProfileActions = (set, get) => ({
 
   loadPublicProfile: createPublicProfileLoader({
     get,
+    isTokenActive: isActiveToken,
     loadPublicProfileData,
     requireToken,
     set,
@@ -65,7 +69,10 @@ export const createProfileActions = (set, get) => ({
 
     if (!token) return
 
-    set(await loadFriendContext(token))
+    const friendContext = await loadFriendContext(token)
+    if (!isActiveToken(token)) return
+
+    set(friendContext)
   },
 
   sendFriendRequest: async (message = '') => {
@@ -83,13 +90,20 @@ export const createProfileActions = (set, get) => ({
     set({ actionError: '', isSubmitting: true })
 
     try {
+      const friendshipContext = await requestFriendship({
+        message,
+        profileId: profile.id,
+        token,
+      })
+      if (!isActiveToken(token)) return false
       set({
-        ...(await requestFriendship({ message, profileId: profile.id, token })),
+        ...friendshipContext,
         isSubmitting: false,
       })
       notifications.push('Friend request sent', 'success')
       return true
     } catch (error) {
+      if (!isActiveToken(token)) return false
       notifications.push(error.message, 'error')
       set({ actionError: '', isSubmitting: false })
       return false
@@ -116,6 +130,7 @@ export const createProfileActions = (set, get) => ({
         payload,
         token,
       })
+      if (!isActiveToken(token)) return null
 
       set({
         currentProfile,
@@ -124,6 +139,7 @@ export const createProfileActions = (set, get) => ({
 
       return result
     } catch (error) {
+      if (!isActiveToken(token)) return null
       set({ actionError: error.message, isSubmitting: false })
       return null
     }
@@ -143,11 +159,13 @@ export const createProfileActions = (set, get) => ({
 
     try {
       const { currentProfile, result } = await saveAvatar({ file, token })
+      if (!isActiveToken(token)) return null
 
       set({ currentProfile, isSubmitting: false })
 
       return result
     } catch (error) {
+      if (!isActiveToken(token)) return null
       set({ actionError: error.message, isSubmitting: false })
       return null
     }
@@ -167,11 +185,13 @@ export const createProfileActions = (set, get) => ({
 
     try {
       const { currentProfile, result } = await clearAvatar({ token })
+      if (!isActiveToken(token)) return null
 
       set({ currentProfile, isSubmitting: false })
 
       return result
     } catch (error) {
+      if (!isActiveToken(token)) return null
       set({ actionError: error.message, isSubmitting: false })
       return null
     }

@@ -54,3 +54,62 @@ describe('parseUserSearchQuery', () => {
     })
   })
 })
+
+describe('getProfileData', () => {
+  const { getProfileData } = require('#modules/users/users.service')
+
+  const user = {
+    id: 1,
+    username: 'player',
+    displayName: 'Player One',
+    bio: null,
+    avatarUrl: null,
+    createdAt: new Date('2026-07-01T00:00:00.000Z'),
+    email: 'player@trackscendence.local',
+    isGuest: false,
+    gamesPlayed: 8,
+    wins: 5,
+    losses: 3,
+    rank: 2,
+  }
+
+  const repositoryWithFriendCount = (friendsCount) => ({
+    listRecentMatchesForUser: async () => [],
+    // The preview list is capped to a handful; the count is the real total.
+    listPublicFriendsForUser: async () => [],
+    countAcceptedFriendsForUser: async () => friendsCount,
+  })
+
+  it('reports the true accepted-friend total in stats, beyond the preview cap', () => {
+    return getProfileData(
+      user,
+      {},
+      {
+        repository: repositoryWithFriendCount(14),
+      },
+    ).then((profile) => {
+      assert.strictEqual(profile.stats.friendsCount, 14)
+      assert.strictEqual(profile.stats.wins, 5)
+      assert.strictEqual(profile.stats.gamesPlayed, 8)
+    })
+  })
+
+  it('keeps the existing stats fields intact', () => {
+    return getProfileData(
+      user,
+      { includeEmail: true },
+      {
+        repository: repositoryWithFriendCount(0),
+      },
+    ).then((profile) => {
+      assert.deepStrictEqual(profile.stats, {
+        gamesPlayed: 8,
+        wins: 5,
+        losses: 3,
+        rank: 2,
+        friendsCount: 0,
+      })
+      assert.strictEqual(profile.email, 'player@trackscendence.local')
+    })
+  })
+})

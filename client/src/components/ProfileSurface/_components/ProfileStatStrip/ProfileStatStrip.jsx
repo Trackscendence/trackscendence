@@ -1,9 +1,12 @@
 import profileFormatters from '../../_utils/profileFormatters'
 
+// Every metric here is real (#396): Friends is the accepted-friendship total
+// from the server, the rest come from game history. The old Followers and
+// Following placeholders had no backing model and always rendered zero.
 const ProfileStatStrip = ({ stats = {} }) => {
   const summaryStats = [
-    { label: 'Followers', value: stats.followers || 0 },
-    { label: 'Following', value: stats.following || 0 },
+    { label: 'Friends', value: stats.friendsCount || 0 },
+    { label: 'Wins', value: stats.wins || 0 },
     { label: 'Games', value: stats.gamesPlayed || 0 },
     { label: 'Win Rate', value: `${profileFormatters.getWinRate(stats)}%` },
   ]

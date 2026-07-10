@@ -149,10 +149,13 @@ describe('auth cache invalidation after user profile mutations', () => {
           }),
       },
       async (usersService) => {
-        const result = await usersService.updateCurrentUserProfile(buildViewer(), {
-          displayName: 'Midnight Tactician',
-          bio: 'Plays the long game.',
-        })
+        const result = await usersService.updateCurrentUserProfile(
+          buildViewer(),
+          {
+            displayName: 'Midnight Tactician',
+            bio: 'Plays the long game.',
+          },
+        )
 
         assert.strictEqual(invalidatedUserId, 42)
         assert.strictEqual(result.authUser.displayName, 'Midnight Tactician')

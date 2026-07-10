@@ -87,13 +87,6 @@ const mapServerGameState = ({
           ...orderedPlayerIds.slice(0, ownIndex),
         ].filter((userId) => userId !== ownUserId)
 
-  console.log('[game table order]', {
-    ownUserId,
-    currentPlayer: state.currentPlayer,
-    playerHandsSizes: state.playerHandsSizes,
-    orderedPlayerIds,
-    opponentIds,
-  })
   const seats = getOpponentSeats(opponentIds.length)
   const opponents = opponentIds.map((userId, index) => {
     const known = playersById.get(userId)
@@ -105,11 +98,6 @@ const mapServerGameState = ({
       seat: seats[index] ?? 'top',
       cardCount: state.playerHandsSizes[userId],
     }
-  })
-
-  console.log('[more]', {
-    seats,
-    opponents,
   })
 
   const ownIdentity = getPlayerIdentity({

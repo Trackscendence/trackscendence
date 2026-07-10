@@ -102,6 +102,7 @@ const RelationshipActions = ({ profile, relationship }) => {
         {isSubmitting ? 'Working' : action.label}
       </Button>
       <FriendRequestModal
+        displayName={displayName}
         isOpen={isRequestModalOpen}
         onClose={() => setIsRequestModalOpen(false)}
       />

@@ -1,23 +1,33 @@
+import { CircleAlert, CircleCheck, Info, X } from 'lucide-react'
+
+// Branded toast palette: the deep blue with its lighter accent carries the
+// positive tone, the red carries the negative one, and info stays a quiet
+// white card in the same blue family. Solid fills read instantly from the
+// corner of the eye without the label doing the work.
 const STYLES = {
   info: {
-    accent: 'bg-[#24356F]',
-    frame: 'border-[#c8d0ee] text-[#24356F]',
+    frame: 'border border-[#0B2D88]/25 bg-white text-[#0B2D88]',
+    icon: Info,
+    iconColor: 'text-[#5B86FC]',
     label: 'Notice',
   },
   success: {
-    accent: 'bg-[#2f7d61]',
-    frame: 'border-[#bbd2c3] text-[#24563f]',
+    frame: 'bg-[#0B2D88] text-white',
+    icon: CircleCheck,
+    iconColor: 'text-[#5B86FC]',
     label: 'Done',
   },
   error: {
-    accent: 'bg-[#e86d2f]',
-    frame: 'border-[#e2a496] text-[#8a321f]',
+    frame: 'bg-[#E03325] text-white',
+    icon: CircleAlert,
+    iconColor: 'text-white',
     label: 'Action blocked',
   },
 }
 
 const Toast = ({ message, type = 'info', onDismiss }) => {
   const style = STYLES[type] ?? STYLES.info
+  const ToneIcon = style.icon
   const isError = type === 'error'
 
   return (
@@ -25,28 +35,27 @@ const Toast = ({ message, type = 'info', onDismiss }) => {
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
       aria-atomic="true"
-      className={`w-full overflow-hidden rounded-sm border bg-white shadow-[0_18px_40px_rgba(61,18,0,0.18)] ${style.frame}`}
+      className={`w-full overflow-hidden rounded-lg shadow-[0_12px_32px_rgba(11,45,136,0.28)] ${style.frame}`}
     >
-      <div className={`h-1 ${style.accent}`} />
       <div className="flex items-start gap-3 px-4 py-3">
-        <span
+        <ToneIcon
           aria-hidden="true"
-          className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${style.accent}`}
+          className={`mt-0.5 h-5 w-5 shrink-0 ${style.iconColor}`}
         />
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold tracking-wide uppercase">
+          <p className="text-[11px] font-semibold tracking-wide uppercase opacity-80">
             {style.label}
           </p>
-          <p className="mt-1 text-sm leading-5">{message}</p>
+          <p className="mt-0.5 text-sm leading-5 font-medium">{message}</p>
         </div>
         {onDismiss && (
           <button
             aria-label="Dismiss notification"
-            className="shrink-0 px-1 text-base leading-none font-semibold opacity-70 transition hover:opacity-100 focus:ring-2 focus:ring-current/30 focus:outline-none"
+            className="shrink-0 rounded-full p-0.5 opacity-70 transition hover:opacity-100 focus:ring-2 focus:ring-current/40 focus:outline-none"
             type="button"
             onClick={onDismiss}
           >
-            x
+            <X aria-hidden="true" className="h-4 w-4" />
           </button>
         )}
       </div>

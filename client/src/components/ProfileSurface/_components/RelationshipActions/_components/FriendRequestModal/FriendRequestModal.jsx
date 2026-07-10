@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MessageSquarePlus, Send } from 'lucide-react'
+import { Send } from 'lucide-react'
 import Button from '@/components/Button'
 import Modal from '@/components/Modal'
 import useProfileStore from '@/stores/useProfileStore'
@@ -7,10 +7,11 @@ import useProfileStore from '@/stores/useProfileStore'
 // Mirrors the server's friend-request message limit.
 const MESSAGE_MAX_LENGTH = 500
 
-// Two-step friend request (#395): first choose whether to say hello, then
-// compose within the character limit. Owns the flow state; the send itself
-// goes through the profile store, with or without a message.
-const FriendRequestModal = ({ isOpen, onClose }) => {
+// Two-step friend request (#395), sized and anchored like a connect dialog:
+// wide, hanging below the header, actions bottom-right. Step one chooses
+// whether to say hello; step two composes within the character limit. The
+// send itself goes through the profile store, with or without a message.
+const FriendRequestModal = ({ displayName, isOpen, onClose }) => {
   const [step, setStep] = useState('choose')
   const [message, setMessage] = useState('')
   const isSubmitting = useProfileStore((state) => state.isSubmitting)
@@ -32,38 +33,49 @@ const FriendRequestModal = ({ isOpen, onClose }) => {
   }
 
   return (
-    <Modal isOpen={isOpen} title="Send friend request" onClose={close}>
+    <Modal
+      isOpen={isOpen}
+      placement="top"
+      size="lg"
+      title="Add a message to your request?"
+      onClose={close}
+    >
       {step === 'choose' ? (
-        <div className="space-y-3">
+        <div className="space-y-6">
           <p className="text-sm leading-6 text-[#6f5439]">
-            Say hello first, or send the request on its own.
+            Say hello to <span className="font-semibold">{displayName}</span>{' '}
+            before you play together. A request with a message is easier to
+            recognise and becomes the first message of your conversation.
           </p>
-          <Button
-            className="flex items-center justify-center gap-2"
-            type="button"
-            variant="orange"
-            onClick={() => setStep('compose')}
-          >
-            <MessageSquarePlus aria-hidden="true" className="h-4 w-4" />
-            Add a message
-          </Button>
-          <Button
-            disabled={isSubmitting}
-            type="button"
-            variant="orangeOutline"
-            onClick={() => send('')}
-          >
-            {isSubmitting ? 'Sending' : 'Send without a message'}
-          </Button>
+          <div className="flex justify-end gap-3">
+            <Button
+              fullWidth={false}
+              type="button"
+              variant="orangeOutline"
+              onClick={() => setStep('compose')}
+            >
+              Add a message
+            </Button>
+            <Button
+              disabled={isSubmitting}
+              fullWidth={false}
+              type="button"
+              variant="orange"
+              onClick={() => send('')}
+            >
+              {isSubmitting ? 'Sending' : 'Send without a message'}
+            </Button>
+          </div>
         </div>
       ) : (
-        <form className="space-y-3" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="block text-sm font-semibold text-[#3d1200]">
             Message
             <textarea
               autoFocus
-              className="mt-2 min-h-28 w-full resize-none rounded-md border border-[#e6c9a8] px-3 py-2 text-sm transition outline-none focus:border-[#e86d2f]"
+              className="mt-2 min-h-40 w-full resize-none rounded-md border border-[#e6c9a8] px-3 py-2 text-sm leading-6 transition outline-none focus:border-[#e86d2f]"
               maxLength={MESSAGE_MAX_LENGTH}
+              placeholder={`Write a short hello to ${displayName}`}
               required
               value={message}
               onChange={(event) => setMessage(event.target.value)}
@@ -72,8 +84,9 @@ const FriendRequestModal = ({ isOpen, onClose }) => {
           <p className="text-right text-xs text-[#9a7050]">
             {message.length}/{MESSAGE_MAX_LENGTH}
           </p>
-          <div className="flex gap-2">
+          <div className="flex justify-end gap-3">
             <Button
+              fullWidth={false}
               type="button"
               variant="orangeOutline"
               onClick={() => setStep('choose')}
@@ -83,6 +96,7 @@ const FriendRequestModal = ({ isOpen, onClose }) => {
             <Button
               className="flex items-center justify-center gap-2"
               disabled={isSubmitting || !message.trim()}
+              fullWidth={false}
               type="submit"
               variant="orange"
             >

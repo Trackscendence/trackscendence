@@ -101,6 +101,9 @@ const findOrCreateConversationForUsers = async (
   return createConversationForUsers(firstUserId, secondUserId, db)
 }
 
+// Keyed off participation, not current friendship, by design (#392): a
+// conversation stays listed for both users after an unfriend; only sending is
+// friend-gated.
 const listConversationsForUser = (userId, db = prisma) => {
   return db.directConversation.findMany({
     where: {

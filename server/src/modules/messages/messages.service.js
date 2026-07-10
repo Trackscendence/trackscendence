@@ -219,6 +219,10 @@ const getOrCreateConversation = async (
   }
 }
 
+// Read access is participant-based on purpose (#392): sending requires a
+// current accepted friendship, but unfriending does not revoke either user's
+// access to the existing conversation and its history. Do not add a friendship
+// check here; removing history is a separate, user-initiated future feature.
 const listMessages = async (
   user,
   params,

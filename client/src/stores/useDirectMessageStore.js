@@ -1,5 +1,6 @@
-import { create } from 'zustand'
 import { getStoredToken } from '../services/tokenStorage.js'
+import { createSessionStore } from './createSessionStore.js'
+import { isActiveToken } from './sessionGuard.js'
 import useNotificationStore from './useNotificationStore.js'
 
 const MAX_MESSAGES_PER_CONVERSATION = 100
@@ -80,7 +81,10 @@ const getConversationUnreadTotal = (conversations) => {
   )
 }
 
-const useDirectMessageStore = create((set) => ({
+// Session store (#391): holds the signed-in user's message content, so it is
+// cleared by resetSessionStores() at teardown, and every post-await write is
+// guarded so an in-flight response from a previous session cannot repopulate it.
+const useDirectMessageStore = createSessionStore((set) => ({
   ...getDefaultState(),
 
   setActiveConversation: (conversationId) =>
@@ -95,6 +99,7 @@ const useDirectMessageStore = create((set) => ({
     try {
       const { getConversations } = await getMessagesService()
       const result = await getConversations(token)
+      if (!isActiveToken(token)) return
       const conversations = result.conversations || []
       set({
         conversations,
@@ -103,6 +108,7 @@ const useDirectMessageStore = create((set) => ({
           result.unreadCount ?? getConversationUnreadTotal(conversations),
       })
     } catch (error) {
+      if (!isActiveToken(token)) return
       set({ error: error.message, isLoadingConversations: false })
     }
   },
@@ -129,6 +135,7 @@ const useDirectMessageStore = create((set) => ({
       const { markAllConversationsRead } = await getMessagesService()
       await markAllConversationsRead(token)
     } catch (error) {
+      if (!isActiveToken(token)) return
       set({ error: error.message })
       await useDirectMessageStore.getState().loadConversations()
     }
@@ -138,11 +145,13 @@ const useDirectMessageStore = create((set) => ({
     const notifications = useNotificationStore.getState()
 
     try {
+      const token = requireToken()
       const { getOrCreateConversation } = await getMessagesService()
       const { conversation } = await getOrCreateConversation(
         targetUserId,
-        requireToken(),
+        token,
       )
+      if (!isActiveToken(token)) return null
       set((state) => {
         const conversations = upsertConversation(
           state.conversations,
@@ -173,6 +182,7 @@ const useDirectMessageStore = create((set) => ({
         conversationId,
         token,
       )
+      if (!isActiveToken(token)) return
 
       set((state) => {
         const conversations = upsertConversation(state.conversations, {
@@ -193,6 +203,7 @@ const useDirectMessageStore = create((set) => ({
         }
       })
     } catch (error) {
+      if (!isActiveToken(token)) return
       set({ error: error.message, isLoadingMessages: false })
     }
   },
@@ -201,11 +212,13 @@ const useDirectMessageStore = create((set) => ({
     const notifications = useNotificationStore.getState()
 
     try {
+      const token = requireToken()
       const { sendConversationMessage } = await getMessagesService()
       const result = await sendConversationMessage(
         { conversationId, message },
-        requireToken(),
+        token,
       )
+      if (!isActiveToken(token)) return null
 
       set((state) => {
         const conversations = upsertConversation(state.conversations, {
@@ -233,6 +246,9 @@ const useDirectMessageStore = create((set) => ({
 
   receiveMessage: (message, currentUserId) => {
     if (!message?.conversationId || !message?.id) return
+    // Socket handler: a late event after teardown must not write into a store
+    // that was just cleared for the next user (#391).
+    if (!getActiveToken()) return
 
     set((state) => {
       const isIncoming = String(message.senderId) !== String(currentUserId)

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useNotificationStore from '@/stores/useNotificationStore'
 import useSocketStore from '@/stores/useSocketStore'
+import { initSessionTeardown } from '@/stores/sessionTeardown'
 import { checkApiHealth } from '@/services/system'
 import {
   getBootRetryDelay,
@@ -137,6 +138,12 @@ const App = () => {
     return () =>
       window.removeEventListener('trackscendence:session-expired', handler)
   }, [])
+
+  // Session teardown (#391): clears the user-scoped stores synchronously when
+  // the token clears or changes, so the next user never sees the previous
+  // user's data. The subscription fires inside the auth state transition, not
+  // after a render cycle like the socket effect above.
+  useEffect(() => initSessionTeardown(), [])
 
   // A reconnecting client that still has a game in progress is routed back into
   // it, unless it is already on the game page. This is what makes the 90s

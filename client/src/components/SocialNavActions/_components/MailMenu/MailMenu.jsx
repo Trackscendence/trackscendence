@@ -3,18 +3,9 @@ import { Mail, Plus } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
 import MarkAllReadButton from '@/components/MarkAllReadButton'
+import getPlayerIdentity from '@/utils/getPlayerIdentity'
+import { formatMessageTime } from '@/utils/formatMessageTime'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
-
-const formatTime = (value) => {
-  if (!value) return ''
-
-  return new Intl.DateTimeFormat(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value))
-}
-
-const getName = (user) => user?.displayName || user?.username || 'Player'
 
 const MenuButton = ({ count, isOpen, onClick }) => (
   <button
@@ -174,45 +165,49 @@ const MailMenu = () => {
               <EmptyState mode={mode} />
             ) : null}
 
-            {visibleConversations.map((conversation) => (
-              <button
-                key={conversation.id}
-                role="menuitem"
-                type="button"
-                className="flex w-full gap-3 px-5 py-3 text-left transition hover:bg-[#fff4e8] focus:bg-[#fff4e8] focus:outline-none"
-                onClick={() => openConversation(conversation.id)}
-              >
-                <Avatar
-                  alt={getName(conversation.friend)}
-                  initials={getName(conversation.friend).slice(0, 2)}
-                  size={42}
-                  src={conversation.friend?.avatarUrl || undefined}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-start justify-between gap-3">
-                    <span className="truncate text-sm font-black text-[#3d1200]">
-                      {getName(conversation.friend)}
+            {visibleConversations.map((conversation) => {
+              const identity = getPlayerIdentity(conversation.friend)
+
+              return (
+                <button
+                  key={conversation.id}
+                  role="menuitem"
+                  type="button"
+                  className="flex w-full gap-3 px-5 py-3 text-left transition hover:bg-[#fff4e8] focus:bg-[#fff4e8] focus:outline-none"
+                  onClick={() => openConversation(conversation.id)}
+                >
+                  <Avatar
+                    alt={identity.name}
+                    initials={identity.initials}
+                    size={42}
+                    src={identity.avatarUrl}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="truncate text-sm font-black text-[#3d1200]">
+                        {identity.name}
+                      </span>
+                      <span className="shrink-0 text-[11px] font-semibold text-[#9a7050]">
+                        {formatMessageTime(
+                          conversation.lastMessage?.createdAt ||
+                            conversation.updatedAt,
+                        )}
+                      </span>
                     </span>
-                    <span className="shrink-0 text-[11px] font-semibold text-[#9a7050]">
-                      {formatTime(
-                        conversation.lastMessage?.createdAt ||
-                          conversation.updatedAt,
-                      )}
+                    <span className="mt-0.5 block truncate text-xs text-[#7a3810]">
+                      {conversation.lastMessage?.message || 'Start a message'}
                     </span>
                   </span>
-                  <span className="mt-0.5 block truncate text-xs text-[#7a3810]">
-                    {conversation.lastMessage?.message || 'Start a message'}
-                  </span>
-                </span>
-                {conversation.unreadCount > 0 ? (
-                  <span className="mt-2 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#e23f32] px-1 text-[10px] font-black text-white">
-                    {conversation.unreadCount > 9
-                      ? '9+'
-                      : conversation.unreadCount}
-                  </span>
-                ) : null}
-              </button>
-            ))}
+                  {conversation.unreadCount > 0 ? (
+                    <span className="mt-2 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#e23f32] px-1 text-[10px] font-black text-white">
+                      {conversation.unreadCount > 9
+                        ? '9+'
+                        : conversation.unreadCount}
+                    </span>
+                  ) : null}
+                </button>
+              )
+            })}
           </div>
         </div>
       ) : null}

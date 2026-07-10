@@ -1,16 +1,7 @@
 import Avatar from '@/components/Avatar'
+import getPlayerIdentity from '@/utils/getPlayerIdentity'
+import { formatMessageTime } from '@/utils/formatMessageTime'
 import MessageComposer from '../MessageComposer'
-
-const getName = (user) => user?.displayName || user?.username || 'Player'
-
-const formatTime = (value) => {
-  if (!value) return ''
-
-  return new Intl.DateTimeFormat(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value))
-}
 
 const EmptyThread = () => (
   <div className="flex flex-1 items-center justify-center px-6 text-center">
@@ -33,21 +24,21 @@ const MessageThread = ({
 }) => {
   if (!conversation) return <EmptyThread />
 
-  const friendName = getName(conversation.friend)
+  const friend = getPlayerIdentity(conversation.friend)
 
   return (
     <section className="flex min-h-0 flex-col bg-white">
       <header className="flex items-center justify-between border-b border-[#f0d9bd] px-5 py-4">
         <div className="flex min-w-0 items-center gap-3">
           <Avatar
-            alt={friendName}
-            initials={friendName.slice(0, 2)}
+            alt={friend.name}
+            initials={friend.initials}
             size={44}
-            src={conversation.friend?.avatarUrl || undefined}
+            src={friend.avatarUrl}
           />
           <div className="min-w-0">
             <h2 className="truncate text-lg font-black text-[#3d1200]">
-              {friendName}
+              {friend.name}
             </h2>
             <p className="text-xs font-semibold text-[#9a7050]">
               {isConnected ? 'Online' : 'Reconnecting'}
@@ -100,7 +91,7 @@ const MessageThread = ({
                       isOwn ? 'text-white/70' : 'text-[#9a7050]'
                     }`}
                   >
-                    {formatTime(message.createdAt)}
+                    {formatMessageTime(message.createdAt)}
                   </p>
                 </div>
               </div>

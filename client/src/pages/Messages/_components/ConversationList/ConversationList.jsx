@@ -1,15 +1,6 @@
 import Avatar from '@/components/Avatar'
-
-const getName = (user) => user?.displayName || user?.username || 'Player'
-
-const formatDate = (value) => {
-  if (!value) return ''
-
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(value))
-}
+import getPlayerIdentity from '@/utils/getPlayerIdentity'
+import { formatMessageDate } from '@/utils/formatMessageTime'
 
 const EmptyState = ({ filter }) => (
   <div className="px-6 py-10 text-center">
@@ -65,7 +56,7 @@ const ConversationList = ({
 
         {conversations.map((conversation) => {
           const isActive = conversation.id === activeConversationId
-          const name = getName(conversation.friend)
+          const identity = getPlayerIdentity(conversation.friend)
 
           return (
             <button
@@ -79,18 +70,18 @@ const ConversationList = ({
               onClick={() => onSelect(conversation.id)}
             >
               <Avatar
-                alt={name}
-                initials={name.slice(0, 2)}
+                alt={identity.name}
+                initials={identity.initials}
                 size={44}
-                src={conversation.friend?.avatarUrl || undefined}
+                src={identity.avatarUrl}
               />
               <span className="min-w-0 flex-1">
                 <span className="flex items-start justify-between gap-3">
                   <span className="truncate text-sm font-black text-[#3d1200]">
-                    {name}
+                    {identity.name}
                   </span>
                   <span className="shrink-0 text-[11px] font-semibold text-[#9a7050]">
-                    {formatDate(
+                    {formatMessageDate(
                       conversation.lastMessage?.createdAt ||
                         conversation.updatedAt,
                     )}

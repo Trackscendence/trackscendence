@@ -3,12 +3,12 @@ import { Bell, Settings } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
 import MarkAllReadButton from '@/components/MarkAllReadButton'
+import getPlayerIdentity from '@/utils/getPlayerIdentity'
+import { formatMessageTime } from '@/utils/formatMessageTime'
 import useSocialNotificationStore from '@/stores/useSocialNotificationStore'
 
-const getName = (user) => user?.displayName || user?.username || 'Player'
-
 const getNotificationText = (notification) => {
-  const name = getName(notification.actor)
+  const { name } = getPlayerIdentity(notification.actor)
 
   if (notification.type === 'FRIEND_REQUEST') {
     return `${name} sent a friend request`
@@ -23,15 +23,6 @@ const getNotificationText = (notification) => {
   }
 
   return 'New notification'
-}
-
-const formatTime = (value) => {
-  if (!value) return ''
-
-  return new Intl.DateTimeFormat(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value))
 }
 
 const EmptyState = () => (
@@ -179,6 +170,8 @@ const SocialNotificationMenu = () => {
             {!isLoading && notifications.length === 0 ? <EmptyState /> : null}
 
             {notifications.map((notification) => {
+              const actor = getPlayerIdentity(notification.actor)
+
               return (
                 <div
                   key={notification.id}
@@ -186,10 +179,10 @@ const SocialNotificationMenu = () => {
                   className="flex w-full gap-3 px-5 py-3 text-left transition focus-within:bg-[#fff4e8] hover:bg-[#fff4e8]"
                 >
                   <Avatar
-                    alt={getName(notification.actor)}
-                    initials={getName(notification.actor).slice(0, 2)}
+                    alt={actor.name}
+                    initials={actor.initials}
                     size={42}
-                    src={notification.actor?.avatarUrl || undefined}
+                    src={actor.avatarUrl}
                   />
                   <span className="min-w-0 flex-1">
                     <button
@@ -202,7 +195,7 @@ const SocialNotificationMenu = () => {
                           {getNotificationText(notification)}
                         </span>
                         <span className="shrink-0 text-[11px] font-semibold text-[#9a7050]">
-                          {formatTime(notification.createdAt)}
+                          {formatMessageTime(notification.createdAt)}
                         </span>
                       </span>
                       {notification.message ? (

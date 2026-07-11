@@ -1,27 +1,37 @@
-import { CircleAlert, CircleCheck, Info, X } from 'lucide-react'
+import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from 'lucide-react'
 
-// Branded toast palette: the deep blue with its lighter accent carries the
-// positive tone, the red carries the negative one, and info stays a quiet
-// white card in the same blue family. Solid fills read instantly from the
-// corner of the eye without the label doing the work.
+// Duotone toast: the message stays on a white card so it is always readable,
+// while a solid tone chip holds the icon and carries the meaning from the
+// corner of the eye. The chip, text block, and dismiss all centre on one
+// horizontal axis.
 const STYLES = {
   info: {
-    frame: 'border border-[#0B2D88]/25 bg-white text-[#0B2D88]',
+    chip: 'bg-[#51AFF1]',
     icon: Info,
-    iconColor: 'text-[#5B86FC]',
-    label: 'Notice',
+    iconColor: 'text-white',
+    label: 'text-[#51AFF1]',
+    title: 'Notice',
   },
   success: {
-    frame: 'bg-[#0B2D88] text-white',
+    chip: 'bg-[#489E52]',
     icon: CircleCheck,
-    iconColor: 'text-[#5B86FC]',
-    label: 'Done',
+    iconColor: 'text-white',
+    label: 'text-[#489E52]',
+    title: 'Done',
+  },
+  warning: {
+    chip: 'bg-[#F4C745]',
+    icon: TriangleAlert,
+    iconColor: 'text-[#3d1200]',
+    label: 'text-[#b8890a]',
+    title: 'Heads up',
   },
   error: {
-    frame: 'bg-[#E03325] text-white',
+    chip: 'bg-[#E03325]',
     icon: CircleAlert,
     iconColor: 'text-white',
-    label: 'Action blocked',
+    label: 'text-[#E03325]',
+    title: 'Action blocked',
   },
 }
 
@@ -35,23 +45,27 @@ const Toast = ({ message, type = 'info', onDismiss }) => {
       role={isError ? 'alert' : 'status'}
       aria-live={isError ? 'assertive' : 'polite'}
       aria-atomic="true"
-      className={`w-full overflow-hidden rounded-lg shadow-[0_12px_32px_rgba(11,45,136,0.28)] ${style.frame}`}
+      className="w-full rounded-xl bg-white text-[#1f2d28] shadow-[0_10px_30px_rgba(61,18,0,0.14)]"
     >
-      <div className="flex items-start gap-3 px-4 py-3">
-        <ToneIcon
+      <div className="flex items-center gap-3 py-3 pr-3 pl-2.5">
+        <span
           aria-hidden="true"
-          className={`mt-0.5 h-5 w-5 shrink-0 ${style.iconColor}`}
-        />
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${style.chip}`}
+        >
+          <ToneIcon className={`h-5 w-5 ${style.iconColor}`} />
+        </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold tracking-wide uppercase opacity-80">
-            {style.label}
+          <p
+            className={`text-[11px] font-bold tracking-wide uppercase ${style.label}`}
+          >
+            {style.title}
           </p>
           <p className="mt-0.5 text-sm leading-5 font-medium">{message}</p>
         </div>
         {onDismiss && (
           <button
             aria-label="Dismiss notification"
-            className="shrink-0 rounded-full p-0.5 opacity-70 transition hover:opacity-100 focus:ring-2 focus:ring-current/40 focus:outline-none"
+            className="shrink-0 self-center rounded-full p-1 text-[#1f2d28] opacity-60 transition hover:opacity-100 focus:ring-2 focus:ring-[#1f2d28]/30 focus:outline-none"
             type="button"
             onClick={onDismiss}
           >

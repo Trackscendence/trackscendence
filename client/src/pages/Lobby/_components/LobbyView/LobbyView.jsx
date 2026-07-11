@@ -1,6 +1,7 @@
 import AppHeader from '@/components/AppHeader'
 import PlayHeading from './_components/PlayHeading'
 import RoomGrid from './_components/RoomGrid'
+import LegalFooter from '@/components/LegalFooter'
 
 const LobbyView = ({ rooms, onCreateRoom, onJoinRoom }) => {
   return (
@@ -12,6 +13,7 @@ const LobbyView = ({ rooms, onCreateRoom, onJoinRoom }) => {
           <RoomGrid rooms={rooms} onJoinRoom={onJoinRoom} />
         </div>
       </main>
+      <LegalFooter />
     </div>
   )
 }

@@ -146,6 +146,7 @@ describe('notificationsRepository.attachConversationToLatestFriendRequest', () =
     const [, updateQuery] = queries[1]
     assert.deepEqual(updateQuery.where, { id: 42 })
     assert.deepEqual(updateQuery.data, { conversationId: 31 })
+    assert.deepEqual(updateQuery.select, { id: true, conversationId: true })
     assert.equal(result.id, 42)
   })
 

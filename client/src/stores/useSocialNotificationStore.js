@@ -123,20 +123,50 @@ const useSocialNotificationStore = createSessionStore((set) => ({
   // conversation so the row routes to the chat even before the background
   // reload restores full truth.
   markFriendRequestHandled: (actorId, conversationId = null) =>
-    set((state) => ({
-      notifications: state.notifications.map((notification) =>
-        notification.type === 'FRIEND_REQUEST' &&
-        notification.actor?.id === actorId
-          ? {
-              ...notification,
-              friendRequestStatus: null,
-              ...(conversationId && notification.message
-                ? { conversationId }
-                : {}),
+    set((state) => {
+      const latestRequest = conversationId
+        ? state.notifications.reduce((latest, notification) => {
+            if (
+              notification.type !== 'FRIEND_REQUEST' ||
+              notification.actor?.id !== actorId
+            ) {
+              return latest
             }
-          : notification,
-      ),
-    })),
+
+            if (!latest) return notification
+
+            const notificationTime = Date.parse(notification.createdAt || '')
+            const latestTime = Date.parse(latest.createdAt || '')
+
+            if (notificationTime !== latestTime) {
+              return notificationTime > latestTime ? notification : latest
+            }
+
+            return Number(notification.id) > Number(latest.id)
+              ? notification
+              : latest
+          }, null)
+        : null
+
+      const conversationNotificationId = latestRequest?.message
+        ? latestRequest.id
+        : null
+
+      return {
+        notifications: state.notifications.map((notification) =>
+          notification.type === 'FRIEND_REQUEST' &&
+          notification.actor?.id === actorId
+            ? {
+                ...notification,
+                friendRequestStatus: null,
+                ...(conversationNotificationId === notification.id
+                  ? { conversationId }
+                  : {}),
+              }
+            : notification,
+        ),
+      }
+    }),
 
   rejectFriendRequest: async (targetUserId) => {
     const notifications = useNotificationStore.getState()

@@ -95,6 +95,7 @@ const attachConversationToLatestFriendRequest = async (
   return db.socialNotification.update({
     where: { id: latestRequest.id },
     data: { conversationId },
+    select: { id: true, conversationId: true },
   })
 }
 

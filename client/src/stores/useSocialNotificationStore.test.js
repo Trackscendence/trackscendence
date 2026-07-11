@@ -89,6 +89,7 @@ test('an accepted intro request carries its conversation into the cache', () => 
         ...notification,
         id: 1,
         conversationId: null,
+        createdAt: '2026-07-10T12:00:00.000Z',
         friendRequestStatus: 'PENDING',
         type: 'FRIEND_REQUEST',
       },
@@ -96,6 +97,7 @@ test('an accepted intro request carries its conversation into the cache', () => 
         ...notification,
         id: 2,
         conversationId: null,
+        createdAt: '2026-07-09T12:00:00.000Z',
         friendRequestStatus: 'PENDING',
         message: null,
         type: 'FRIEND_REQUEST',
@@ -110,4 +112,82 @@ test('an accepted intro request carries its conversation into the cache', () => 
   // routing (no conversation attached).
   assert.equal(state.notifications[0].conversationId, 48)
   assert.equal(state.notifications[1].conversationId, null)
+})
+
+test('only the latest request receives the accepted conversation', () => {
+  useSocialNotificationStore.setState({
+    notifications: [
+      {
+        ...notification,
+        id: 1,
+        conversationId: null,
+        createdAt: '2026-07-09T12:00:00.000Z',
+        friendRequestStatus: 'PENDING',
+        message: 'old intro',
+        type: 'FRIEND_REQUEST',
+      },
+      {
+        ...notification,
+        id: 2,
+        conversationId: null,
+        createdAt: '2026-07-10T12:00:00.000Z',
+        friendRequestStatus: 'PENDING',
+        message: 'new intro',
+        type: 'FRIEND_REQUEST',
+      },
+      {
+        ...notification,
+        id: 3,
+        actor: { ...notification.actor, id: 9, username: 'other' },
+        conversationId: null,
+        createdAt: '2026-07-11T12:00:00.000Z',
+        friendRequestStatus: 'PENDING',
+        message: 'other intro',
+        type: 'FRIEND_REQUEST',
+      },
+    ],
+  })
+
+  useSocialNotificationStore.getState().markFriendRequestHandled(2, 48)
+
+  const state = useSocialNotificationStore.getState()
+  assert.equal(state.notifications[0].conversationId, null)
+  assert.equal(state.notifications[1].conversationId, 48)
+  assert.equal(state.notifications[2].conversationId, null)
+  assert.equal(state.notifications[0].friendRequestStatus, null)
+  assert.equal(state.notifications[1].friendRequestStatus, null)
+  assert.equal(state.notifications[2].friendRequestStatus, 'PENDING')
+})
+
+test('an accepted plain request does not stamp an older intro request', () => {
+  useSocialNotificationStore.setState({
+    notifications: [
+      {
+        ...notification,
+        id: 1,
+        conversationId: null,
+        createdAt: '2026-07-09T12:00:00.000Z',
+        friendRequestStatus: 'PENDING',
+        message: 'old intro',
+        type: 'FRIEND_REQUEST',
+      },
+      {
+        ...notification,
+        id: 2,
+        conversationId: null,
+        createdAt: '2026-07-10T12:00:00.000Z',
+        friendRequestStatus: 'PENDING',
+        message: null,
+        type: 'FRIEND_REQUEST',
+      },
+    ],
+  })
+
+  useSocialNotificationStore.getState().markFriendRequestHandled(2, 48)
+
+  const state = useSocialNotificationStore.getState()
+  assert.equal(state.notifications[0].conversationId, null)
+  assert.equal(state.notifications[1].conversationId, null)
+  assert.equal(state.notifications[0].friendRequestStatus, null)
+  assert.equal(state.notifications[1].friendRequestStatus, null)
 })

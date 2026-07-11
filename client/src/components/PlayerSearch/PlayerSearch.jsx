@@ -1,13 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
+import { Search } from 'lucide-react'
 import Input from '@/components/Input'
 import useUserSearchStore from '@/stores/useUserSearchStore'
 import PlayerSearchResults from './_components/PlayerSearchResults'
 
-// The compact player search at the top of the profile (#220): one input,
-// submit on Enter, results in a dropdown. The finder used to live on the
-// leaderboard with a heading, label, button, and pagination — here it is
-// stripped to a single field and the first page of matches.
-const PlayerSearch = () => {
+// The compact player search (#220): one input, submit on Enter, results in a
+// dropdown. Shared by two containers: the profile header, where results link
+// to public profiles (the default), and the message compose panel, which
+// passes onSelectUser to receive the picked player instead of navigating.
+// resultsPlacement flips the dropdown above the input for hosts that sit near
+// the bottom of their panel.
+const PlayerSearch = ({
+  autoFocus = false,
+  className = '',
+  inputId,
+  onSelectUser = null,
+  placeholder = 'Search....',
+  resultsPlacement = 'below',
+  showIcon = false,
+}) => {
   const results = useUserSearchStore((state) => state.results)
   const isSearching = useUserSearchStore((state) => state.isSearching)
   const error = useUserSearchStore((state) => state.error)
@@ -39,7 +50,7 @@ const PlayerSearch = () => {
     }
   }, [isOpen])
 
-  // Leaving the profile drops the results so a later visit starts empty.
+  // Unmounting drops the results so the next search starts empty.
   useEffect(() => () => useUserSearchStore.getState().clear(), [])
 
   const handleSubmit = async (event) => {
@@ -54,21 +65,46 @@ const PlayerSearch = () => {
     setIsOpen(true)
   }
 
+  const handlePick = onSelectUser
+    ? (user) => {
+        setIsOpen(false)
+        onSelectUser(user)
+      }
+    : null
+
   return (
-    <div ref={containerRef} className="relative mx-auto w-full max-w-md">
+    <div ref={containerRef} className={`relative w-full ${className}`}>
       <form onSubmit={handleSubmit}>
-        <Input
-          value={term}
-          onChange={(event) => setTerm(event.target.value)}
-          onFocus={() => hasSearched && setIsOpen(true)}
-          maxLength={50}
-          placeholder="Search...."
-          aria-label="Search for a player"
-        />
+        <div className="relative">
+          {showIcon ? (
+            // Input carries mt-2, so the wrapper's center sits 4px above the
+            // field's center; the offset keeps the icon centered in the field.
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-[calc(50%+0.25rem)] left-3 h-4 w-4 -translate-y-1/2 text-[#9a7050]"
+              strokeWidth={2.2}
+            />
+          ) : null}
+          <Input
+            autoFocus={autoFocus}
+            className={showIcon ? 'pl-9' : ''}
+            id={inputId}
+            value={term}
+            onChange={(event) => setTerm(event.target.value)}
+            onFocus={() => hasSearched && setIsOpen(true)}
+            maxLength={50}
+            placeholder={placeholder}
+            aria-label="Search for a player"
+          />
+        </div>
       </form>
 
       {isOpen && hasSearched && !isSearching ? (
-        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-lg border border-[#f0d8bd] bg-white shadow-lg">
+        <div
+          className={`absolute z-30 w-full overflow-hidden rounded-lg border border-[#f0d8bd] bg-white shadow-lg ${
+            resultsPlacement === 'above' ? 'bottom-full mb-2' : 'mt-2'
+          }`}
+        >
           {error ? (
             <p className="px-5 py-4 text-sm font-semibold text-[#8a321f]">
               {error}
@@ -76,6 +112,7 @@ const PlayerSearch = () => {
           ) : (
             <PlayerSearchResults
               results={results}
+              onPick={handlePick}
               onSelect={() => setIsOpen(false)}
             />
           )}

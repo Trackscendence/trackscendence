@@ -1,6 +1,9 @@
+import { Plus } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
 import ProfileLink from '@/components/ProfileLink'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
+import { composeMessagePath } from '@/utils/conversationPath'
 import { formatMessageDate } from '@/utils/formatMessageTime'
 
 const EmptyState = ({ filter }) => (
@@ -25,7 +28,17 @@ const ConversationList = ({
   return (
     <aside className="flex min-h-0 flex-col border-r border-[#f0d9bd] bg-[#fffaf3]">
       <div className="border-b border-[#f0d9bd] px-5 py-5">
-        <h1 className="text-2xl font-black text-[#3d1200]">Messages</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-black text-[#3d1200]">Messages</h1>
+          <Link
+            aria-label="New message"
+            title="New message"
+            to={composeMessagePath}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#fff0df] focus:ring-2 focus:ring-[#3d1200]/20 focus:outline-none"
+          >
+            <Plus aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
+          </Link>
+        </div>
         <div className="mt-4 grid grid-cols-2 rounded-md bg-[#fff0df] p-1">
           {['all', 'unread'].map((item) => (
             <button

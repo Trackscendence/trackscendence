@@ -12,7 +12,18 @@ const MessageComposer = ({ autoFocus = false, disabled, onSend }) => {
   const send = () => {
     const text = message.trim()
     if (!text || disabled) return
-    if (onSend(text)) setMessage('')
+
+    // Thread sends answer synchronously (socket emit), compose sends resolve
+    // later (the conversation is created first). Only a confirmed send clears
+    // the draft, so a failure never eats the message.
+    const result = onSend(text)
+    if (result === true) {
+      setMessage('')
+    } else if (typeof result?.then === 'function') {
+      result.then((sent) => {
+        if (sent) setMessage('')
+      })
+    }
   }
 
   const handleSubmit = (event) => {

@@ -5,7 +5,9 @@ import Avatar from '@/components/Avatar'
 import MarkAllReadButton from '@/components/MarkAllReadButton'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import { formatMessageTime } from '@/utils/formatMessageTime'
-import getConversationPath from '@/utils/conversationPath'
+import getConversationPath, {
+  composeMessagePath,
+} from '@/utils/conversationPath'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
 
 const MenuButton = ({ count, isOpen, onClick }) => (
@@ -125,7 +127,7 @@ const MailMenu = () => {
                 <Link
                   aria-label="New message"
                   title="New message"
-                  to="/messages"
+                  to={composeMessagePath}
                   className="flex h-8 w-8 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#fff4e8] focus:ring-2 focus:ring-[#3d1200]/20 focus:outline-none"
                   onClick={() => setIsOpen(false)}
                 >

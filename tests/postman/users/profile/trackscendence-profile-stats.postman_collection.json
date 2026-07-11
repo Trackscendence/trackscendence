@@ -21,10 +21,10 @@
                   "const usernameSuffix = runId.slice(-8);",
                   "pm.environment.set('runId', runId);",
                   "pm.environment.set('profileEmail', `${pm.environment.get('profileEmailPrefix')}.${runId}@example.com`);",
-                  "pm.environment.set('profileUsername', `${pm.environment.get('profileUsernamePrefix')}_${usernameSuffix}`);",
+                  "pm.environment.set('profileUsername', `${pm.environment.get('profileUsernamePrefix')}${usernameSuffix}`);",
                   "pm.environment.set('profileOpponentEmail', `${pm.environment.get('profileOpponentEmailPrefix')}.${runId}@example.com`);",
-                  "pm.environment.set('profileOpponentUsername', `${pm.environment.get('profileOpponentUsernamePrefix')}_${usernameSuffix}`);",
-                  "pm.environment.set('profileMissingUsername', `${pm.environment.get('profileMissingUsernamePrefix')}_${usernameSuffix}`);",
+                  "pm.environment.set('profileOpponentUsername', `${pm.environment.get('profileOpponentUsernamePrefix')}${usernameSuffix}`);",
+                  "pm.environment.set('profileMissingUsername', `${pm.environment.get('profileMissingUsernamePrefix')}${usernameSuffix}`);",
                   "pm.environment.unset('profileOwnerId');",
                   "pm.environment.unset('profileOpponentId');",
                   "pm.environment.unset('profileToken');"
@@ -41,8 +41,8 @@
                   "});",
                   "pm.test('profile variables were generated', function () {",
                   "  pm.expect(pm.environment.get('profileEmail')).to.include('@example.com');",
-                  "  pm.expect(pm.environment.get('profileUsername')).to.include('profile_player_');",
-                  "  pm.expect(pm.environment.get('profileOpponentUsername')).to.include('profile_opponent_');",
+                  "  pm.expect(pm.environment.get('profileUsername')).to.include('profileplayer');",
+                  "  pm.expect(pm.environment.get('profileOpponentUsername')).to.include('profileopponent');",
                   "});"
                 ]
               }
@@ -102,7 +102,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{profileEmail}}\",\n  \"username\": \"{{profileUsername}}\",\n  \"password\": \"{{profilePassword}}\"\n}",
+              "raw": "{\n  \"email\": \"{{profileEmail}}\",\n  \"username\": \"{{profileUsername}}\",\n  \"password\": \"{{profilePassword}}\",\n  \"termsAccepted\": true,\n  \"privacyAccepted\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -220,7 +220,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{profileOpponentEmail}}\",\n  \"username\": \"{{profileOpponentUsername}}\",\n  \"password\": \"{{profilePassword}}\"\n}",
+              "raw": "{\n  \"email\": \"{{profileOpponentEmail}}\",\n  \"username\": \"{{profileOpponentUsername}}\",\n  \"password\": \"{{profilePassword}}\",\n  \"termsAccepted\": true,\n  \"privacyAccepted\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -332,18 +332,18 @@
           "response": []
         },
         {
-          "name": "Invalid Username Returns 400",
+          "name": "Malformed Username Lookup Returns 404",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('invalid username returns 400', function () {",
-                  "  pm.response.to.have.status(400);",
+                  "pm.test('malformed username lookup returns 404', function () {",
+                  "  pm.response.to.have.status(404);",
                   "});",
-                  "pm.test('invalid username includes validation detail', function () {",
-                  "  pm.expect(pm.response.json().error.payload.details).to.include('Username can only contain letters, numbers, underscores, and hyphens');",
+                  "pm.test('malformed username lookup returns not found message', function () {",
+                  "  pm.expect(pm.response.json().error.message).to.eql('User not found');",
                   "});"
                 ]
               }

@@ -9,7 +9,7 @@ const defaultFilePath = path.join(
 )
 
 const filePath = process.argv[2] || defaultFilePath
-const baseUrl = (process.argv[3] || 'http://localhost:8080').replace(/\/$/, '')
+const baseUrl = (process.argv[3] || 'http://localhost:5173').replace(/\/$/, '')
 const apiBaseUrl = `${baseUrl}/api/v1`
 
 const runId = Date.now().toString()
@@ -165,6 +165,8 @@ const main = async () => {
       email,
       username,
       password,
+      termsAccepted: true,
+      privacyAccepted: true,
     },
   })
   await expectStatus(registerResult.response, 201)

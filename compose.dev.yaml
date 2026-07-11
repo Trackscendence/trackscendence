@@ -64,6 +64,11 @@ services:
     # env or its 8080/8443 port publishes: dev runs Vite on 5173 only.
     environment: !override
       - VITE_API_PROXY_TARGET=http://server:3001
+      # File events do not cross the macOS bind mount reliably, so Vite can
+      # keep serving a stale bundle while logging HMR updates. Polling trades
+      # a little CPU for watching that actually works; native (non-Docker)
+      # dev keeps fast FS events because this flag is container-only.
+      - VITE_WATCH_POLL=true
     volumes:
       - ./client:/app
       - client_node_modules:/app/node_modules

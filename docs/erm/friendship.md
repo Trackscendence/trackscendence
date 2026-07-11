@@ -80,3 +80,25 @@ On the `User` model, the Prisma relation fields are named:
 - `friendshipsBlockedByUser`
 
 These names are meant to describe the role of the user in the relationship row more clearly than "sent/received friendships".
+
+## UI State Mapping
+
+How the lifecycle above surfaces in the interface (#395). The profile's
+relationship control is `ProfileSurface/_components/RelationshipActions`; its
+state comes from `_utils/profileActions`, and messaging is gated on `ACCEPTED`
+end to end: the mailbox button calls
+`useDirectMessageStore.ensureConversation`, and the server rejects direct
+messages between non-friends.
+
+| Relationship state (viewer's perspective) | Profile shows                                                                         | Notification panel                                                                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| No row                                    | "Add a friend": a two-step modal offers "Add a message" (500-char limit) or not       | -                                                                                                                                            |
+| `PENDING`, viewer is the requester        | "Request sent"; hovering reveals "Cancel request", clicking deletes the request       | -                                                                                                                                            |
+| `PENDING`, viewer is the addressee        | Accept and Reject buttons                                                             | Click navigates to the requester's profile; requests with an intro message also offer Accept (jumps into the conversation) and Reject inline |
+| `ACCEPTED`                                | Friends pair: Handshake status (hover reveals UserX, clicking unfriends) plus Mailbox | -                                                                                                                                            |
+| `BLOCKED`                                 | Disabled "Unavailable"                                                                | -                                                                                                                                            |
+
+Accept keeps the request's intro message as the first direct message. Reject,
+cancel, and unfriend all delete the row (`respondToFriendRequest` with
+`action: 'reject'`, or `DELETE /friends/:targetUserId`), so the pair can
+request again later.

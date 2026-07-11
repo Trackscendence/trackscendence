@@ -100,7 +100,15 @@ const MessageThread = ({
         </div>
       </div>
 
-      <MessageComposer disabled={!conversation} onSend={onSend} />
+      {/* Keyed per conversation: switching chats remounts the composer, so
+          the draft never leaks across conversations and the cursor lands in
+          the input every time a chat opens. */}
+      <MessageComposer
+        key={conversation.id}
+        autoFocus
+        disabled={!conversation}
+        onSend={onSend}
+      />
     </section>
   )
 }

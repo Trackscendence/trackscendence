@@ -34,7 +34,7 @@ const PrivacyPolicy = lazy(() => import('@/pages/Privacy'))
 const Profile = lazy(() => import('@/pages/Profile'))
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'))
 const Session = lazy(() => import('@/pages/Session'))
-const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
+const Settings = lazy(() => import('@/pages/Settings'))
 const Signup = lazy(() => import('@/pages/Signup'))
 const SignupSuccess = lazy(() => import('@/pages/SignupSuccess'))
 const TermsOfService = lazy(() => import('@/pages/TermsOfService'))
@@ -260,7 +260,7 @@ const App = () => {
               />
               <Route path="/users/:username" element={<User />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
 
             <Route path="/change-password" element={<ChangePassword />} />

@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
+import AuthPageShell from '@/components/AuthPageShell'
 import FortyTwoButton from '@/components/FortyTwoButton'
+import TextLink from '@/components/TextLink'
 import SignupForm from './_components/SignupForm'
 
 const Signup = () => {
@@ -20,43 +22,31 @@ const Signup = () => {
   }, [])
 
   return (
-    <div className="flex flex-1 items-center justify-center px-5 py-10">
-      <div className="w-full max-w-[414px]">
-        <h1 className="mb-8 text-center text-5xl font-semibold text-[#081934] uppercase">
-          Create your profile
-        </h1>
+    <AuthPageShell title="Create your profile">
+      <SignupForm
+        onSuccess={() => navigate('/signup/success', { replace: true })}
+      />
 
-        <SignupForm
-          onSuccess={() => navigate('/signup/success', { replace: true })}
-        />
-
-        <div className="my-5 flex items-center gap-4">
-          <div className="h-px flex-1 bg-black" />
-          <span className="text-sm font-medium text-black">OR</span>
-          <div className="h-px flex-1 bg-black" />
-        </div>
-
-        <FortyTwoButton
-          comingSoon={!isAuthProvidersLoading && !isFortyTwoLoginEnabled}
-          isChecking={isAuthProvidersLoading && !isFortyTwoLoginEnabled}
-          onClick={
-            isFortyTwoLoginEnabled
-              ? () => useAuthStore.getState().startFortyTwoLogin()
-              : undefined
-          }
-        />
-
-        <p className="mt-5 text-center text-sm text-[#081934]">
-          Already have an account?{' '}
-          <Link
-            className="font-semibold text-[#0196FF] hover:text-[#0080e0]"
-            to="/login"
-          >
-            Log in
-          </Link>
-        </p>
+      <div className="my-5 flex items-center gap-4">
+        <div className="h-px flex-1 bg-black" />
+        <span className="text-sm font-medium text-black">OR</span>
+        <div className="h-px flex-1 bg-black" />
       </div>
-    </div>
+
+      <FortyTwoButton
+        comingSoon={!isAuthProvidersLoading && !isFortyTwoLoginEnabled}
+        isChecking={isAuthProvidersLoading && !isFortyTwoLoginEnabled}
+        onClick={
+          isFortyTwoLoginEnabled
+            ? () => useAuthStore.getState().startFortyTwoLogin()
+            : undefined
+        }
+      />
+
+      <p className="mt-5 text-center text-sm text-[#081934]">
+        Already have an account? <TextLink to="/login">Log in</TextLink>
+      </p>
+    </AuthPageShell>
   )
 }
 

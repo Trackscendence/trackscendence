@@ -126,7 +126,7 @@ const renderSettingsSection = ({ activeKey, navigate, setActiveKey, user }) => {
   )
 }
 
-const SettingsPage = () => {
+const Settings = () => {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const [activeKey, setActiveKey] = useState('account')
@@ -176,4 +176,4 @@ const SettingsPage = () => {
   )
 }
 
-export default SettingsPage
+export default Settings

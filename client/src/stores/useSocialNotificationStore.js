@@ -103,8 +103,9 @@ const useSocialNotificationStore = createSessionStore((set) => ({
       await useSocialNotificationStore.getState().loadNotifications()
       await useDirectMessageStore.getState().loadConversations()
       if (!isActiveToken(token)) return null
+      // No success toast here: panel responses are bulk work, and the list
+      // updating (the request disappears) is the feedback. Failures still toast.
       set({ isSubmitting: false })
-      notifications.push('Friend request accepted', 'success')
       return result
     } catch (error) {
       // A missing token (null) still surfaces; a stale session stays silent.
@@ -132,7 +133,6 @@ const useSocialNotificationStore = createSessionStore((set) => ({
       await useSocialNotificationStore.getState().loadNotifications()
       if (!isActiveToken(token)) return null
       set({ isSubmitting: false })
-      notifications.push('Friend request rejected', 'success')
       return result
     } catch (error) {
       // A missing token (null) still surfaces; a stale session stays silent.

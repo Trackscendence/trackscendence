@@ -86,3 +86,26 @@ describe('notificationsService.listNotifications', () => {
     assert.equal(result.notifications[0].friendRequestStatus, null)
   })
 })
+
+describe('attachConversationToFriendRequestNotifications', () => {
+  it('targets only the request rows between that pair (#395)', async () => {
+    const calls = []
+    const repository = {
+      attachConversationToFriendRequests: async (payload, db) => {
+        calls.push({ payload, db })
+        return { count: 1 }
+      },
+    }
+
+    const result =
+      await notificationsService.attachConversationToFriendRequestNotifications(
+        { actorId: 7, conversationId: 31, userId: 2 },
+        { repository, db: 'tx' },
+      )
+
+    assert.deepEqual(calls, [
+      { payload: { actorId: 7, conversationId: 31, userId: 2 }, db: 'tx' },
+    ])
+    assert.deepEqual(result, { count: 1 })
+  })
+})

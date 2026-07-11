@@ -339,6 +339,20 @@ const respondToFriendRequest = async (user, payload) => {
           { db: tx },
         )
 
+        // A request that came with an intro message lives on as the first
+        // direct message; point the addressee's request notification at that
+        // conversation so clicking it later reopens the chat (#395).
+        if (accepted.requestMessage) {
+          await notificationsService.attachConversationToFriendRequestNotifications(
+            {
+              actorId: accepted.requesterId,
+              conversationId: conversation.id,
+              userId: user.id,
+            },
+            { db: tx },
+          )
+        }
+
         return {
           message: 'Friend request accepted successfully',
           friendship: toFriendSummary(accepted, user.id),

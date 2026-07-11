@@ -68,6 +68,19 @@ const markNotificationReadForUser = (id, userId, db = prisma) => {
   })
 }
 
+// Stamps the conversation created by an accepted intro-message request onto
+// the original FRIEND_REQUEST notification, so clicking it later opens the
+// conversation instead of dead-ending on the requester's profile (#395).
+const attachConversationToFriendRequests = (
+  { actorId, conversationId, userId },
+  db = prisma,
+) => {
+  return db.socialNotification.updateMany({
+    where: { actorId, type: 'FRIEND_REQUEST', userId },
+    data: { conversationId },
+  })
+}
+
 const markAllNotificationsReadForUser = (userId, db = prisma) => {
   return db.socialNotification.updateMany({
     where: { userId, readAt: null },
@@ -76,6 +89,7 @@ const markAllNotificationsReadForUser = (userId, db = prisma) => {
 }
 
 module.exports = {
+  attachConversationToFriendRequests,
   countUnreadNotificationsForUser,
   createNotification,
   listNotificationsForUser,

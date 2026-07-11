@@ -114,6 +114,9 @@ const SocialNotificationMenu = () => {
 
   const acceptRequest = async (event, notification) => {
     event.stopPropagation()
+    // Answering also reads: the row is inert for message requests, so this is
+    // the only moment the unread dot can clear.
+    if (!notification.isRead) await markRead(notification.id)
     const result = await acceptFriendRequest(notification.actor?.id)
 
     if (result?.conversationId) {
@@ -126,6 +129,7 @@ const SocialNotificationMenu = () => {
 
   const rejectRequest = async (event, notification) => {
     event.stopPropagation()
+    if (!notification.isRead) await markRead(notification.id)
     await rejectFriendRequest(notification.actor?.id)
   }
 
@@ -191,12 +195,19 @@ const SocialNotificationMenu = () => {
             {notifications.map((notification) => {
               const actor = getPlayerIdentity(notification.actor)
 
-              return (
-                <div
-                  key={notification.id}
-                  role="menuitem"
-                  className="flex w-full gap-3 px-5 py-3 text-left transition focus-within:bg-[#fff4e8] hover:bg-[#fff4e8]"
-                >
+              // Requests with an intro message are answered right here, so
+              // their row stays inert and only Accept and Reject act. Every
+              // other notification makes the whole row the click target
+              // (plain requests go to the requester's profile, message
+              // alerts open the conversation).
+              const hasInlineActions =
+                notification.type === 'FRIEND_REQUEST' &&
+                notification.friendRequestStatus === 'PENDING' &&
+                notification.message &&
+                notification.actor?.id
+
+              const rowBody = (
+                <>
                   <Avatar
                     alt={actor.name}
                     initials={actor.initials}
@@ -204,32 +215,20 @@ const SocialNotificationMenu = () => {
                     src={actor.avatarUrl}
                   />
                   <span className="min-w-0 flex-1">
-                    <button
-                      type="button"
-                      className="w-full text-left focus:outline-none"
-                      onClick={() => openNotification(notification)}
-                    >
-                      <span className="flex items-start justify-between gap-3">
-                        <span className="text-sm font-black text-[#3d1200]">
-                          {getNotificationText(notification)}
-                        </span>
-                        <span className="shrink-0 text-[11px] font-semibold text-[#9a7050]">
-                          {formatMessageTime(notification.createdAt)}
-                        </span>
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="text-sm font-black text-[#3d1200]">
+                        {getNotificationText(notification)}
                       </span>
-                      {notification.message ? (
-                        <span className="mt-0.5 block truncate text-xs text-[#7a3810]">
-                          {notification.message}
-                        </span>
-                      ) : null}
-                    </button>
-                    {/* Only requests with an intro message are answered from
-                        the panel (Accept jumps into the conversation); plain
-                        requests navigate to the profile instead. */}
-                    {notification.type === 'FRIEND_REQUEST' &&
-                    notification.friendRequestStatus === 'PENDING' &&
-                    notification.message &&
-                    notification.actor?.id ? (
+                      <span className="shrink-0 text-[11px] font-semibold text-[#9a7050]">
+                        {formatMessageTime(notification.createdAt)}
+                      </span>
+                    </span>
+                    {notification.message ? (
+                      <span className="mt-0.5 block truncate text-xs text-[#7a3810]">
+                        {notification.message}
+                      </span>
+                    ) : null}
+                    {hasInlineActions ? (
                       <span className="mt-3 flex gap-2">
                         <button
                           className="rounded-md bg-[#e86d2f] px-3 py-1.5 text-xs font-black text-white transition hover:bg-[#c95b24] disabled:cursor-not-allowed disabled:bg-[#dda37e]"
@@ -257,7 +256,31 @@ const SocialNotificationMenu = () => {
                   {!notification.isRead ? (
                     <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[#e23f32]" />
                   ) : null}
-                </div>
+                </>
+              )
+
+              if (hasInlineActions) {
+                return (
+                  <div
+                    key={notification.id}
+                    role="menuitem"
+                    className="flex w-full gap-3 px-5 py-3 text-left"
+                  >
+                    {rowBody}
+                  </div>
+                )
+              }
+
+              return (
+                <button
+                  key={notification.id}
+                  role="menuitem"
+                  type="button"
+                  className="flex w-full gap-3 px-5 py-3 text-left transition hover:bg-[#fff4e8] focus:outline-none focus-visible:bg-[#fff4e8]"
+                  onClick={() => openNotification(notification)}
+                >
+                  {rowBody}
+                </button>
               )
             })}
           </div>

@@ -119,7 +119,7 @@ These items are **mandatory**. Evaluation fails without them, regardless of feat
 
 ## 6. Custom Design System Module
 
-The project claims the **custom design system minor module (1 point)**. The deliverable is `components/` — at least 10 cohesive, reusable UI primitives. Current count: `Avatar`, `Button`, `Card`, `ErrorBoundary`, `FormField`, `Input`, `LeaderboardTable`, `LoadingSpinner`, `Modal`, `Toast` = **10**. `LeaderboardTable` renders the ranked-players rows shared by the profile leaderboard and the post-game results snapshot.
+The project claims the **custom design system minor module (1 point)**. The deliverable is `components/` — at least 10 cohesive, reusable UI primitives. Current count: `Avatar`, `Button`, `Card`, `ErrorBoundary`, `FormField`, `Input`, `LeaderboardTable`, `LoadingSpinner`, `Modal`, `ProfileLink`, `Toast` = **11**. `LeaderboardTable` renders the ranked-players rows shared by the profile leaderboard and the post-game results snapshot. `ProfileLink` is the one way to link to a user's public profile (avatar, name, or both as children); every `/users/:username` link in the app goes through it.
 
 Note: `AppLayout` and `AuthLayout` live in `layouts/`, and `ProtectedRoute` lives in `router/` — none of these count toward the total as they are route shells, not UI primitives.
 

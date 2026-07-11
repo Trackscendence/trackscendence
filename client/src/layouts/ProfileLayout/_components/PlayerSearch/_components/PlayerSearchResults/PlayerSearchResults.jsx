@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import ProfileLink from '@/components/ProfileLink'
 
 // The dropdown list under the profile search. A presenter: it renders the
 // users it is given as links to their public profiles and tells the container
@@ -16,8 +16,8 @@ const PlayerSearchResults = ({ results = [], onSelect }) => {
     <ul className="max-h-72 divide-y divide-[#ffe7cb] overflow-y-auto">
       {results.map((user) => (
         <li key={user.id}>
-          <Link
-            to={`/users/${user.username}`}
+          <ProfileLink
+            username={user.username}
             className="flex items-baseline justify-between gap-3 px-5 py-3 hover:bg-[#fff8f2] focus:bg-[#fff8f2] focus:outline-none"
             onClick={onSelect}
           >
@@ -25,7 +25,7 @@ const PlayerSearchResults = ({ results = [], onSelect }) => {
               {user.displayName || user.username}
             </span>
             <span className="text-xs text-[#7a3810]">@{user.username}</span>
-          </Link>
+          </ProfileLink>
         </li>
       ))}
     </ul>

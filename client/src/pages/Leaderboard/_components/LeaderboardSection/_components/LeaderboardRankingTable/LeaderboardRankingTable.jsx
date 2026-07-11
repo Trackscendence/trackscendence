@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import ProfileLink from '@/components/ProfileLink'
 
 const formatNumber = (value) => new Intl.NumberFormat('en').format(value || 0)
 
@@ -48,12 +48,12 @@ const LeaderboardRankingTable = ({ rows = [], currentUserId }) => {
                   {entry.rank}
                 </td>
                 <td className="px-4 py-2.5">
-                  <Link
-                    to={`/users/${entry.username}`}
+                  <ProfileLink
+                    username={entry.username}
                     className="font-semibold text-[#3d1200] hover:underline"
                   >
                     {entry.displayName || entry.username}
-                  </Link>
+                  </ProfileLink>
                   {isYou ? (
                     <span className="ml-2 rounded bg-[#f2652a] px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase">
                       You

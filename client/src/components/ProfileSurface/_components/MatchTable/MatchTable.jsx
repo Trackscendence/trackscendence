@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import ProfileLink from '@/components/ProfileLink'
 import EmptyState from '../EmptyState'
 import profileFormatters from '../../_utils/profileFormatters'
 
@@ -42,12 +42,12 @@ const MatchTable = ({ matches }) => {
             >
               <td className="px-5 py-3 text-sm font-semibold text-[#3d1200]">
                 {match.opponents?.length === 1 ? (
-                  <Link
+                  <ProfileLink
                     className="hover:text-[#e86d2f]"
-                    to={`/users/${match.opponents[0].username}`}
+                    username={match.opponents[0].username}
                   >
                     {profileFormatters.formatOpponents(match.opponents)}
-                  </Link>
+                  </ProfileLink>
                 ) : (
                   profileFormatters.formatOpponents(match.opponents)
                 )}

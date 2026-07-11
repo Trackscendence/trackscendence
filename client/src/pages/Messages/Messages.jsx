@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AppHeader from '@/components/AppHeader'
+import LegalFooter from '@/components/LegalFooter'
 import getConversationPath from '@/utils/conversationPath'
 import useAuthStore from '@/stores/useAuthStore'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
@@ -118,7 +119,7 @@ const Messages = () => {
       <AppHeader />
 
       <main className="flex flex-1 px-6 py-6">
-        <div className="mx-auto grid h-[calc(100vh-8.25rem)] w-full max-w-[1240px] grid-cols-1 overflow-hidden rounded-lg border border-[#e6c9a8] bg-white shadow-[0_18px_45px_rgba(61,18,0,0.08)] lg:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="mx-auto grid w-full max-w-[1240px] grid-cols-1 overflow-hidden rounded-lg border border-[#e6c9a8] bg-white shadow-[0_18px_45px_rgba(61,18,0,0.08)] lg:grid-cols-[360px_minmax(0,1fr)]">
           <ConversationList
             activeConversationId={activeConversationId}
             conversations={visibleConversations}
@@ -146,6 +147,7 @@ const Messages = () => {
           />
         </div>
       </main>
+      <LegalFooter />
     </div>
   )
 }

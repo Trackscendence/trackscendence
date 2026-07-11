@@ -1,19 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Search } from 'lucide-react'
 import Input from '@/components/Input'
-import useUserSearchStore from '@/stores/useUserSearchStore'
+import usePlayerSearch from '@/hooks/usePlayerSearch'
 import PlayerSearchResults from './_components/PlayerSearchResults'
 
 // The compact player search (#220): one input, results in a dropdown. It
-// searches as you type, debounced so a request only fires once typing pauses
-// (the store's monotonic request id drops out-of-order responses); Enter
-// searches immediately. Shared by two containers: the profile header, where
-// results link to public profiles (the default), and the message compose
-// panel, which passes onSelectUser to receive the picked player instead of
-// navigating. resultsPlacement flips the dropdown above the input for hosts
-// that sit near the bottom of their panel.
-const SEARCH_DEBOUNCE_MS = 300
-
+// searches as you type (debounced, minimum two characters); Enter searches
+// immediately. The search lifecycle lives in usePlayerSearch, keyed by the
+// scope prop so instances stay isolated. Two containers use it: the profile
+// header, where results link to public profiles (the default), and the
+// message compose panel, which passes onSelectUser to receive the picked
+// player instead of navigating. resultsPlacement flips the dropdown above
+// the input for hosts that sit near the bottom of their panel.
 const PlayerSearch = ({
   autoFocus = false,
   className = '',
@@ -21,26 +19,21 @@ const PlayerSearch = ({
   onSelectUser = null,
   placeholder = 'Search....',
   resultsPlacement = 'below',
+  scope = 'player-search',
   showIcon = false,
 }) => {
-  const results = useUserSearchStore((state) => state.results)
-  const error = useUserSearchStore((state) => state.error)
-  const hasSearched = useUserSearchStore((state) => state.hasSearched)
-
-  const [term, setTerm] = useState('')
-  const [isOpen, setIsOpen] = useState(false)
+  const {
+    changeTerm,
+    close,
+    error,
+    hasSearched,
+    isOpen,
+    openIfSearched,
+    results,
+    submitTerm,
+    term,
+  } = usePlayerSearch(scope)
   const containerRef = useRef(null)
-  const debounceRef = useRef(null)
-
-  const cancelPendingSearch = () => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current)
-      debounceRef.current = null
-    }
-  }
-
-  // A pending debounce must not outlive the component.
-  useEffect(() => cancelPendingSearch, [])
 
   // Close the dropdown on an outside click or Escape.
   useEffect(() => {
@@ -50,11 +43,11 @@ const PlayerSearch = ({
         containerRef.current &&
         !containerRef.current.contains(event.target)
       ) {
-        setIsOpen(false)
+        close()
       }
     }
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setIsOpen(false)
+      if (event.key === 'Escape') close()
     }
     window.addEventListener('mousedown', handlePointerDown)
     window.addEventListener('keydown', handleKeyDown)
@@ -62,56 +55,23 @@ const PlayerSearch = ({
       window.removeEventListener('mousedown', handlePointerDown)
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isOpen])
-
-  // Unmounting drops the results so the next search starts empty.
-  useEffect(() => () => useUserSearchStore.getState().clear(), [])
-
-  const runSearch = async (q) => {
-    await useUserSearchStore.getState().search({ q, page: 1 })
-    setIsOpen(true)
-  }
-
-  const handleChange = (event) => {
-    const value = event.target.value
-    setTerm(value)
-    cancelPendingSearch()
-
-    const q = value.trim()
-    if (!q) {
-      useUserSearchStore.getState().clear()
-      setIsOpen(false)
-      return
-    }
-
-    debounceRef.current = setTimeout(() => {
-      debounceRef.current = null
-      runSearch(q)
-    }, SEARCH_DEBOUNCE_MS)
-  }
-
-  const handleSubmit = (event) => {
-    event.preventDefault()
-    cancelPendingSearch()
-    const q = term.trim()
-    if (!q) {
-      useUserSearchStore.getState().clear()
-      setIsOpen(false)
-      return
-    }
-    runSearch(q)
-  }
+  }, [close, isOpen])
 
   const handlePick = onSelectUser
     ? (user) => {
-        setIsOpen(false)
+        close()
         onSelectUser(user)
       }
     : null
 
   return (
     <div ref={containerRef} className={`relative w-full ${className}`}>
-      <form onSubmit={handleSubmit}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          submitTerm()
+        }}
+      >
         <div className="relative">
           {showIcon ? (
             // Input carries mt-2, so the wrapper's center sits 4px above the
@@ -127,8 +87,8 @@ const PlayerSearch = ({
             className={showIcon ? 'pl-9' : ''}
             id={inputId}
             value={term}
-            onChange={handleChange}
-            onFocus={() => hasSearched && setIsOpen(true)}
+            onChange={(event) => changeTerm(event.target.value)}
+            onFocus={openIfSearched}
             maxLength={50}
             placeholder={placeholder}
             aria-label="Search for a player"
@@ -136,8 +96,6 @@ const PlayerSearch = ({
         </div>
       </form>
 
-      {/* Keep the previous results visible while the next search is in
-          flight: hiding on isSearching would flicker on every keystroke. */}
       {isOpen && hasSearched ? (
         <div
           className={`absolute z-30 w-full overflow-hidden rounded-lg border border-[#f0d8bd] bg-white shadow-lg ${
@@ -152,7 +110,7 @@ const PlayerSearch = ({
             <PlayerSearchResults
               results={results}
               onPick={handlePick}
-              onSelect={() => setIsOpen(false)}
+              onSelect={close}
             />
           )}
         </div>

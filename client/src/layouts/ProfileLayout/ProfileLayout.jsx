@@ -17,7 +17,9 @@ const ProfileLayout = () => {
         <BackButton className="h-[27px] w-[138px] shrink-0" />
 
         <div className="flex flex-1 justify-center px-4">
-          {showSearch ? <PlayerSearch className="mx-auto max-w-md" /> : null}
+          {showSearch ? (
+            <PlayerSearch className="mx-auto max-w-md" scope="profile-header" />
+          ) : null}
         </div>
 
         <LobbyChip className="h-[27px] w-[138px] shrink-0" />

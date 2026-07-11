@@ -17,6 +17,7 @@ const RecipientField = ({ onClear, onPick, recipient }) => (
         showIcon
         placeholder="Search Players"
         resultsPlacement="above"
+        scope="compose-recipient"
         onSelectUser={onPick}
       />
     )}

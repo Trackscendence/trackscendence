@@ -20,63 +20,108 @@ const EMPTY_SCOPE_STATE = {
 // and that a response may only open the dropdown while its query still
 // matches the input.
 const usePlayerSearch = (scope) => {
+  if (!scope) {
+    throw new Error('usePlayerSearch requires a stable scope')
+  }
+
   const scopeState =
     useUserSearchStore((state) => state.scopes[scope]) || EMPTY_SCOPE_STATE
 
   const [term, setTerm] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const debouncedTerm = useDebounce(term)
+  const activeRunRef = useRef(0)
+  const isMountedRef = useRef(false)
+  const skipNextDebouncedQueryRef = useRef(null)
   const termRef = useRef('')
 
-  // Fires once typing pauses. The cleanup marks the run stale so a response
+  const searchAndOpen = useCallback(
+    async (searchQuery, runId) => {
+      try {
+        const didCommit = await useUserSearchStore
+          .getState()
+          .search(scope, { query: searchQuery, page: 1 })
+
+        if (!didCommit) return
+        if (!isMountedRef.current) return
+        if (activeRunRef.current !== runId) return
+        if (termRef.current.trim() !== searchQuery) return
+        setIsOpen(true)
+      } catch {
+        // The store owns user-facing search errors. This guard prevents an
+        // unexpected failure from becoming an unhandled event-handler promise.
+      }
+    },
+    [scope],
+  )
+
+  // Fires once typing pauses. The cleanup supersedes this run so a response
   // that lands after a newer term (or after unmount) cannot open the list.
   useEffect(() => {
-    const q = debouncedTerm.trim()
-    if (q.length < MIN_SEARCH_LENGTH) return undefined
+    const searchQuery = debouncedTerm.trim()
+    if (searchQuery.length < MIN_SEARCH_LENGTH) return undefined
+    if (termRef.current.trim() !== searchQuery) return undefined
 
-    let isStale = false
-
-    const search = async () => {
-      await useUserSearchStore.getState().search(scope, { q, page: 1 })
-      if (isStale) return
-      if (termRef.current.trim() !== q) return
-      setIsOpen(true)
+    if (skipNextDebouncedQueryRef.current === searchQuery) {
+      skipNextDebouncedQueryRef.current = null
+      return undefined
     }
-    search()
+
+    const runId = activeRunRef.current + 1
+    activeRunRef.current = runId
+    searchAndOpen(searchQuery, runId)
 
     return () => {
-      isStale = true
+      activeRunRef.current += 1
     }
-  }, [debouncedTerm, scope])
+  }, [debouncedTerm, searchAndOpen])
 
   // The scope's results do not outlive the component; clear() also
   // invalidates whatever request is still in flight for it.
-  useEffect(() => () => useUserSearchStore.getState().clear(scope), [scope])
+  useEffect(() => {
+    isMountedRef.current = true
+
+    return () => {
+      isMountedRef.current = false
+      activeRunRef.current += 1
+      useUserSearchStore.getState().clear(scope)
+    }
+  }, [scope])
 
   const changeTerm = (value) => {
     setTerm(value)
     termRef.current = value
-    if (value.trim().length < MIN_SEARCH_LENGTH) {
+    activeRunRef.current += 1
+    const searchQuery = value.trim()
+    if (
+      skipNextDebouncedQueryRef.current &&
+      skipNextDebouncedQueryRef.current !== searchQuery
+    ) {
+      skipNextDebouncedQueryRef.current = null
+    }
+
+    if (searchQuery.length < MIN_SEARCH_LENGTH) {
       useUserSearchStore.getState().clear(scope)
       setIsOpen(false)
+    } else {
+      useUserSearchStore.getState().invalidate(scope)
     }
   }
 
   // Enter skips the debounce for an immediate search.
   const submitTerm = () => {
-    const q = termRef.current.trim()
-    if (q.length < MIN_SEARCH_LENGTH) {
+    const searchQuery = termRef.current.trim()
+    if (searchQuery.length < MIN_SEARCH_LENGTH) {
       useUserSearchStore.getState().clear(scope)
       setIsOpen(false)
       return
     }
 
-    const search = async () => {
-      await useUserSearchStore.getState().search(scope, { q, page: 1 })
-      if (termRef.current.trim() !== q) return
-      setIsOpen(true)
-    }
-    search()
+    skipNextDebouncedQueryRef.current =
+      debouncedTerm.trim() === searchQuery ? null : searchQuery
+    const runId = activeRunRef.current + 1
+    activeRunRef.current = runId
+    searchAndOpen(searchQuery, runId)
   }
 
   const close = useCallback(() => setIsOpen(false), [])
@@ -88,7 +133,12 @@ const usePlayerSearch = (scope) => {
     hasSearched: scopeState.hasSearched,
     isOpen,
     openIfSearched: () => {
-      if (scopeState.hasSearched) setIsOpen(true)
+      if (
+        scopeState.hasSearched &&
+        termRef.current.trim().length >= MIN_SEARCH_LENGTH
+      ) {
+        setIsOpen(true)
+      }
     },
     results: scopeState.results,
     submitTerm,

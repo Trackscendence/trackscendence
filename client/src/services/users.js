@@ -46,8 +46,11 @@ export const getUserByUsername = (username, token) => {
   return request(`/users/${encodeURIComponent(username)}`, { token })
 }
 
-export const searchUsers = ({ q = '', page = 1, limit = 10 } = {}, token) => {
-  const query = new URLSearchParams({ q, page, limit })
+export const searchUsers = (
+  { query = '', page = 1, limit = 10 } = {},
+  token,
+) => {
+  const params = new URLSearchParams({ q: query, page, limit })
 
-  return request(`/users/search?${query.toString()}`, { token })
+  return request(`/users/search?${params.toString()}`, { token })
 }

@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Mail, Plus } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Mail } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
 import MarkAllReadButton from '@/components/MarkAllReadButton'
+import NewMessage from '@/components/NewMessage'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import { formatMessageTime } from '@/utils/formatMessageTime'
-import getConversationPath, {
-  composeMessagePath,
-} from '@/utils/conversationPath'
+import getConversationPath from '@/utils/conversationPath'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
 
 const MenuButton = ({ count, isOpen, onClick }) => (
@@ -124,19 +123,7 @@ const MailMenu = () => {
                   onClick={markAllRead}
                   disabled={unreadCount === 0}
                 />
-                <Link
-                  aria-label="New message"
-                  title="New message"
-                  to={composeMessagePath}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#fff4e8] focus:ring-2 focus:ring-[#3d1200]/20 focus:outline-none"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Plus
-                    aria-hidden="true"
-                    className="h-4 w-4"
-                    strokeWidth={2.4}
-                  />
-                </Link>
+                <NewMessage size="sm" onClick={() => setIsOpen(false)} />
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 rounded-md bg-[#fff4e8] p-1">

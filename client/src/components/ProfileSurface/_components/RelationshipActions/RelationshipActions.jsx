@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, UserPlus } from 'lucide-react'
 import Button from '@/components/Button'
+import getConversationPath from '@/utils/conversationPath'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
 import useProfileStore from '@/stores/useProfileStore'
 import profileActions from '../../_utils/profileActions'
@@ -26,7 +27,7 @@ const RelationshipActions = ({ profile, relationship }) => {
     const conversation = await useDirectMessageStore
       .getState()
       .ensureConversation(profile.id)
-    if (conversation) navigate(`/messages?conversation=${conversation.id}`)
+    if (conversation) navigate(getConversationPath(conversation.id))
   }
 
   if (action.kind === 'friends') {

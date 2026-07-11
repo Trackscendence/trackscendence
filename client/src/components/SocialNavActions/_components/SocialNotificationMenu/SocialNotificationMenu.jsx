@@ -5,6 +5,7 @@ import Avatar from '@/components/Avatar'
 import MarkAllReadButton from '@/components/MarkAllReadButton'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import { formatMessageTime } from '@/utils/formatMessageTime'
+import getConversationPath from '@/utils/conversationPath'
 import useSocialNotificationStore from '@/stores/useSocialNotificationStore'
 
 const getNotificationText = (notification) => {
@@ -93,11 +94,7 @@ const SocialNotificationMenu = () => {
 
     if (notification.conversationId) {
       setIsOpen(false)
-      navigate(
-        `/messages?conversation=${encodeURIComponent(
-          notification.conversationId,
-        )}`,
-      )
+      navigate(getConversationPath(notification.conversationId))
       return
     }
 
@@ -121,9 +118,7 @@ const SocialNotificationMenu = () => {
 
     if (result?.conversationId) {
       setIsOpen(false)
-      navigate(
-        `/messages?conversation=${encodeURIComponent(result.conversationId)}`,
-      )
+      navigate(getConversationPath(result.conversationId))
     }
   }
 

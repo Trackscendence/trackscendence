@@ -11,6 +11,7 @@ process.env.FORTYTWO_CLIENT_SECRET = ''
 process.env.FORTYTWO_REDIRECT_URI = ''
 
 const authRepository = require('#modules/auth/auth.repository')
+const authMailer = require('#modules/auth/auth.mailer')
 const authToken = require('#modules/auth/auth.token')
 const authTokenCache = require('#modules/auth/auth.token-cache')
 const {
@@ -44,6 +45,17 @@ const withRepositoryStubs = async (stubs, callback) => {
     for (const key of Object.keys(stubs)) {
       authRepository[key] = originals[key]
     }
+  }
+}
+
+const withMailerStub = async (stub, callback) => {
+  const original = authMailer.sendPasswordResetEmail
+  authMailer.sendPasswordResetEmail = stub
+
+  try {
+    return await callback()
+  } finally {
+    authMailer.sendPasswordResetEmail = original
   }
 }
 
@@ -435,6 +447,45 @@ describe('requestPasswordReset', () => {
 
         assert.match(result.message, /If that email is registered/)
         assert.strictEqual(resetTokenUpdates, 0)
+      },
+    )
+  })
+
+  it('clears the reset token again when email delivery fails', async () => {
+    let clearedUserId = null
+    let updatedUserId = null
+
+    await withRepositoryStubs(
+      {
+        clearPasswordResetToken: async (userId) => {
+          clearedUserId = userId
+        },
+        findByEmail: async () =>
+          buildAuthUser({
+            email: 'player@example.com',
+            id: 202,
+            isBot: false,
+            isGuest: false,
+          }),
+        updatePasswordResetToken: async (userId) => {
+          updatedUserId = userId
+        },
+      },
+      async () => {
+        await withMailerStub(
+          async () => {
+            throw new Error('delivery failed')
+          },
+          async () => {
+            const result = await requestPasswordReset({
+              email: 'player@example.com',
+            })
+
+            assert.match(result.message, /If that email is registered/)
+            assert.strictEqual(updatedUserId, 202)
+            assert.strictEqual(clearedUserId, 202)
+          },
+        )
       },
     )
   })

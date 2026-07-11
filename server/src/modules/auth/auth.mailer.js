@@ -2,11 +2,45 @@ const nodemailer = require('nodemailer')
 const config = require('#utils/config')
 const logger = require('#utils/logger')
 
+const BREVO_EMAIL_API_URL = 'https://api.brevo.com/v3/smtp/email'
+const BREVO_SENDER_NAME = 'Trackscendence'
 const PASSWORD_RESET_SUBJECT = 'Reset your Trackscendence password'
 
 let transporter
 
+const hasBrevoConfig = () =>
+  Boolean(config.BREVO_API_KEY || config.BREVO_SENDER)
+
+const isBrevoConfigured = () =>
+  Boolean(config.BREVO_API_KEY && config.BREVO_SENDER)
+
 const isSmtpConfigured = () => Boolean(config.SMTP_HOST && config.SMTP_FROM)
+
+const hasSmtpConfig = () =>
+  Boolean(
+    config.SMTP_HOST ||
+    config.SMTP_FROM ||
+    config.SMTP_USER ||
+    config.SMTP_PASS,
+  )
+
+const assertBrevoConfigured = () => {
+  if (!hasBrevoConfig()) return
+
+  if (!isBrevoConfigured()) {
+    throw new Error(
+      'Brevo delivery requires both BREVO_API_KEY and BREVO_SENDER',
+    )
+  }
+}
+
+const assertSmtpConfigured = () => {
+  if (!hasSmtpConfig()) return
+
+  if (!isSmtpConfigured()) {
+    throw new Error('SMTP delivery requires both SMTP_HOST and SMTP_FROM')
+  }
+}
 
 const getSmtpAuth = () => {
   if (!config.SMTP_USER && !config.SMTP_PASS) {
@@ -66,29 +100,48 @@ const getPasswordResetCopy = (resetUrl, expiresAt) => {
   return { text, html }
 }
 
-const sendPasswordResetEmail = async ({ email, resetToken, expiresAt }) => {
-  const resetUrl = buildPasswordResetUrl(resetToken)
-
-  if (!isSmtpConfigured()) {
-    if (config.NODE_ENV === 'production') {
-      throw new Error('SMTP is not configured for password reset delivery')
-    }
-
-    logger.warn(
-      'SMTP not configured. Password reset link logged for local development.',
-      {
-        email,
-        resetUrl,
+const sendViaBrevo = async ({ email, html, text }) => {
+  const response = await fetch(BREVO_EMAIL_API_URL, {
+    method: 'POST',
+    headers: {
+      'api-key': config.BREVO_API_KEY,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: {
+        name: BREVO_SENDER_NAME,
+        email: config.BREVO_SENDER,
       },
-    )
+      to: [{ email }],
+      subject: PASSWORD_RESET_SUBJECT,
+      htmlContent: html,
+      textContent: text,
+    }),
+  })
 
-    return {
-      delivery: 'log',
-      resetUrl,
-    }
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(
+      `Brevo email delivery failed: ${response.status} ${response.statusText}${
+        errorBody ? ` - ${errorBody}` : ''
+      }`,
+    )
   }
 
-  const { text, html } = getPasswordResetCopy(resetUrl, expiresAt)
+  const body = await response.json()
+
+  logger.info('Password reset email sent', {
+    email,
+    messageId: body.messageId || null,
+  })
+
+  return {
+    delivery: 'brevo',
+    messageId: body.messageId || null,
+  }
+}
+
+const sendViaSmtp = async ({ email, html, text }) => {
   const info = await getTransporter().sendMail({
     from: config.SMTP_FROM,
     to: email,
@@ -105,6 +158,41 @@ const sendPasswordResetEmail = async ({ email, resetToken, expiresAt }) => {
   return {
     delivery: 'smtp',
     messageId: info.messageId,
+  }
+}
+
+const sendPasswordResetEmail = async ({ email, resetToken, expiresAt }) => {
+  const resetUrl = buildPasswordResetUrl(resetToken)
+  const { text, html } = getPasswordResetCopy(resetUrl, expiresAt)
+
+  assertBrevoConfigured()
+  assertSmtpConfigured()
+
+  if (isBrevoConfigured()) {
+    return sendViaBrevo({ email, html, text })
+  }
+
+  if (isSmtpConfigured()) {
+    return sendViaSmtp({ email, html, text })
+  }
+
+  if (config.NODE_ENV === 'production') {
+    throw new Error(
+      'Password reset email delivery is not configured (set Brevo or SMTP)',
+    )
+  }
+
+  logger.warn(
+    'Email delivery not configured. Password reset link logged for local development.',
+    {
+      email,
+      resetUrl,
+    },
+  )
+
+  return {
+    delivery: 'log',
+    resetUrl,
   }
 }
 

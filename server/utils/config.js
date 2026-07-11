@@ -90,6 +90,10 @@ const optionalConfigs = {
     'PASSWORD_RESET_URL_BASE',
     `${appBaseUrl}/reset-password`,
   ),
+  // Railway blocks outbound SMTP on lower tiers, so production password-reset
+  // mail can use Brevo's HTTPS API instead. Local dev still uses Mailpit/SMTP.
+  BREVO_API_KEY: process.env.BREVO_API_KEY || '',
+  BREVO_SENDER: process.env.BREVO_SENDER || '',
   SMTP_HOST: process.env.SMTP_HOST || '',
   SMTP_PORT: parseNumber('SMTP_PORT', 1025),
   SMTP_SECURE: parseBoolean('SMTP_SECURE', false),

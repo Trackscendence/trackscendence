@@ -59,7 +59,7 @@
                   "const usernameSuffix = runId.slice(-8);",
                   "pm.environment.set('runId', runId);",
                   "pm.environment.set('avatarEmail', `${pm.environment.get('avatarEmailPrefix')}.${runId}@example.com`);",
-                  "pm.environment.set('avatarUsername', `${pm.environment.get('avatarUsernamePrefix')}_${usernameSuffix}`);",
+                  "pm.environment.set('avatarUsername', `${pm.environment.get('avatarUsernamePrefix')}${usernameSuffix}`);",
                   "pm.environment.unset('avatarUserId');",
                   "pm.environment.unset('avatarToken');",
                   "pm.environment.unset('avatarUploadedUrl');",
@@ -77,7 +77,7 @@
                   "});",
                   "pm.test('avatar variables were generated', function () {",
                   "  pm.expect(pm.environment.get('avatarEmail')).to.include('@example.com');",
-                  "  pm.expect(pm.environment.get('avatarUsername')).to.include('avatar_player_');",
+                  "  pm.expect(pm.environment.get('avatarUsername')).to.include('avatarplayer');",
                   "});"
                 ]
               }
@@ -130,7 +130,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{avatarEmail}}\",\n  \"username\": \"{{avatarUsername}}\",\n  \"password\": \"{{avatarPassword}}\"\n}",
+              "raw": "{\n  \"email\": \"{{avatarEmail}}\",\n  \"username\": \"{{avatarUsername}}\",\n  \"password\": \"{{avatarPassword}}\",\n  \"termsAccepted\": true,\n  \"privacyAccepted\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"

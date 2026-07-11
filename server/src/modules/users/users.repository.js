@@ -149,6 +149,17 @@ const listRecentMatchesForUser = (userId, limit) => {
   })
 }
 
+// The true accepted-friend total for the profile stat strip (#396). Separate
+// from listPublicFriendsForUser, which is capped to a preview-sized page.
+const countAcceptedFriendsForUser = (userId) => {
+  return prisma.friendship.count({
+    where: {
+      status: 'ACCEPTED',
+      OR: [{ requesterId: userId }, { addresseeId: userId }],
+    },
+  })
+}
+
 const listPublicFriendsForUser = (userId, limit = 6) => {
   return prisma.friendship.findMany({
     where: {
@@ -172,6 +183,7 @@ const listPublicFriendsForUser = (userId, limit = 6) => {
 }
 
 module.exports = {
+  countAcceptedFriendsForUser,
   findPublicProfileByUsername,
   findRelationshipBetweenUsers,
   findSelfProfileById,

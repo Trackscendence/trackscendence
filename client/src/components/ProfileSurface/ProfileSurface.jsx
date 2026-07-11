@@ -29,7 +29,9 @@ const ProfileSurface = ({
         <main className="min-w-0 flex-1 bg-[#ffd099] p-4 sm:p-8">
           {activeTab === 'overview' && (
             <ProfileOverview
-              friendsCount={visibleFriends.length}
+              // The server's accepted-friendship total (#396), not the capped
+              // preview list, so achievements agree with the header strip.
+              friendsCount={profile.stats?.friendsCount || 0}
               profile={profile}
               onShowGames={() => setActiveTab('games')}
             />

@@ -1,5 +1,5 @@
 import AuthPageShell from '@/components/AuthPageShell'
-import TextLink from '@/components/TextLink'
+import Url from '@/components/Url'
 
 // Full-screen failure state for the 42 callback. It carries its own warm
 // surface because the callback route sits outside AuthLayout (no shared header).
@@ -12,7 +12,7 @@ const OAuth42Error = ({ message }) => (
       {message}
     </p>
     <p className="mt-5 text-sm text-[#081934]">
-      <TextLink to="/login">Back to log in</TextLink>
+      <Url to="/login">Back to log in</Url>
     </p>
   </AuthPageShell>
 )

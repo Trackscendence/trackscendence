@@ -4,7 +4,7 @@ import useAuthStore from '@/stores/useAuthStore'
 import AuthPageShell from '@/components/AuthPageShell'
 import FortyTwoButton from '@/components/FortyTwoButton'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import TextLink from '@/components/TextLink'
+import Url from '@/components/Url'
 import GuestLoginButton from './_components/GuestLoginButton'
 import LoginForm from './_components/LoginForm'
 
@@ -95,10 +95,10 @@ const Login = () => {
           </div>
 
           <p className="mt-5 text-center text-sm text-[#081934]">
-            New player? <TextLink to="/signup">Sign up</TextLink>
+            New player? <Url to="/signup">Sign up</Url>
           </p>
           <p className="mt-3 text-center text-sm text-[#081934]">
-            <TextLink to="/forgot-password">Forgot your password?</TextLink>
+            <Url to="/forgot-password">Forgot your password?</Url>
           </p>
         </>
       ) : null}

@@ -5,7 +5,7 @@ import AuthPageShell from '@/components/AuthPageShell'
 import Button from '@/components/Button'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
-import TextLink from '@/components/TextLink'
+import Url from '@/components/Url'
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('')
@@ -64,7 +64,7 @@ const ForgotPassword = () => {
       </form>
 
       <p className="mt-5 text-center text-sm text-[#081934]">
-        Remembered your password? <TextLink to="/login">Log in</TextLink>
+        Remembered your password? <Url to="/login">Log in</Url>
       </p>
     </AuthPageShell>
   )

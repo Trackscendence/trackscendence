@@ -1,5 +1,5 @@
 import LegalPageShell from '@/components/LegalPageShell'
-import TextLink from '@/components/TextLink'
+import Url from '@/components/Url'
 
 const LAST_UPDATED = 'June 2026'
 
@@ -104,9 +104,9 @@ const TermsOfService = () => {
           We may suspend or terminate your account at any time if we believe you
           have violated these Terms. You may delete your account at any time by
           contacting us (see our{' '}
-          <TextLink to="/privacy-policy" variant="legal">
+          <Url to="/privacy-policy" variant="legal">
             Privacy Policy
-          </TextLink>{' '}
+          </Url>{' '}
           for details).
         </p>
       </section>

@@ -5,7 +5,7 @@ const VARIANTS = {
   legal: 'font-semibold text-[#2f6f86] hover:text-[#24586a]',
 }
 
-const TextLink = ({ children, className = '', variant = 'auth', ...props }) => (
+const Url = ({ children, className = '', variant = 'auth', ...props }) => (
   <Link
     className={`${VARIANTS[variant] ?? VARIANTS.auth} ${className}`}
     {...props}
@@ -14,4 +14,4 @@ const TextLink = ({ children, className = '', variant = 'auth', ...props }) => (
   </Link>
 )
 
-export default TextLink
+export default Url

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import AuthPageShell from '@/components/AuthPageShell'
-import TextLink from '@/components/TextLink'
+import Url from '@/components/Url'
 import ResetPasswordForm from './_components/ResetPasswordForm'
 
 const ResetPassword = () => {
@@ -21,7 +21,7 @@ const ResetPassword = () => {
       />
 
       <p className="mt-5 text-center text-sm text-[#081934]">
-        Remembered your password? <TextLink to="/login">Log in</TextLink>
+        Remembered your password? <Url to="/login">Log in</Url>
       </p>
     </AuthPageShell>
   )

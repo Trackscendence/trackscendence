@@ -1,4 +1,4 @@
-import TextLink from '@/components/TextLink'
+import Url from '@/components/Url'
 
 const LegalPageShell = ({ children, footerLinks, lastUpdated, title }) => {
   return (
@@ -20,9 +20,9 @@ const LegalPageShell = ({ children, footerLinks, lastUpdated, title }) => {
           {footerLinks.map((link, index) => (
             <span key={link.to}>
               {index > 0 ? ' · ' : ''}
-              <TextLink to={link.to} variant="legal">
+              <Url to={link.to} variant="legal">
                 {link.label}
-              </TextLink>
+              </Url>
             </span>
           ))}
         </p>

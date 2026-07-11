@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import AuthPageShell from '@/components/AuthPageShell'
 import FortyTwoButton from '@/components/FortyTwoButton'
-import TextLink from '@/components/TextLink'
+import Url from '@/components/Url'
 import SignupForm from './_components/SignupForm'
 
 const Signup = () => {
@@ -44,7 +44,7 @@ const Signup = () => {
       />
 
       <p className="mt-5 text-center text-sm text-[#081934]">
-        Already have an account? <TextLink to="/login">Log in</TextLink>
+        Already have an account? <Url to="/login">Log in</Url>
       </p>
     </AuthPageShell>
   )

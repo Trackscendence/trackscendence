@@ -1,5 +1,9 @@
 const { Prisma } = require('@prisma/client')
 const prisma = require('#db/prisma')
+const {
+  refreshUserRanks,
+  updateLifetimeStatsForUsers,
+} = require('./game.stats')
 
 const GAME_RESULT_STATUSES = new Set(['COMPLETED', 'ABANDONED'])
 
@@ -66,62 +70,6 @@ const validateSavedGameInput = ({ startedAt, endedAt, status, players }) => {
   if (status === 'ABANDONED' && winnerCount !== 0) {
     throw new Error('An abandoned game cannot have a winner.')
   }
-}
-
-const updateLifetimeStatsForUsers = async (tx, userIds) => {
-  const uniqueUserIds = [...new Set(userIds)].filter(Number.isInteger)
-
-  if (uniqueUserIds.length === 0) {
-    return
-  }
-
-  await tx.$executeRaw`
-    UPDATE "User" u
-    SET
-      "gamesPlayed" = stats."gamesPlayed",
-      "wins" = stats."wins",
-      "losses" = stats."losses"
-    FROM (
-      SELECT
-        gp."userId" AS "userId",
-        CAST(COUNT(*) AS INTEGER) AS "gamesPlayed",
-        CAST(COUNT(*) FILTER (WHERE gp."isWinner" = true) AS INTEGER) AS "wins",
-        CAST(
-          COUNT(*) FILTER (
-            WHERE gp."isWinner" = false AND g."status" = 'COMPLETED'
-          ) AS INTEGER
-        ) AS "losses"
-      FROM "GamePlayer" gp
-      JOIN "Game" g ON g."id" = gp."gameId"
-      WHERE gp."userId" IN (${Prisma.join(uniqueUserIds)})
-      GROUP BY gp."userId"
-    ) stats
-    WHERE u."id" = stats."userId"
-  `
-}
-
-const refreshUserRanks = async (tx) => {
-  await tx.$executeRaw`
-    WITH ranked_users AS (
-      SELECT
-        u."id",
-        CAST(
-          ROW_NUMBER() OVER (
-            ORDER BY
-              u."wins" DESC,
-              u."losses" ASC,
-              u."gamesPlayed" DESC,
-              u."username" ASC
-          ) AS INTEGER
-        ) AS "computedRank"
-      FROM "User" u
-      WHERE u."gamesPlayed" > 0
-    )
-    UPDATE "User" u
-    SET "rank" = ranked_users."computedRank"
-    FROM ranked_users
-    WHERE u."id" = ranked_users."id"
-  `
 }
 
 // Sort keys map to output-column aliases of the leaderboard query so ORDER BY
@@ -278,9 +226,4 @@ module.exports = {
   saveGameResult,
   getLeaderboard,
   countLeaderboardPlayers,
-  // Exported for the dev seed (#396): seeded game history must go through the
-  // same stats recompute as the production save path, or the denormalized
-  // user counters drift from the Game/GamePlayer rows.
-  refreshUserRanks,
-  updateLifetimeStatsForUsers,
 }

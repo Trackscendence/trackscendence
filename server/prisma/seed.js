@@ -16,7 +16,7 @@ const prisma = require('#db/prisma')
 const {
   refreshUserRanks,
   updateLifetimeStatsForUsers,
-} = require('#modules/game/game.repository')
+} = require('#modules/game/game.stats')
 
 // The password every seeded account shares. Log in as `dev` with this.
 const DEV_PASSWORD = 'DevPass123!'

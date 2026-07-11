@@ -13,6 +13,7 @@ import {
   saveCurrentProfile,
 } from './profileStore.helpers'
 import { createCurrentProfileLoader } from './profileStore.currentProfileLoader'
+import { withFriendsCountDelta } from './profileStore.friendsCount'
 import { createPublicProfileLoader } from './profileStore.publicProfileLoader'
 import { isActiveToken } from './sessionGuard'
 import useAuthStore from './useAuthStore'
@@ -144,7 +145,19 @@ export const createProfileActions = (set, get) => ({
         token,
       })
       if (!isActiveToken(token)) return null
-      set({ relationship: result.relationship, isSubmitting: false })
+      // An accept changes the accepted-friendship total on both sides, so
+      // patch the cached counts the stat strip reads (#396); the next full
+      // profile load restores server truth.
+      set((state) => ({
+        relationship: result.relationship,
+        isSubmitting: false,
+        ...(action === 'accept'
+          ? {
+              publicProfile: withFriendsCountDelta(state.publicProfile, 1),
+              currentProfile: withFriendsCountDelta(state.currentProfile, 1),
+            }
+          : {}),
+      }))
       notifications.push(
         action === 'accept'
           ? 'Friend request accepted'
@@ -192,7 +205,18 @@ export const createProfileActions = (set, get) => ({
     try {
       const result = await removeFriendship({ profileId: profile.id, token })
       if (!isActiveToken(token)) return false
-      set({ relationship: result.relationship, isSubmitting: false })
+      // Unfriending shrinks the accepted-friendship total on both sides;
+      // cancelling a pending request never counted, so no patch there.
+      set((state) => ({
+        relationship: result.relationship,
+        isSubmitting: false,
+        ...(wasFriends
+          ? {
+              publicProfile: withFriendsCountDelta(state.publicProfile, -1),
+              currentProfile: withFriendsCountDelta(state.currentProfile, -1),
+            }
+          : {}),
+      }))
       notifications.push(
         wasFriends ? 'Friend removed' : 'Friend request cancelled',
         'info',

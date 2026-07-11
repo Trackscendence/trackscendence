@@ -39,6 +39,7 @@ const buildSelfUser = (overrides = {}) => ({
 
 const withUserServiceStubs = async (stubs, callback) => {
   const originals = {
+    countAcceptedFriendsForUser: usersRepository.countAcceptedFriendsForUser,
     deleteAvatarFileByUrl: userAvatar.deleteAvatarFileByUrl,
     invalidate: authTokenCache.invalidate,
     listPublicFriendsForUser: usersRepository.listPublicFriendsForUser,
@@ -54,6 +55,9 @@ const withUserServiceStubs = async (stubs, callback) => {
     storeAvatarFile: stubs.storeAvatarFile ?? originals.storeAvatarFile,
   })
   Object.assign(usersRepository, {
+    countAcceptedFriendsForUser:
+      stubs.countAcceptedFriendsForUser ??
+      originals.countAcceptedFriendsForUser,
     listPublicFriendsForUser:
       stubs.listPublicFriendsForUser ?? originals.listPublicFriendsForUser,
     listRecentMatchesForUser:
@@ -73,6 +77,7 @@ const withUserServiceStubs = async (stubs, callback) => {
       storeAvatarFile: originals.storeAvatarFile,
     })
     Object.assign(usersRepository, {
+      countAcceptedFriendsForUser: originals.countAcceptedFriendsForUser,
       listPublicFriendsForUser: originals.listPublicFriendsForUser,
       listRecentMatchesForUser: originals.listRecentMatchesForUser,
       updateAvatarById: originals.updateAvatarById,
@@ -131,6 +136,65 @@ describe('parseUserSearchQuery', () => {
   })
 })
 
+describe('getProfileData', () => {
+  const { getProfileData } = require('#modules/users/users.service')
+
+  const user = {
+    id: 1,
+    username: 'player',
+    displayName: 'Player One',
+    bio: null,
+    avatarUrl: null,
+    createdAt: new Date('2026-07-01T00:00:00.000Z'),
+    email: 'player@trackscendence.local',
+    isGuest: false,
+    gamesPlayed: 8,
+    wins: 5,
+    losses: 3,
+    rank: 2,
+  }
+
+  const repositoryWithFriendCount = (friendsCount) => ({
+    listRecentMatchesForUser: async () => [],
+    // The preview list is capped to a handful; the count is the real total.
+    listPublicFriendsForUser: async () => [],
+    countAcceptedFriendsForUser: async () => friendsCount,
+  })
+
+  it('reports the true accepted-friend total in stats, beyond the preview cap', () => {
+    return getProfileData(
+      user,
+      {},
+      {
+        repository: repositoryWithFriendCount(14),
+      },
+    ).then((profile) => {
+      assert.strictEqual(profile.stats.friendsCount, 14)
+      assert.strictEqual(profile.stats.wins, 5)
+      assert.strictEqual(profile.stats.gamesPlayed, 8)
+    })
+  })
+
+  it('keeps the existing stats fields intact', () => {
+    return getProfileData(
+      user,
+      { includeEmail: true },
+      {
+        repository: repositoryWithFriendCount(0),
+      },
+    ).then((profile) => {
+      assert.deepStrictEqual(profile.stats, {
+        gamesPlayed: 8,
+        wins: 5,
+        losses: 3,
+        rank: 2,
+        friendsCount: 0,
+      })
+      assert.strictEqual(profile.email, 'player@trackscendence.local')
+    })
+  })
+})
+
 describe('auth cache invalidation after user profile mutations', () => {
   it('invalidates the auth cache after updating the current profile', async () => {
     let invalidatedUserId = null
@@ -140,6 +204,7 @@ describe('auth cache invalidation after user profile mutations', () => {
         invalidate: (userId) => {
           invalidatedUserId = userId
         },
+        countAcceptedFriendsForUser: async () => 0,
         listPublicFriendsForUser: async () => [],
         listRecentMatchesForUser: async () => [],
         updateProfileById: async () =>
@@ -172,6 +237,7 @@ describe('auth cache invalidation after user profile mutations', () => {
         invalidate: (userId) => {
           invalidatedUserId = userId
         },
+        countAcceptedFriendsForUser: async () => 0,
         listPublicFriendsForUser: async () => [],
         listRecentMatchesForUser: async () => [],
         storeAvatarFile: async () => ({
@@ -206,6 +272,7 @@ describe('auth cache invalidation after user profile mutations', () => {
         invalidate: (userId) => {
           invalidatedUserId = userId
         },
+        countAcceptedFriendsForUser: async () => 0,
         listPublicFriendsForUser: async () => [],
         listRecentMatchesForUser: async () => [],
         updateAvatarById: async () =>

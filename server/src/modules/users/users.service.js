@@ -195,10 +195,18 @@ const toRelationshipState = (relationship, viewerId, profileUserId) => {
   return { status: 'PENDING_INCOMING', requestedAt: relationship.createdAt }
 }
 
-const getProfileData = async (user, options = {}) => {
-  const [recentMatches, friends] = await Promise.all([
-    usersRepository.listRecentMatchesForUser(user.id, MATCH_HISTORY_LIMIT),
-    usersRepository.listPublicFriendsForUser(user.id, PROFILE_FRIENDS_LIMIT),
+const getProfileData = async (
+  user,
+  options = {},
+  { repository = usersRepository } = {},
+) => {
+  const [recentMatches, friends, friendsCount] = await Promise.all([
+    repository.listRecentMatchesForUser(user.id, MATCH_HISTORY_LIMIT),
+    repository.listPublicFriendsForUser(user.id, PROFILE_FRIENDS_LIMIT),
+    // The full accepted-friend total (#396): the list above is a capped
+    // preview, so the stat strip needs its own count, and this way public
+    // profiles show it even where the friends list itself stays private.
+    repository.countAcceptedFriendsForUser(user.id),
   ])
 
   return {
@@ -210,7 +218,7 @@ const getProfileData = async (user, options = {}) => {
     createdAt: user.createdAt,
     ...(options.includeEmail ? { email: user.email } : {}),
     isGuest: Boolean(user.isGuest),
-    stats: toProfileStats(user),
+    stats: { ...toProfileStats(user), friendsCount },
     recentMatches: recentMatches.map((match) => toRecentMatch(match, user.id)),
     friends: friends.map((friendship) => toProfileFriend(friendship, user.id)),
   }
@@ -435,6 +443,7 @@ const deleteCurrentUserAvatar = async (viewer) => {
 module.exports = {
   deleteCurrentUserAvatar,
   getCurrentProfile,
+  getProfileData,
   getProfileByUsername,
   parseUserSearchQuery,
   searchUsers,

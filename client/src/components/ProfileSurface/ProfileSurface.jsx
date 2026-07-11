@@ -8,34 +8,20 @@ import ProfileSidebar from './_components/ProfileSidebar'
 const ProfileSurface = ({
   friends = [],
   isOwnProfile,
-  isSubmitting,
   leaderboard = [],
-  onFriendRequest,
-  onMessage,
   profile,
   relationship,
 }) => {
   const [activeTab, setActiveTab] = useState('overview')
   const visibleFriends = isOwnProfile ? friends : profile.friends || []
 
-  const handlePrimaryAction = (action) => {
-    if (action.kind === 'message') {
-      void onMessage?.()
-      return
-    }
-
-    void onFriendRequest?.()
-  }
-
   return (
     <div className="w-full bg-white">
       <ProfileHeader
         activeTab={activeTab}
         isOwnProfile={isOwnProfile}
-        isSubmitting={isSubmitting}
         profile={profile}
         relationship={relationship}
-        onPrimaryAction={handlePrimaryAction}
         onTabChange={setActiveTab}
       />
 

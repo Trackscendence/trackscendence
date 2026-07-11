@@ -4,7 +4,7 @@
 export const CURRENT_PROFILE_TTL_MS = 30000
 
 export const createCurrentProfileLoader = ({
-  emptyFriendContext,
+  emptyFriendsAndLeaderboard,
   get,
   getAuthUserId,
   // Session guard (#391): injected so a response from a session that ended or
@@ -66,7 +66,7 @@ export const createCurrentProfileLoader = ({
       // painted with its seeded friends preview, so this only corrects the
       // count and fills the friends tab. The leaderboard is already fetching
       // from before the try above.
-      get().refreshFriendContext()
+      get().refreshFriends()
     } catch (error) {
       if (requestId !== currentProfileRequestId) return
       if (!isTokenActive(token)) return
@@ -75,7 +75,7 @@ export const createCurrentProfileLoader = ({
         currentProfile: null,
         error: error.message,
         isLoading: false,
-        ...emptyFriendContext,
+        ...emptyFriendsAndLeaderboard,
       })
       lastLoadedAt = 0
       lastLoadedUserId = null

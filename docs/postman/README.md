@@ -17,6 +17,13 @@ Current structure:
 
 Each collection keeps reusable test variables in a matching environment file, so the collection JSON stays generic and easy to rerun.
 
+## Local Ports
+
+- `npm run compose:dev`: the backend API is available on `http://localhost:3001`, so the checked-in Postman `baseUrl` defaults to `http://localhost:3001/api/v1`.
+- `npm run compose:up`: the server still listens on port `3001` inside Docker, but the host entrypoint is the frontend proxy on `http://localhost:8080` (redirects to `https://localhost:8443`).
+- If you want to run the collections against `compose:up`, override the Postman `baseUrl` to `http://localhost:8080/api/v1`.
+- Mailpit stays on `http://localhost:8025/api/v1` in both modes.
+
 ## Auth Security
 
 Import:
@@ -40,7 +47,8 @@ Coverage:
 
 Notes:
 
-- The collection assumes the Docker production-style stack is running on `http://localhost:8080`.
+- The checked-in environment defaults to `http://localhost:3001/api/v1` for `npm run compose:dev`.
+- If you are running `npm run compose:up`, change `baseUrl` to `http://localhost:8080/api/v1`.
 - Mail-based reset testing uses Mailpit on `http://localhost:8025`.
 - The collection now covers register/login, TOTP 2FA setup, recovery-code login, disable/regenerate 2FA, password change, and forgot/reset-password flows.
 - TOTP codes are generated inside Postman from the setup secret, so you can demo the full 2FA API flow without manually opening an authenticator app.
@@ -67,7 +75,7 @@ Coverage:
 - protected self-update via `PATCH /api/v1/users/me`
 - zero-state lifetime stats contract for new users
 - public/private field exposure checks
-- username validation for public profile lookups
+- unknown and malformed public-profile lookup behavior
 - profile-field normalization, trimming, and clearing to `null`
 - validation and auth guards for profile updates
 
@@ -170,20 +178,20 @@ node tests/postman/users/avatar/avatar-upload-smoke.mjs
 Optional arguments:
 
 - first argument: custom file path
-- second argument: base app URL (default: `http://localhost:8080`)
+- second argument: base app URL (default: `http://localhost:5173`)
 
 Example:
 
 ```sh
 bash tests/postman/users/avatar/avatar-upload-smoke.sh \
   tests/postman/users/avatar/fixtures/avatar-valid.png \
-  http://localhost:8080
+  http://localhost:5173
 ```
 
 ```sh
 node tests/postman/users/avatar/avatar-upload-smoke.mjs \
   tests/postman/users/avatar/fixtures/avatar-valid.png \
-  http://localhost:8080
+  http://localhost:5173
 ```
 
 ## Friendship Flow
@@ -208,6 +216,7 @@ Coverage:
 
 Notes:
 
-- The collection assumes the Docker production-style stack is running on `http://localhost:8080`.
+- The checked-in environment defaults to `http://localhost:3001/api/v1` for `npm run compose:dev`.
+- If you are running `npm run compose:up`, change `baseUrl` to `http://localhost:8080/api/v1`.
 - The friendship collection auto-saves two users, their ids, and both bearer tokens.
 - UI-only behavior is not covered by Postman.

@@ -10,9 +10,7 @@ const BasicChat = () => {
   const user = useAuthStore((state) => state.user)
   const token = useAuthStore((state) => state.token)
   const friends = useProfileStore((state) => state.friends)
-  const refreshFriendContext = useProfileStore(
-    (state) => state.refreshFriendContext,
-  )
+  const refreshFriends = useProfileStore((state) => state.refreshFriends)
   const roomsById = useChatStore((state) => state.rooms)
   const messagesByRoom = useChatStore((state) => state.messages)
   const activeRoomId = useChatStore((state) => state.activeRoom)
@@ -38,11 +36,11 @@ const BasicChat = () => {
   useEffect(() => {
     if (!token) return undefined
 
-    refreshFriendContext().catch(() => undefined)
+    refreshFriends().catch(() => undefined)
     loadChatRooms()
 
     return undefined
-  }, [loadChatRooms, refreshFriendContext, token])
+  }, [loadChatRooms, refreshFriends, token])
 
   useEffect(() => {
     syncFriendRooms(friends)

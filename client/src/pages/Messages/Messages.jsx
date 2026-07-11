@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AppHeader from '@/components/AppHeader'
+import getConversationPath from '@/utils/conversationPath'
 import useAuthStore from '@/stores/useAuthStore'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
 import useNotificationStore from '@/stores/useNotificationStore'
@@ -71,7 +72,7 @@ const Messages = () => {
       const conversation = await ensureConversation(Number(targetUserId))
       if (!conversation || isCancelled) return
 
-      navigate(`/messages?conversation=${conversation.id}`, { replace: true })
+      navigate(getConversationPath(conversation.id), { replace: true })
     }
 
     openUserConversation()
@@ -126,7 +127,7 @@ const Messages = () => {
             onFilterChange={setFilter}
             onSelect={(conversationId) => {
               setActiveConversation(conversationId)
-              navigate(`/messages?conversation=${conversationId}`, {
+              navigate(getConversationPath(conversationId), {
                 replace: true,
               })
             }}

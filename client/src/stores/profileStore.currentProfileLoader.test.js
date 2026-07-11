@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createCurrentProfileLoader } from './profileStore.currentProfileLoader.js'
 
-const emptyFriendContext = {
+const emptyFriendsAndLeaderboard = {
   friends: [],
   leaderboard: [],
 }
 
 // Models the post-fix flow: /users/me is the only critical-path call and it
 // carries a seeded friends preview; the full friends list and the leaderboard
-// load off the critical path (refreshFriendContext / loadLeaderboard). The calls
+// load off the critical path (refreshFriends / loadLeaderboard). The calls
 // object records which of those the loader reaches.
 const createServiceStubs = () => {
   const calls = {
@@ -31,7 +31,7 @@ const createServiceStubs = () => {
     calls.leaderboardParams.push({ limit: 5 })
   }
 
-  const refreshFriendContext = async () => {
+  const refreshFriends = async () => {
     calls.refreshFriends += 1
   }
 
@@ -39,13 +39,13 @@ const createServiceStubs = () => {
     calls,
     loadCurrentProfileData,
     loadLeaderboard,
-    refreshFriendContext,
+    refreshFriends,
   }
 }
 
 const stubGet = (stubs) => () => ({
   loadLeaderboard: stubs.loadLeaderboard,
-  refreshFriendContext: stubs.refreshFriendContext,
+  refreshFriends: stubs.refreshFriends,
 })
 
 test('loads /users/me, seeds the friends preview, and fetches leaderboard + full friends off the critical path', async () => {
@@ -53,7 +53,7 @@ test('loads /users/me, seeds the friends preview, and fetches leaderboard + full
   const stubs = createServiceStubs()
 
   const loadCurrentProfile = createCurrentProfileLoader({
-    emptyFriendContext,
+    emptyFriendsAndLeaderboard,
     get: stubGet(stubs),
     getAuthUserId: () => 7,
     loadCurrentProfileData: stubs.loadCurrentProfileData,
@@ -82,7 +82,7 @@ test('skips a second load, and the off-critical-path fetches, within the freshne
   let clock = 1000
 
   const loadCurrentProfile = createCurrentProfileLoader({
-    emptyFriendContext,
+    emptyFriendsAndLeaderboard,
     get: stubGet(stubs),
     getAuthUserId: () => 7,
     loadCurrentProfileData: stubs.loadCurrentProfileData,
@@ -108,7 +108,7 @@ test('reloads past the freshness window and when forced', async () => {
   let clock = 1000
 
   const loadCurrentProfile = createCurrentProfileLoader({
-    emptyFriendContext,
+    emptyFriendsAndLeaderboard,
     get: stubGet(stubs),
     getAuthUserId: () => 7,
     loadCurrentProfileData: stubs.loadCurrentProfileData,
@@ -133,7 +133,7 @@ test('reloads when a different user is authenticated within the window', async (
   let authUserId = 7
 
   const loadCurrentProfile = createCurrentProfileLoader({
-    emptyFriendContext,
+    emptyFriendsAndLeaderboard,
     get: stubGet(stubs),
     getAuthUserId: () => authUserId,
     loadCurrentProfileData: stubs.loadCurrentProfileData,
@@ -168,8 +168,8 @@ test('a stale in-flight response cannot overwrite a newer profile load', async (
   }
 
   const loadCurrentProfile = createCurrentProfileLoader({
-    emptyFriendContext,
-    get: () => ({ loadLeaderboard: () => {}, refreshFriendContext: () => {} }),
+    emptyFriendsAndLeaderboard,
+    get: () => ({ loadLeaderboard: () => {}, refreshFriends: () => {} }),
     getAuthUserId: () => 7,
     loadCurrentProfileData,
     now: () => 1000,

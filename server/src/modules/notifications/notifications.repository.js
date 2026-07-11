@@ -68,6 +68,37 @@ const markNotificationReadForUser = (id, userId, db = prisma) => {
   })
 }
 
+// Stamps the conversation created by an accepted intro-message request onto
+// that request's own notification, so clicking it later opens the
+// conversation instead of dead-ending on the requester's profile (#395).
+// Only the newest intro-message row is touched: the pair-unique friendship
+// constraint means the accepted request is always the most recent one, and
+// older notifications from rejected or cancelled cycles must keep their
+// original routing.
+const attachConversationToLatestFriendRequest = async (
+  { actorId, conversationId, userId },
+  db = prisma,
+) => {
+  const latestRequest = await db.socialNotification.findFirst({
+    where: {
+      actorId,
+      message: { not: null },
+      type: 'FRIEND_REQUEST',
+      userId,
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    select: { id: true },
+  })
+
+  if (!latestRequest) return null
+
+  return db.socialNotification.update({
+    where: { id: latestRequest.id },
+    data: { conversationId },
+    select: { id: true, conversationId: true },
+  })
+}
+
 const markAllNotificationsReadForUser = (userId, db = prisma) => {
   return db.socialNotification.updateMany({
     where: { userId, readAt: null },
@@ -76,6 +107,7 @@ const markAllNotificationsReadForUser = (userId, db = prisma) => {
 }
 
 module.exports = {
+  attachConversationToLatestFriendRequest,
   countUnreadNotificationsForUser,
   createNotification,
   listNotificationsForUser,

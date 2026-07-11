@@ -103,8 +103,88 @@ const useSocialNotificationStore = createSessionStore((set) => ({
       await useSocialNotificationStore.getState().loadNotifications()
       await useDirectMessageStore.getState().loadConversations()
       if (!isActiveToken(token)) return null
+      // No success toast here: panel responses are bulk work, and the list
+      // updating (the request disappears) is the feedback. Failures still toast.
       set({ isSubmitting: false })
-      notifications.push('Friend request accepted', 'success')
+      return result
+    } catch (error) {
+      // A missing token (null) still surfaces; a stale session stays silent.
+      if (token && !isActiveToken(token)) return null
+      set({ error: error.message, isSubmitting: false })
+      notifications.push(error.message, 'error')
+      return null
+    }
+  },
+
+  // Synchronous patch for a request answered somewhere else (the profile's
+  // Accept/Reject): the cached notification drops its inline actions the
+  // moment the backend confirms, so the bell can never briefly offer a
+  // response that was already given, and an accept carries its new
+  // conversation so the row routes to the chat even before the background
+  // reload restores full truth.
+  markFriendRequestHandled: (actorId, conversationId = null) =>
+    set((state) => {
+      const latestRequest = conversationId
+        ? state.notifications.reduce((latest, notification) => {
+            if (
+              notification.type !== 'FRIEND_REQUEST' ||
+              notification.actor?.id !== actorId
+            ) {
+              return latest
+            }
+
+            if (!latest) return notification
+
+            const notificationTime = Date.parse(notification.createdAt || '')
+            const latestTime = Date.parse(latest.createdAt || '')
+
+            if (notificationTime !== latestTime) {
+              return notificationTime > latestTime ? notification : latest
+            }
+
+            return Number(notification.id) > Number(latest.id)
+              ? notification
+              : latest
+          }, null)
+        : null
+
+      const conversationNotificationId = latestRequest?.message
+        ? latestRequest.id
+        : null
+
+      return {
+        notifications: state.notifications.map((notification) =>
+          notification.type === 'FRIEND_REQUEST' &&
+          notification.actor?.id === actorId
+            ? {
+                ...notification,
+                friendRequestStatus: null,
+                ...(conversationNotificationId === notification.id
+                  ? { conversationId }
+                  : {}),
+              }
+            : notification,
+        ),
+      }
+    }),
+
+  rejectFriendRequest: async (targetUserId) => {
+    const notifications = useNotificationStore.getState()
+
+    set({ error: '', isSubmitting: true })
+
+    let token = null
+    try {
+      token = requireToken()
+      const { respondToFriendRequest } = await getFriendsService()
+      const result = await respondToFriendRequest(
+        { action: 'reject', targetUserId },
+        token,
+      )
+      if (!isActiveToken(token)) return null
+      await useSocialNotificationStore.getState().loadNotifications()
+      if (!isActiveToken(token)) return null
+      set({ isSubmitting: false })
       return result
     } catch (error) {
       // A missing token (null) still surfaces; a stale session stays silent.

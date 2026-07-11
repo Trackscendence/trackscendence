@@ -86,3 +86,88 @@ describe('notificationsService.listNotifications', () => {
     assert.equal(result.notifications[0].friendRequestStatus, null)
   })
 })
+
+describe('attachConversationToFriendRequestNotification', () => {
+  it('passes the pair and conversation through to the repository (#395)', async () => {
+    const calls = []
+    const repository = {
+      attachConversationToLatestFriendRequest: async (payload, db) => {
+        calls.push({ payload, db })
+        return { id: 5 }
+      },
+    }
+
+    const result =
+      await notificationsService.attachConversationToFriendRequestNotification(
+        { actorId: 7, conversationId: 31, userId: 2 },
+        { repository, db: 'tx' },
+      )
+
+    assert.deepEqual(calls, [
+      { payload: { actorId: 7, conversationId: 31, userId: 2 }, db: 'tx' },
+    ])
+    assert.deepEqual(result, { id: 5 })
+  })
+})
+
+describe('notificationsRepository.attachConversationToLatestFriendRequest', () => {
+  const notificationsRepository = require('./notifications.repository')
+
+  it('updates only the newest intro-message request, not historical rows (#395)', async () => {
+    const queries = []
+    const db = {
+      socialNotification: {
+        findFirst: async (query) => {
+          queries.push(['findFirst', query])
+          // The newest of several historical request rows for this pair.
+          return { id: 42 }
+        },
+        update: async (query) => {
+          queries.push(['update', query])
+          return { id: 42, conversationId: 31 }
+        },
+      },
+    }
+
+    const result =
+      await notificationsRepository.attachConversationToLatestFriendRequest(
+        { actorId: 7, conversationId: 31, userId: 2 },
+        db,
+      )
+
+    const [, findQuery] = queries[0]
+    assert.deepEqual(findQuery.where, {
+      actorId: 7,
+      message: { not: null },
+      type: 'FRIEND_REQUEST',
+      userId: 2,
+    })
+    assert.deepEqual(findQuery.orderBy, [{ createdAt: 'desc' }, { id: 'desc' }])
+    const [, updateQuery] = queries[1]
+    assert.deepEqual(updateQuery.where, { id: 42 })
+    assert.deepEqual(updateQuery.data, { conversationId: 31 })
+    assert.deepEqual(updateQuery.select, { id: true, conversationId: true })
+    assert.equal(result.id, 42)
+  })
+
+  it('does nothing when the pair has no intro-message request', async () => {
+    let updated = false
+    const db = {
+      socialNotification: {
+        findFirst: async () => null,
+        update: async () => {
+          updated = true
+        },
+      },
+    }
+
+    const result =
+      await notificationsRepository.attachConversationToLatestFriendRequest(
+        { actorId: 7, conversationId: 31, userId: 2 },
+        db,
+      )
+
+    assert.equal(result, null)
+    assert.equal(updated, false)
+  })
+})

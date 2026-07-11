@@ -42,7 +42,10 @@ const FRIENDS = [
 
 // People who have sent the primary account a friend request but are not friends
 // yet. Each becomes a PENDING friendship plus an unread FRIEND_REQUEST
-// notification, so the bell shows an actionable request with its intro message.
+// notification. The first two carry an intro message (the bell shows the
+// preview with inline Accept and Reject); the last two send without one, so
+// the plain-request path is testable too: their notification navigates to the
+// profile, where the Accept and Reject controls live (#395).
 const REQUESTERS = [
   {
     username: 'wilds',
@@ -53,6 +56,16 @@ const REQUESTERS = [
     username: 'reverse',
     displayName: 'Reverse Ray',
     requestMessage: 'Up for a rematch this week?',
+  },
+  {
+    username: 'shuffle',
+    displayName: 'Shuffle Ace',
+    requestMessage: null,
+  },
+  {
+    username: 'zero',
+    displayName: 'Zero Hero',
+    requestMessage: null,
   },
 ]
 
@@ -225,12 +238,15 @@ async function seedSocialGraph(primary, friends, requesters) {
           addresseeId: primary.id,
         },
       },
-      update: { status: 'PENDING', requestMessage: requester.requestMessage },
+      update: {
+        status: 'PENDING',
+        requestMessage: requester.requestMessage ?? null,
+      },
       create: {
         requesterId: requester.id,
         addresseeId: primary.id,
         status: 'PENDING',
-        requestMessage: requester.requestMessage,
+        requestMessage: requester.requestMessage ?? null,
       },
     })
 
@@ -239,7 +255,7 @@ async function seedSocialGraph(primary, friends, requesters) {
         userId: primary.id,
         actorId: requester.id,
         type: 'FRIEND_REQUEST',
-        message: requester.requestMessage,
+        message: requester.requestMessage ?? null,
       },
     })
   }

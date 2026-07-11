@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import ProfileLink from '@/components/ProfileLink'
 import EmptyState from '../EmptyState'
 
 const ProfileFriends = ({ friends, isOwnProfile }) => {
@@ -27,10 +27,10 @@ const ProfileFriends = ({ friends, isOwnProfile }) => {
       </div>
       <div className="divide-y divide-[#fceee0]">
         {friends.map(({ friendSince, user }) => (
-          <Link
+          <ProfileLink
             key={user.id}
             className="flex items-center gap-3 px-5 py-3 transition hover:bg-[#fff8f2]"
-            to={`/users/${user.username}`}
+            username={user.username}
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFB04F] text-xs font-bold text-white">
               {(user.displayName || user.username).slice(0, 2).toUpperCase()}
@@ -43,7 +43,7 @@ const ProfileFriends = ({ friends, isOwnProfile }) => {
                 Friends since {new Date(friendSince).toLocaleDateString()}
               </span>
             </span>
-          </Link>
+          </ProfileLink>
         ))}
       </div>
     </section>

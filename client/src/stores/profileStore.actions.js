@@ -149,7 +149,7 @@ export const createProfileActions = (set, get) => ({
         action === 'accept'
           ? 'Friend request accepted'
           : 'Friend request rejected',
-        'success',
+        action === 'accept' ? 'success' : 'info',
       )
       if (action === 'accept') get().refreshFriends()
       // The bell caches this request's inline actions; reload it so an
@@ -189,7 +189,7 @@ export const createProfileActions = (set, get) => ({
       set({ relationship: result.relationship, isSubmitting: false })
       notifications.push(
         wasFriends ? 'Friend removed' : 'Friend request cancelled',
-        'success',
+        'info',
       )
       if (wasFriends) get().refreshFriends()
       return true

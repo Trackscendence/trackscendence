@@ -53,3 +53,31 @@ test('reset returns fresh default objects, not shared references', () => {
   )
   assert.deepEqual(useSocialNotificationStore.getState().notifications, [])
 })
+
+test('markFriendRequestHandled drops the inline actions for that actor only', () => {
+  useSocialNotificationStore.setState({
+    notifications: [
+      {
+        ...notification,
+        id: 1,
+        friendRequestStatus: 'PENDING',
+        type: 'FRIEND_REQUEST',
+      },
+      {
+        ...notification,
+        id: 2,
+        actor: { ...notification.actor, id: 9, username: 'other' },
+        friendRequestStatus: 'PENDING',
+        type: 'FRIEND_REQUEST',
+      },
+      { ...notification, id: 3, type: 'DIRECT_MESSAGE' },
+    ],
+  })
+
+  useSocialNotificationStore.getState().markFriendRequestHandled(2)
+
+  const state = useSocialNotificationStore.getState()
+  assert.equal(state.notifications[0].friendRequestStatus, null)
+  assert.equal(state.notifications[1].friendRequestStatus, 'PENDING')
+  assert.equal(state.notifications[2].type, 'DIRECT_MESSAGE')
+})

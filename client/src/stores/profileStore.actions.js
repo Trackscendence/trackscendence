@@ -152,10 +152,13 @@ export const createProfileActions = (set, get) => ({
         action === 'accept' ? 'success' : 'info',
       )
       if (action === 'accept') get().refreshFriends()
-      // The bell caches this request's inline actions; reload it so an
-      // already-answered request cannot be answered again from the panel.
+      // Drop the request's inline actions from the bell synchronously, so it
+      // can never briefly offer a response that was already given (even if
+      // the background reload below fails); then reload for full truth.
       // loadNotifications handles its own failures.
-      useSocialNotificationStore.getState().loadNotifications()
+      const socialNotifications = useSocialNotificationStore.getState()
+      socialNotifications.markFriendRequestHandled(profile.id)
+      socialNotifications.loadNotifications()
       return result
     } catch (error) {
       if (!isActiveToken(token)) return null

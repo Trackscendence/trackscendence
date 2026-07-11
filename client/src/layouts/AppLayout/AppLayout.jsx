@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import Navbar from './_components/Navbar'
+import AppHeader from '@/components/AppHeader'
 
 const AppLayout = () => {
   const location = useLocation()
@@ -10,7 +10,7 @@ const AppLayout = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f4f7f2] text-[#1f2d28]">
-      <Navbar />
+      <AppHeader />
       <main className={mainClassName}>
         <Outlet />
       </main>

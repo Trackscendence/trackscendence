@@ -31,7 +31,7 @@ const ComposeThread = ({ onSend }) => {
           <p className="mt-1 text-xs text-[#9a7050]">
             {recipient
               ? 'Your first message opens the conversation.'
-              : 'Type a name below and press Enter.'}
+              : 'Results appear as you type.'}
           </p>
         </div>
       </div>

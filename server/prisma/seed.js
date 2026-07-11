@@ -42,10 +42,10 @@ const FRIENDS = [
 
 // People who have sent the primary account a friend request but are not friends
 // yet. Each becomes a PENDING friendship plus an unread FRIEND_REQUEST
-// notification. The first two carry an intro message (the bell shows the
-// preview with inline Accept and Reject); the last two send without one, so
-// the plain-request path is testable too: their notification navigates to the
-// profile, where the Accept and Reject controls live (#395).
+// notification. Requests with an intro message show the preview with inline
+// Accept and Reject in the bell; requests without one navigate to the profile,
+// where the Accept and Reject controls live (#395). One message is long on
+// purpose, so preview truncation stays visible in the dropdown.
 const REQUESTERS = [
   {
     username: 'wilds',
@@ -56,6 +56,20 @@ const REQUESTERS = [
     username: 'reverse',
     displayName: 'Reverse Ray',
     requestMessage: 'Up for a rematch this week?',
+  },
+  {
+    username: 'swap',
+    displayName: 'Swap Hands',
+    requestMessage:
+      'Hey! We were in the same room last night, the one where the deck ran ' +
+      'out twice and everyone kept stacking draw cards. That comeback from ' +
+      'one card down was the best thing I have seen all week. Add me and we ' +
+      'can run it back whenever you are around.',
+  },
+  {
+    username: 'match',
+    displayName: 'Match Point',
+    requestMessage: 'Saw you on the leaderboard. Fancy a game sometime?',
   },
   {
     username: 'shuffle',
@@ -69,9 +83,13 @@ const REQUESTERS = [
   },
 ]
 
-// Direct-message threads between the primary account and existing friends. The
-// friend's messages stay unread for the primary account, so the mail dropdown
-// and its badge render a populated, unread inbox against real API responses.
+// Direct-message threads between the primary account and existing friends.
+// By default the friend's messages stay unread for the primary account, so
+// the mail dropdown and its badge render a populated, unread inbox against
+// real API responses. Threads marked `primaryHasRead: true` are already read:
+// no badge, no notification, and (when the primary sent the last message) the
+// "You:" preview path. One thread is a single long message so preview
+// truncation stays visible there too.
 const CONVERSATIONS = [
   {
     friend: 'uno',
@@ -86,6 +104,37 @@ const CONVERSATIONS = [
     messages: [
       { from: 'friend', body: 'That last hand was brutal.' },
       { from: 'friend', body: 'Rematch tomorrow?' },
+    ],
+  },
+  {
+    friend: 'cards',
+    messages: [
+      { from: 'friend', body: 'Did you see the new leaderboard?' },
+      { from: 'primary', body: 'Not yet, anything change?' },
+      { from: 'friend', body: 'skip overtook you this morning.' },
+      { from: 'primary', body: 'No way. How many games did that take?' },
+      { from: 'friend', body: 'Three in a row, all against uno.' },
+      { from: 'friend', body: 'You need two wins to take it back.' },
+    ],
+  },
+  {
+    friend: 'flip',
+    primaryHasRead: true,
+    messages: [
+      { from: 'friend', body: 'Thanks for the games yesterday!' },
+      { from: 'primary', body: 'Any time, that reverse chain was great.' },
+    ],
+  },
+  {
+    friend: 'draw',
+    messages: [
+      {
+        from: 'friend',
+        body:
+          'So about tonight: winner of the first game picks the rules for ' +
+          'the rest, loser has to keep the same avatar for a week, and if ' +
+          'anyone forgets to call UNO they buy the snacks next time. Deal?',
+      },
     ],
   },
 ]
@@ -286,8 +335,8 @@ async function seedSocialGraph(primary, friends, requesters) {
       if (entry.from === 'friend') lastIncoming = savedMessage
     }
 
-    // The friend has read the whole thread; the primary account has not, so the
-    // friend's messages surface as unread.
+    // The friend has read the whole thread. The primary account has too when
+    // the spec says so; otherwise the friend's messages surface as unread.
     const primaryReadField =
       conversation.userOneId === primary.id
         ? 'userOneLastReadAt'
@@ -298,10 +347,13 @@ async function seedSocialGraph(primary, friends, requesters) {
         : 'userTwoLastReadAt'
     await prisma.directConversation.update({
       where: { id: conversation.id },
-      data: { [friendReadField]: new Date(stamp), [primaryReadField]: null },
+      data: {
+        [friendReadField]: new Date(stamp),
+        [primaryReadField]: spec.primaryHasRead ? new Date(stamp) : null,
+      },
     })
 
-    if (lastIncoming) {
+    if (lastIncoming && !spec.primaryHasRead) {
       await prisma.socialNotification.create({
         data: {
           userId: primary.id,

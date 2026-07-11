@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
-import AuthPageShell from '@/components/AuthPageShell'
 import FortyTwoButton from '@/components/FortyTwoButton'
 import Url from '@/components/Url'
 import SignupForm from './_components/SignupForm'
@@ -22,9 +21,14 @@ const Signup = () => {
   }, [])
 
   return (
-    <AuthPageShell title="Create your profile">
+    <>
       <SignupForm
-        onSuccess={() => navigate('/signup/success', { replace: true })}
+        onSuccess={() =>
+          navigate('/login', {
+            replace: true,
+            state: { message: 'Account created. Please log in.' },
+          })
+        }
       />
 
       <div className="my-5 flex items-center gap-4">
@@ -46,7 +50,7 @@ const Signup = () => {
       <p className="mt-5 text-center text-sm text-[#081934]">
         Already have an account? <Url to="/login">Log in</Url>
       </p>
-    </AuthPageShell>
+    </>
   )
 }
 

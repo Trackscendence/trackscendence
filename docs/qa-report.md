@@ -16,7 +16,6 @@ were clean.
 | `/signup`              | no   | clean              | clean            |
 | `/forgot-password`     | no   | clean              | clean            |
 | `/reset-password`      | no   | clean              | clean            |
-| `/signup/success`      | no   | clean              | clean            |
 | `/privacy-policy`      | no   | clean              | clean            |
 | `/terms-of-service`    | no   | clean              | clean            |
 | `/` (waiting room)     | yes  | clean              | clean            |

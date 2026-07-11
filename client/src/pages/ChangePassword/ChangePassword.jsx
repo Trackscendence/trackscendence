@@ -1,5 +1,4 @@
 import BackButton from '@/components/BackButton'
-import AuthPageShell from '@/components/AuthPageShell'
 import useAuthStore from '@/stores/useAuthStore'
 import ChangePasswordForm from './_components/ChangePasswordForm'
 
@@ -13,14 +12,19 @@ const ChangePassword = () => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#1f2d28]">
+    <div className="bg-surface-warm flex min-h-screen flex-col text-[#081934]">
       <header className="relative z-20 flex items-start">
         <BackButton className="h-[27px] w-[138px] shrink-0" />
       </header>
 
-      <AuthPageShell title="Change password" titleSize="md">
-        <ChangePasswordForm onSuccess={handleSuccess} />
-      </AuthPageShell>
+      <main className="flex flex-1 items-center justify-center px-5 py-10">
+        <div className="w-full max-w-[414px]">
+          <h1 className="mb-8 text-center text-4xl font-semibold text-[#081934] uppercase">
+            Change password
+          </h1>
+          <ChangePasswordForm onSuccess={handleSuccess} />
+        </div>
+      </main>
     </div>
   )
 }

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { requestPasswordReset } from '@/services/auth'
 import usePasswordOperation from '@/hooks/usePasswordOperation'
-import AuthPageShell from '@/components/AuthPageShell'
 import Button from '@/components/Button'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
@@ -22,7 +21,7 @@ const ForgotPassword = () => {
   }
 
   return (
-    <AuthPageShell title="Forgot password" titleSize="md">
+    <>
       {message ? (
         <p className="mb-4 rounded-md border border-[#bbd2c3] bg-[#eef7f1] px-3 py-2 text-sm text-[#24563f]">
           {message}
@@ -66,7 +65,7 @@ const ForgotPassword = () => {
       <p className="mt-5 text-center text-sm text-[#081934]">
         Remembered your password? <Url to="/login">Log in</Url>
       </p>
-    </AuthPageShell>
+    </>
   )
 }
 

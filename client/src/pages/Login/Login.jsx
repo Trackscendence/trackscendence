@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
-import AuthPageShell from '@/components/AuthPageShell'
 import FortyTwoButton from '@/components/FortyTwoButton'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Url from '@/components/Url'
@@ -55,7 +54,7 @@ const Login = () => {
   if (isAuthenticated) return <Navigate to={from} replace />
 
   return (
-    <AuthPageShell title="LOG IN">
+    <>
       {message ? (
         <p className="mb-4 rounded-md border border-[#bbd2c3] bg-[#eef7f1] px-3 py-2 text-sm text-[#24563f]">
           {message}
@@ -102,7 +101,7 @@ const Login = () => {
           </p>
         </>
       ) : null}
-    </AuthPageShell>
+    </>
   )
 }
 

@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom'
-import AuthPageShell from '@/components/AuthPageShell'
 import Url from '@/components/Url'
 import ResetPasswordForm from './_components/ResetPasswordForm'
 
@@ -7,7 +6,7 @@ const ResetPassword = () => {
   const navigate = useNavigate()
 
   return (
-    <AuthPageShell title="Reset password">
+    <>
       <ResetPasswordForm
         onSuccess={() =>
           navigate('/login', {
@@ -23,7 +22,7 @@ const ResetPassword = () => {
       <p className="mt-5 text-center text-sm text-[#081934]">
         Remembered your password? <Url to="/login">Log in</Url>
       </p>
-    </AuthPageShell>
+    </>
   )
 }
 

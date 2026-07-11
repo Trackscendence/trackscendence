@@ -36,7 +36,6 @@ const ResetPassword = lazy(() => import('@/pages/ResetPassword'))
 const Session = lazy(() => import('@/pages/Session'))
 const Settings = lazy(() => import('@/pages/Settings'))
 const Signup = lazy(() => import('@/pages/Signup'))
-const SignupSuccess = lazy(() => import('@/pages/SignupSuccess'))
 const TermsOfService = lazy(() => import('@/pages/TermsOfService'))
 const User = lazy(() => import('@/pages/User'))
 const WaitingRoom = lazy(() => import('@/pages/WaitingRoom'))
@@ -236,11 +235,10 @@ const App = () => {
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/signup/success" element={<SignupSuccess />} />
           </Route>
 
-          {/* Standalone (no AuthLayout header): the callback is a full-screen
-              transition into the app, not an auth form. */}
+          {/* Standalone auth status route: no shared auth header while the 42
+              callback resolves or confirms the completed sign-in. */}
           <Route path="/oauth/42/callback" element={<OAuth42Callback />} />
 
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

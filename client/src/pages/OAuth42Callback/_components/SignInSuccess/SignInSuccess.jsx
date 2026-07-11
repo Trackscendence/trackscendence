@@ -1,11 +1,9 @@
-import AuthPageShell from '@/components/AuthPageShell'
+import AuthLayout from '@/layouts/AuthLayout'
 
 // Brief confirmation shown after a successful 42 sign-in, before the container
-// redirects into the waiting room. Mirrors SignupSuccess (warm surface, navy
-// ink, blue check) so the auth flow feels like one continuous space. Pure
-// presenter — the parent owns the redirect timer.
+// redirects into the waiting room. Pure presenter: the parent owns the timer.
 const SignInSuccess = ({ username }) => (
-  <AuthPageShell fullScreen contentClassName="text-center">
+  <AuthLayout showHeader={false} contentClassName="text-center">
     <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-[#0196FF]">
       <svg
         width="48"
@@ -30,7 +28,7 @@ const SignInSuccess = ({ username }) => (
       {username ? `Welcome back, ${username}. ` : 'Welcome back. '}
       Taking you to the table…
     </p>
-  </AuthPageShell>
+  </AuthLayout>
 )
 
 export default SignInSuccess

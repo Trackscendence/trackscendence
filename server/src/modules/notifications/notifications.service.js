@@ -115,11 +115,11 @@ const createDirectMessageNotification = (
   )
 }
 
-const attachConversationToFriendRequestNotifications = (
+const attachConversationToFriendRequestNotification = (
   { actorId, conversationId, userId },
   { repository = notificationsRepository, db } = {},
 ) => {
-  return repository.attachConversationToFriendRequests(
+  return repository.attachConversationToLatestFriendRequest(
     { actorId, conversationId, userId },
     db,
   )
@@ -175,7 +175,7 @@ const markAllNotificationsRead = async (
 
 module.exports = {
   SOCIAL_NOTIFICATION_TYPE,
-  attachConversationToFriendRequestNotifications,
+  attachConversationToFriendRequestNotification,
   createDirectMessageNotification,
   createFriendAcceptedNotification,
   createFriendRequestNotification,

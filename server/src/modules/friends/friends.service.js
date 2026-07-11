@@ -343,7 +343,7 @@ const respondToFriendRequest = async (user, payload) => {
         // direct message; point the addressee's request notification at that
         // conversation so clicking it later reopens the chat (#395).
         if (accepted.requestMessage) {
-          await notificationsService.attachConversationToFriendRequestNotifications(
+          await notificationsService.attachConversationToFriendRequestNotification(
             {
               actorId: accepted.requesterId,
               conversationId: conversation.id,

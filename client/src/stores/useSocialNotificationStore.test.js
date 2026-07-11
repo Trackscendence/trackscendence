@@ -81,3 +81,33 @@ test('markFriendRequestHandled drops the inline actions for that actor only', ()
   assert.equal(state.notifications[1].friendRequestStatus, 'PENDING')
   assert.equal(state.notifications[2].type, 'DIRECT_MESSAGE')
 })
+
+test('an accepted intro request carries its conversation into the cache', () => {
+  useSocialNotificationStore.setState({
+    notifications: [
+      {
+        ...notification,
+        id: 1,
+        conversationId: null,
+        friendRequestStatus: 'PENDING',
+        type: 'FRIEND_REQUEST',
+      },
+      {
+        ...notification,
+        id: 2,
+        conversationId: null,
+        friendRequestStatus: 'PENDING',
+        message: null,
+        type: 'FRIEND_REQUEST',
+      },
+    ],
+  })
+
+  useSocialNotificationStore.getState().markFriendRequestHandled(2, 48)
+
+  const state = useSocialNotificationStore.getState()
+  // The intro-message row routes to its chat; the plain row keeps profile
+  // routing (no conversation attached).
+  assert.equal(state.notifications[0].conversationId, 48)
+  assert.equal(state.notifications[1].conversationId, null)
+})

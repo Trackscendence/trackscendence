@@ -119,13 +119,21 @@ const useSocialNotificationStore = createSessionStore((set) => ({
   // Synchronous patch for a request answered somewhere else (the profile's
   // Accept/Reject): the cached notification drops its inline actions the
   // moment the backend confirms, so the bell can never briefly offer a
-  // response that was already given. A background reload restores full truth.
-  markFriendRequestHandled: (actorId) =>
+  // response that was already given, and an accept carries its new
+  // conversation so the row routes to the chat even before the background
+  // reload restores full truth.
+  markFriendRequestHandled: (actorId, conversationId = null) =>
     set((state) => ({
       notifications: state.notifications.map((notification) =>
         notification.type === 'FRIEND_REQUEST' &&
         notification.actor?.id === actorId
-          ? { ...notification, friendRequestStatus: null }
+          ? {
+              ...notification,
+              friendRequestStatus: null,
+              ...(conversationId && notification.message
+                ? { conversationId }
+                : {}),
+            }
           : notification,
       ),
     })),

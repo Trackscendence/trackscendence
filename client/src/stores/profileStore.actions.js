@@ -157,7 +157,10 @@ export const createProfileActions = (set, get) => ({
       // the background reload below fails); then reload for full truth.
       // loadNotifications handles its own failures.
       const socialNotifications = useSocialNotificationStore.getState()
-      socialNotifications.markFriendRequestHandled(profile.id)
+      socialNotifications.markFriendRequestHandled(
+        profile.id,
+        result.conversationId,
+      )
       socialNotifications.loadNotifications()
       return result
     } catch (error) {

@@ -1,7 +1,8 @@
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import BackButton from '@/components/BackButton'
 import LobbyChip from '@/components/LobbyChip'
 import PlayerSearch from './_components/PlayerSearch'
+import LegalFooter from '@/components/LegalFooter'
 
 const ProfileLayout = () => {
   const { pathname } = useLocation()
@@ -28,16 +29,7 @@ const ProfileLayout = () => {
           <Outlet />
         </div>
       </main>
-      <footer className="border-t border-[#d8dfd4] bg-white py-4">
-        <div className="flex w-full items-center justify-center gap-6 px-5 text-xs text-[#50635a]">
-          <Link to="/privacy-policy" className="hover:text-[#1f2d28]">
-            Privacy Policy
-          </Link>
-          <Link to="/terms-of-service" className="hover:text-[#1f2d28]">
-            Terms of Service
-          </Link>
-        </div>
-      </footer>
+      <LegalFooter />
     </div>
   )
 }

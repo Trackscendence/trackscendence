@@ -50,6 +50,13 @@ export default defineConfig({
     alias: { '@': path.resolve(import.meta.dirname, 'src') },
   },
   server: {
+    // Docker dev sets VITE_WATCH_POLL because inotify events do not cross the
+    // bind mount reliably; without polling the dev server can serve a stale
+    // bundle while logging HMR updates. Native dev leaves this unset.
+    watch:
+      process.env.VITE_WATCH_POLL === 'true'
+        ? { usePolling: true, interval: 300 }
+        : undefined,
     proxy: {
       '/api': {
         target: process.env.VITE_API_PROXY_TARGET || 'http://server:3001',

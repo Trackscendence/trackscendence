@@ -5,6 +5,7 @@ import Avatar from '@/components/Avatar'
 import MarkAllReadButton from '@/components/MarkAllReadButton'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import { formatMessageTime } from '@/utils/formatMessageTime'
+import getConversationPath from '@/utils/conversationPath'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
 
 const MenuButton = ({ count, isOpen, onClick }) => (
@@ -88,7 +89,7 @@ const MailMenu = () => {
 
   const openConversation = (conversationId) => {
     setIsOpen(false)
-    navigate(`/messages?conversation=${encodeURIComponent(conversationId)}`)
+    navigate(getConversationPath(conversationId))
   }
 
   return (

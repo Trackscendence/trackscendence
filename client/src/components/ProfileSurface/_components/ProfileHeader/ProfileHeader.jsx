@@ -1,23 +1,19 @@
 import { Link } from 'react-router-dom'
 import { Settings } from 'lucide-react'
-import Button from '@/components/Button'
 import ProfileAvatar from '../ProfileAvatar'
 import ProfileStatStrip from '../ProfileStatStrip'
 import ProfileTabs from '../ProfileTabs'
-import profileActions from '../../_utils/profileActions'
+import RelationshipActions from '../RelationshipActions'
 import profileFormatters from '../../_utils/profileFormatters'
 
 const ProfileHeader = ({
   activeTab,
   isOwnProfile,
-  isSubmitting,
-  onPrimaryAction,
   onTabChange,
   profile,
   relationship,
 }) => {
   const stats = profile.stats || {}
-  const action = profileActions.getProfileActionState({ relationship })
   const metadata = isOwnProfile ? profile.email : `@${profile.username}`
 
   return (
@@ -48,16 +44,10 @@ const ProfileHeader = ({
               <Settings aria-hidden="true" className="h-5 w-5" />
             </Link>
           ) : (
-            <Button
-              className="h-9 w-full rounded-none sm:w-[138px]"
-              disabled={action.isDisabled || isSubmitting}
-              fullWidth={false}
-              type="button"
-              variant={action.variant}
-              onClick={() => onPrimaryAction(action)}
-            >
-              {isSubmitting ? 'Working' : action.label}
-            </Button>
+            <RelationshipActions
+              profile={profile}
+              relationship={relationship}
+            />
           )}
         </div>
 

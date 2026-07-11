@@ -1,12 +1,14 @@
 import {
   clearAvatar,
-  emptyFriendContext,
+  emptyFriendsAndLeaderboard,
   getActiveToken,
   loadCurrentProfileData,
-  loadFriendContext,
+  loadFriendsList,
   loadLeaderboardContext,
   loadPublicProfileData,
+  removeFriendship,
   requestFriendship,
+  respondFriendship,
   saveAvatar,
   saveCurrentProfile,
 } from './profileStore.helpers'
@@ -15,6 +17,7 @@ import { createPublicProfileLoader } from './profileStore.publicProfileLoader'
 import { isActiveToken } from './sessionGuard'
 import useAuthStore from './useAuthStore'
 import useNotificationStore from './useNotificationStore'
+import useSocialNotificationStore from './useSocialNotificationStore'
 
 const requireToken = (set) => {
   const token = getActiveToken()
@@ -47,7 +50,7 @@ export const createProfileActions = (set, get) => ({
   },
 
   loadCurrentProfile: createCurrentProfileLoader({
-    emptyFriendContext,
+    emptyFriendsAndLeaderboard,
     get,
     getAuthUserId: () => useAuthStore.getState().user?.id,
     isTokenActive: isActiveToken,
@@ -64,15 +67,22 @@ export const createProfileActions = (set, get) => ({
     set,
   }),
 
-  refreshFriendContext: async () => {
+  // Never rejects: callers fire this off the critical path (after an accept,
+  // an unfriend, or a chat mount), so a failed refresh just keeps the previous
+  // friends list instead of surfacing as an unhandled rejection.
+  refreshFriends: async () => {
     const token = getActiveToken()
 
     if (!token) return
 
-    const friendContext = await loadFriendContext(token)
-    if (!isActiveToken(token)) return
+    try {
+      const friendsData = await loadFriendsList(token)
+      if (!isActiveToken(token)) return
 
-    set(friendContext)
+      set(friendsData)
+    } catch {
+      // The sidebar keeps the list it already has.
+    }
   },
 
   sendFriendRequest: async (message = '') => {
@@ -101,6 +111,93 @@ export const createProfileActions = (set, get) => ({
         isSubmitting: false,
       })
       notifications.push('Friend request sent', 'success')
+      return true
+    } catch (error) {
+      if (!isActiveToken(token)) return false
+      notifications.push(error.message, 'error')
+      set({ actionError: '', isSubmitting: false })
+      return false
+    }
+  },
+
+  // Answer the viewed profile's incoming friend request from the profile
+  // itself. Accept flips the relationship to FRIENDS and refreshes the friends
+  // context; reject clears the pending row so the pair can request again.
+  respondToFriendRequest: async (action) => {
+    const token = getActiveToken()
+    const profile = get().publicProfile
+    const notifications = useNotificationStore.getState()
+
+    if (!token) {
+      notifications.push('Authentication required', 'error')
+      return null
+    }
+
+    if (!profile || get().isSubmitting) return null
+
+    set({ actionError: '', isSubmitting: true })
+
+    try {
+      const result = await respondFriendship({
+        action,
+        profileId: profile.id,
+        token,
+      })
+      if (!isActiveToken(token)) return null
+      set({ relationship: result.relationship, isSubmitting: false })
+      notifications.push(
+        action === 'accept'
+          ? 'Friend request accepted'
+          : 'Friend request rejected',
+        action === 'accept' ? 'success' : 'info',
+      )
+      if (action === 'accept') get().refreshFriends()
+      // Drop the request's inline actions from the bell synchronously, so it
+      // can never briefly offer a response that was already given (even if
+      // the background reload below fails); then reload for full truth.
+      // loadNotifications handles its own failures.
+      const socialNotifications = useSocialNotificationStore.getState()
+      socialNotifications.markFriendRequestHandled(
+        profile.id,
+        result.conversationId,
+      )
+      socialNotifications.loadNotifications()
+      return result
+    } catch (error) {
+      if (!isActiveToken(token)) return null
+      notifications.push(error.message, 'error')
+      set({ actionError: '', isSubmitting: false })
+      return null
+    }
+  },
+
+  // Cancel an outgoing request or unfriend, both through the same delete
+  // endpoint; the relationship returns to none, so the profile shows
+  // "Add a friend" again.
+  removeRelationship: async () => {
+    const token = getActiveToken()
+    const profile = get().publicProfile
+    const wasFriends = get().relationship?.status === 'FRIENDS'
+    const notifications = useNotificationStore.getState()
+
+    if (!token) {
+      notifications.push('Authentication required', 'error')
+      return false
+    }
+
+    if (!profile || get().isSubmitting) return false
+
+    set({ actionError: '', isSubmitting: true })
+
+    try {
+      const result = await removeFriendship({ profileId: profile.id, token })
+      if (!isActiveToken(token)) return false
+      set({ relationship: result.relationship, isSubmitting: false })
+      notifications.push(
+        wasFriends ? 'Friend removed' : 'Friend request cancelled',
+        'info',
+      )
+      if (wasFriends) get().refreshFriends()
       return true
     } catch (error) {
       if (!isActiveToken(token)) return false

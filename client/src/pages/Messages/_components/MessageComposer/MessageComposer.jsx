@@ -1,27 +1,43 @@
 import { useState } from 'react'
 import { Send } from 'lucide-react'
 
-const MessageComposer = ({ disabled, onSend }) => {
+// The one composer both entry points land on (a notification row and the
+// profile mailbox both navigate here). It takes focus on mount and the thread
+// remounts it per conversation, so arriving in a chat puts the cursor in the
+// input; Enter sends, Shift+Enter keeps making new lines.
+const MessageComposer = ({ autoFocus = false, disabled, onSend }) => {
   const [message, setMessage] = useState('')
   const remaining = 500 - message.length
 
-  const submit = (event) => {
-    event.preventDefault()
+  const send = () => {
     const text = message.trim()
     if (!text || disabled) return
     if (onSend(text)) setMessage('')
   }
 
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    send()
+  }
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      send()
+    }
+  }
+
   return (
     <form
       className="border-t border-[#f0d9bd] bg-white px-5 py-4"
-      onSubmit={submit}
+      onSubmit={handleSubmit}
     >
       <div className="flex items-end gap-3">
         <label className="sr-only" htmlFor="direct-message">
           Message
         </label>
         <textarea
+          autoFocus={autoFocus}
           id="direct-message"
           value={message}
           maxLength={500}
@@ -30,6 +46,7 @@ const MessageComposer = ({ disabled, onSend }) => {
           placeholder="Message"
           className="min-h-11 flex-1 resize-none rounded-md border border-[#e6c9a8] bg-[#fffaf3] px-3 py-2 text-sm text-[#3d1200] transition outline-none placeholder:text-[#9a7050] focus:border-[#e86d2f] disabled:cursor-not-allowed disabled:bg-[#f5eadc]"
           onChange={(event) => setMessage(event.target.value)}
+          onKeyDown={handleKeyDown}
         />
         <button
           aria-label="Send message"

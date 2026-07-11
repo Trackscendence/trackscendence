@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import PlayerSearch from './_components/PlayerSearch'
+import PlayerSearch from '@/components/PlayerSearch'
 import AppHeader from '@/components/AppHeader'
 import LegalFooter from '@/components/LegalFooter'
 

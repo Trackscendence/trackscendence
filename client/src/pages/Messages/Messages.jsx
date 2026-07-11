@@ -7,6 +7,7 @@ import useAuthStore from '@/stores/useAuthStore'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
 import useNotificationStore from '@/stores/useNotificationStore'
 import useSocketStore from '@/stores/useSocketStore'
+import ComposeThread from './_components/ComposeThread'
 import ConversationList from './_components/ConversationList'
 import MessageThread from './_components/MessageThread'
 
@@ -14,6 +15,7 @@ const Messages = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [filter, setFilter] = useState('all')
+  const isComposing = searchParams.get('compose') === '1'
   const user = useAuthStore((state) => state.user)
   const isConnected = useSocketStore((state) => state.isConnected)
   const conversations = useDirectMessageStore((state) => state.conversations)
@@ -90,10 +92,20 @@ const Messages = () => {
       return
     }
 
+    // While composing the right panel is the compose form, so defaulting to
+    // the first conversation would only highlight a row that is not shown.
+    if (isComposing) return
+
     if (!activeConversationId && conversations[0]) {
       setActiveConversation(conversations[0].id)
     }
-  }, [activeConversationId, conversations, searchParams, setActiveConversation])
+  }, [
+    activeConversationId,
+    conversations,
+    isComposing,
+    searchParams,
+    setActiveConversation,
+  ])
 
   useEffect(() => {
     if (!activeConversationId) return
@@ -114,6 +126,26 @@ const Messages = () => {
     return sent
   }
 
+  // A compose send creates (or finds) the conversation first, delivers over
+  // the same socket path a thread send uses, then lands in the thread.
+  // ensureConversation never rejects; it toasts and returns null on failure.
+  const sendToRecipient = async (recipientId, message) => {
+    const conversation = await ensureConversation(recipientId)
+    if (!conversation) return false
+
+    const sent = useSocketStore
+      .getState()
+      .sendChatMessage(message, `user:${recipientId}`)
+
+    if (!sent) {
+      pushNotification('Message could not be sent', 'error')
+      return false
+    }
+
+    navigate(getConversationPath(conversation.id), { replace: true })
+    return true
+  }
+
   return (
     <div className="bg-surface-warm flex min-h-screen flex-col text-[#3d1200]">
       <AppHeader />
@@ -121,7 +153,7 @@ const Messages = () => {
       <main className="flex flex-1 px-6 py-6">
         <div className="mx-auto grid w-full max-w-[1240px] grid-cols-1 overflow-hidden rounded-lg border border-[#e6c9a8] bg-white shadow-[0_18px_45px_rgba(61,18,0,0.08)] lg:grid-cols-[360px_minmax(0,1fr)]">
           <ConversationList
-            activeConversationId={activeConversationId}
+            activeConversationId={isComposing ? null : activeConversationId}
             conversations={visibleConversations}
             filter={filter}
             isLoading={isLoadingConversations}
@@ -133,18 +165,22 @@ const Messages = () => {
               })
             }}
           />
-          <MessageThread
-            conversation={selectedConversation}
-            currentUserId={user?.id}
-            isConnected={isConnected}
-            isLoading={isLoadingMessages}
-            messages={
-              selectedConversation
-                ? messagesByConversation[selectedConversation.id] || []
-                : []
-            }
-            onSend={sendMessage}
-          />
+          {isComposing ? (
+            <ComposeThread onSend={sendToRecipient} />
+          ) : (
+            <MessageThread
+              conversation={selectedConversation}
+              currentUserId={user?.id}
+              isConnected={isConnected}
+              isLoading={isLoadingMessages}
+              messages={
+                selectedConversation
+                  ? messagesByConversation[selectedConversation.id] || []
+                  : []
+              }
+              onSend={sendMessage}
+            />
+          )}
         </div>
       </main>
       <LegalFooter />

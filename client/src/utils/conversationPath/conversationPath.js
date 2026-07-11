@@ -4,4 +4,8 @@
 const getConversationPath = (conversationId) =>
   `/messages?conversation=${encodeURIComponent(conversationId)}`
 
+// The compose entry point lives beside it for the same reason: every "+"
+// (mail dropdown, Messages page header) links here and nowhere else.
+export const composeMessagePath = '/messages?compose=1'
+
 export default getConversationPath

@@ -1,1 +1,1 @@
-export { default } from './conversationPath'
+export { default, composeMessagePath } from './conversationPath'

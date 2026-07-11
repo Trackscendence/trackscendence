@@ -1,7 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import BackButton from '@/components/BackButton'
 import LobbyChip from '@/components/LobbyChip'
-import PlayerSearch from './_components/PlayerSearch'
+import PlayerSearch from '@/components/PlayerSearch'
 
 const ProfileLayout = () => {
   const { pathname } = useLocation()
@@ -17,7 +17,9 @@ const ProfileLayout = () => {
         <BackButton className="h-[27px] w-[138px] shrink-0" />
 
         <div className="flex flex-1 justify-center px-4">
-          {showSearch ? <PlayerSearch /> : null}
+          {showSearch ? (
+            <PlayerSearch className="mx-auto max-w-md" scope="profile-header" />
+          ) : null}
         </div>
 
         <LobbyChip className="h-[27px] w-[138px] shrink-0" />

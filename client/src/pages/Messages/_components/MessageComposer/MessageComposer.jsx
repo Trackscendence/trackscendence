@@ -7,22 +7,33 @@ import { Send } from 'lucide-react'
 // input; Enter sends, Shift+Enter keeps making new lines.
 const MessageComposer = ({ autoFocus = false, disabled, onSend }) => {
   const [message, setMessage] = useState('')
+  const [isSending, setIsSending] = useState(false)
   const remaining = 500 - message.length
 
   const send = () => {
     const text = message.trim()
-    if (!text || disabled) return
+    if (!text || disabled || isSending) return
 
     // Thread sends answer synchronously (socket emit), compose sends resolve
     // later (the conversation is created first). Only a confirmed send clears
-    // the draft, so a failure never eats the message.
+    // the draft, so a failure or rejection never eats the message; while one
+    // async send is pending, further submits are ignored so the same text
+    // cannot be delivered twice.
     const result = onSend(text)
     if (result === true) {
       setMessage('')
-    } else if (typeof result?.then === 'function') {
-      result.then((sent) => {
-        if (sent) setMessage('')
-      })
+      return
+    }
+    if (typeof result?.then === 'function') {
+      setIsSending(true)
+      result
+        .then((sent) => {
+          if (sent) setMessage('')
+        })
+        .catch(() => {
+          // The caller surfaces its own failure (toast); the draft stays.
+        })
+        .finally(() => setIsSending(false))
     }
   }
 
@@ -62,7 +73,7 @@ const MessageComposer = ({ autoFocus = false, disabled, onSend }) => {
         <button
           aria-label="Send message"
           type="submit"
-          disabled={disabled || !message.trim()}
+          disabled={disabled || isSending || !message.trim()}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-[#e86d2f] text-white transition hover:bg-[#c95b24] disabled:cursor-not-allowed disabled:bg-[#d8b49a]"
         >
           <Send aria-hidden="true" className="h-4 w-4" />

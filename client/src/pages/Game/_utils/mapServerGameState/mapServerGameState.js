@@ -75,9 +75,18 @@ const mapServerGameState = ({
   const isMyTurn =
     !isSpectator && !state.winner && state.currentPlayer === ownUserId
 
-  const opponentIds = Object.keys(state.playerHandsSizes ?? {})
-    .map(Number)
-    .filter((userId) => userId !== ownUserId)
+  const orderedPlayerIds = Object.keys(state.playerHandsSizes ?? {}).map(Number)
+
+  const ownIndex = orderedPlayerIds.findIndex((userId) => userId === ownUserId)
+
+  const opponentIds =
+    ownIndex === -1
+      ? orderedPlayerIds
+      : [
+          ...orderedPlayerIds.slice(ownIndex, orderedPlayerIds.length),
+          ...orderedPlayerIds.slice(0, ownIndex),
+        ].filter((userId) => userId !== ownUserId)
+
   const seats = getOpponentSeats(opponentIds.length)
   const opponents = opponentIds.map((userId, index) => {
     const known = playersById.get(userId)

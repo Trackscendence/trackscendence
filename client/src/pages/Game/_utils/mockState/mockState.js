@@ -107,11 +107,11 @@ const createState = (opponentSeats, options = {}) => {
 }
 
 const MOCK_PLAYER_SEATS = {
-  2: ['top'],
-  3: ['left', 'right'],
-  4: ['top', 'left', 'right'],
-  5: ['top-left', 'top-right', 'left', 'right'],
-  6: ['top-left', 'top', 'top-right', 'left', 'right'],
+  1: ['top'],
+  2: ['left', 'right'],
+  3: ['left', 'top', 'right'],
+  4: ['left', 'top-left', 'top-right', 'right'],
+  5: ['left', 'top-left', 'top', 'top-right', 'right'],
 }
 
 const getPlayerSeats = (playerCount) => {
@@ -139,10 +139,10 @@ const SUPPORTED_PLAYER_COUNTS = new Set(['2', '3', '4', '5', '6'])
 const SUPPORTED_DIRECTIONS = new Set(['clockwise', 'counter-clockwise'])
 const SUPPORTED_SEATS = new Set([
   'bottom',
+  'left',
   'top-left',
   'top',
   'top-right',
-  'left',
   'right',
 ])
 

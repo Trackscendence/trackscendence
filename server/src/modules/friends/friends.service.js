@@ -7,6 +7,7 @@ const friendsRepository = require('#modules/friends/friends.repository')
 const messagesService = require('#modules/messages/messages.service')
 const notificationsService = require('#modules/notifications/notifications.service')
 const { BLOCK_STATE } = require('#modules/friends/friendBlockState')
+const notificationsSocket = require('#modules/notifications/notifications.socket')
 
 const FRIENDSHIP_STATUS = {
   PENDING: 'PENDING',
@@ -321,6 +322,7 @@ const sendFriendRequest = async (user, payload) => {
       message: requestMessage,
       userId: targetUserId,
     })
+    notificationsSocket.emitSocialNotificationsChanged(targetUserId)
 
     return {
       message: 'Friend request sent successfully',
@@ -403,6 +405,9 @@ const respondToFriendRequest = async (user, payload) => {
           )
         }
 
+        notificationsSocket.emitSocialNotificationsChanged(accepted.requesterId)
+        notificationsSocket.emitSocialNotificationsChanged(accepted.addresseeId)
+
         return {
           message: 'Friend request accepted successfully',
           friendship: toFriendSummary(accepted, user.id),
@@ -411,6 +416,7 @@ const respondToFriendRequest = async (user, payload) => {
       }
 
       await friendsRepository.deleteFriendshipById(lockedRelationship.id, tx)
+      notificationsSocket.emitSocialNotificationsChanged(user.id)
 
       return {
         message: 'Friend request rejected successfully',

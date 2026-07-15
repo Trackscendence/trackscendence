@@ -44,6 +44,7 @@ export const SOCKET_EVENTS = {
   ACTIVE_GAME: 'active_game',
 
   // Chat (CHAT_MESSAGE and CHAT_PRIVATE_MESSAGE flow both directions)
+  CHAT_CONVERSATION_READ: 'chat:conversation_read',
   CHAT_MESSAGE: 'chat:message',
   CHAT_PRIVATE_MESSAGE: 'chat:private_message',
   CHAT_ROOM_JOIN: 'chat:room_join',

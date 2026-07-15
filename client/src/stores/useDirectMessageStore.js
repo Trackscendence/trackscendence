@@ -90,6 +90,19 @@ const getConversationUnreadTotal = (conversations) => {
   )
 }
 
+const getTimestamp = (value) => {
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : null
+}
+
+const shouldReplaceReadAt = (currentReadAt, nextReadAt) => {
+  const nextTimestamp = getTimestamp(nextReadAt)
+  if (nextTimestamp === null) return false
+
+  const currentTimestamp = getTimestamp(currentReadAt)
+  return currentTimestamp === null || nextTimestamp > currentTimestamp
+}
+
 // Session store (#391): holds the signed-in user's message content, so it is
 // cleared by resetSessionStores() at teardown, and every post-await write is
 // guarded so an in-flight response from a previous session cannot repopulate it.
@@ -341,6 +354,27 @@ const useDirectMessageStore = createSessionStore((set) => ({
         unreadCount: getConversationUnreadTotal(conversations),
       }
     })
+  },
+
+  markConversationReadByFriend: ({ conversationId, readAt } = {}) => {
+    if (!conversationId || !readAt) return
+    if (!getActiveToken()) return
+
+    set((state) => ({
+      conversations: state.conversations.map((conversation) => {
+        if (String(conversation.id) !== String(conversationId)) {
+          return conversation
+        }
+        if (!shouldReplaceReadAt(conversation.friendLastReadAt, readAt)) {
+          return conversation
+        }
+
+        return {
+          ...conversation,
+          friendLastReadAt: readAt,
+        }
+      }),
+    }))
   },
 
   reset: () => set(getDefaultState()),

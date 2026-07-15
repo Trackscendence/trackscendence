@@ -1,9 +1,9 @@
 import Avatar from '@/components/Avatar'
 import ProfileLink from '@/components/ProfileLink'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
-import { formatMessageTime } from '@/utils/formatMessageTime'
 import MessageComposer from '../MessageComposer'
 import BlockedBanner from './_components/BlockedBanner'
+import MessageBubble from './_components/MessageBubble'
 import ThreadHeaderMenu from './_components/ThreadHeaderMenu'
 
 const EmptyThread = () => (
@@ -16,6 +16,20 @@ const EmptyThread = () => (
     </div>
   </div>
 )
+
+const getTimestamp = (value) => {
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : null
+}
+
+const isMessageReadByFriend = (message, friendLastReadTimestamp) => {
+  if (friendLastReadTimestamp === null) return false
+
+  const messageTimestamp = getTimestamp(message.createdAt)
+  return (
+    messageTimestamp !== null && messageTimestamp <= friendLastReadTimestamp
+  )
+}
 
 const MessageThread = ({
   conversation,
@@ -32,6 +46,7 @@ const MessageThread = ({
   const friend = getPlayerIdentity(conversation.friend)
   const blockState = conversation.blockState || 'none'
   const isBlocked = blockState !== 'none'
+  const friendLastReadTimestamp = getTimestamp(conversation.friendLastReadAt)
 
   return (
     <section className="flex min-h-0 flex-col bg-white">
@@ -96,29 +111,15 @@ const MessageThread = ({
             const isOwn = String(message.senderId) === String(currentUserId)
 
             return (
-              <div
+              <MessageBubble
                 key={message.id}
-                className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[75%] rounded-lg px-4 py-2 ${
-                    isOwn
-                      ? 'bg-[#e86d2f] text-white'
-                      : 'border border-[#f0d9bd] bg-white text-[#3d1200]'
-                  }`}
-                >
-                  <p className="text-sm leading-6 break-words">
-                    {message.message}
-                  </p>
-                  <p
-                    className={`mt-1 text-right text-[10px] font-semibold ${
-                      isOwn ? 'text-white/70' : 'text-[#9a7050]'
-                    }`}
-                  >
-                    {formatMessageTime(message.createdAt)}
-                  </p>
-                </div>
-              </div>
+                isOwn={isOwn}
+                isRead={
+                  isOwn &&
+                  isMessageReadByFriend(message, friendLastReadTimestamp)
+                }
+                message={message}
+              />
             )
           })}
         </div>

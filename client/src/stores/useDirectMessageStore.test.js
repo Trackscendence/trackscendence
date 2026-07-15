@@ -98,6 +98,44 @@ test('duplicate direct-message socket echoes are ignored', () => {
   )
 })
 
+test("read events update a non-open conversation's friend cursor", () => {
+  useDirectMessageStore.setState({
+    activeConversationId: null,
+    conversations: [conversation],
+  })
+
+  useDirectMessageStore.getState().markConversationReadByFriend({
+    conversationId: 7,
+    readAt: '2026-07-09T12:04:00.000Z',
+  })
+
+  assert.equal(
+    useDirectMessageStore.getState().conversations[0].friendLastReadAt,
+    '2026-07-09T12:04:00.000Z',
+  )
+})
+
+test('older read events do not move the friend cursor backward', () => {
+  useDirectMessageStore.setState({
+    conversations: [
+      {
+        ...conversation,
+        friendLastReadAt: '2026-07-09T12:05:00.000Z',
+      },
+    ],
+  })
+
+  useDirectMessageStore.getState().markConversationReadByFriend({
+    conversationId: 7,
+    readAt: '2026-07-09T12:04:00.000Z',
+  })
+
+  assert.equal(
+    useDirectMessageStore.getState().conversations[0].friendLastReadAt,
+    '2026-07-09T12:05:00.000Z',
+  )
+})
+
 test('session teardown clears direct-message data back to defaults', () => {
   useDirectMessageStore.setState({
     activeConversationId: 7,

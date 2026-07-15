@@ -29,6 +29,7 @@ verifyUploadsWritable()
 
 const initWebSocket = require('./src/socket/socket.service')
 const io = initWebSocket(server)
+app.set('io', io)
 
 registerGracefulShutdown({ io, logger, prisma, server })
 

@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
+import { Podium, Trophy } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import Avatar from '@/components/Avatar'
 import Logo from '@/components/Logo'
+import NavIconLink from '@/components/NavIconLink'
 import SocialNavActions from '@/components/SocialNavActions'
 import AccountMenu from './_components/AccountMenu'
 
@@ -23,6 +25,12 @@ const AppHeader = ({ onCreateRoom }) => {
         <Logo />
       </Link>
       <div className="flex items-center gap-4">
+        {/* Kept as one group with "+ Room" so a future narrow-screen collapse
+            treats the shortcuts together (#443/#445). */}
+        <div className="flex items-center gap-2">
+          <NavIconLink to="/tournament" label="Tournaments" icon={Trophy} />
+          <NavIconLink to="/leaderboard" label="Leaderboard" icon={Podium} />
+        </div>
         {onCreateRoom ? (
           <button
             type="button"

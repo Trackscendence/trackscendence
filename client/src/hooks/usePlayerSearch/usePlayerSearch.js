@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import useDebounce from '@/hooks/useDebounce'
 import useUserSearchStore from '@/stores/useUserSearchStore'
+import { createPlayerSearchRunGate } from './playerSearchRunGate'
 
 // Queries shorter than this never reach the API: single characters match a
 // large slice of the user table for no navigational value.
@@ -29,8 +30,8 @@ const usePlayerSearch = (scope) => {
 
   const [term, setTerm] = useState('')
   const [isOpen, setIsOpen] = useState(false)
+  const [runGate] = useState(createPlayerSearchRunGate)
   const debouncedTerm = useDebounce(term)
-  const activeRunRef = useRef(0)
   const isMountedRef = useRef(false)
   const skipNextDebouncedQueryRef = useRef(null)
   const termRef = useRef('')
@@ -44,7 +45,7 @@ const usePlayerSearch = (scope) => {
 
         if (!didCommit) return
         if (!isMountedRef.current) return
-        if (activeRunRef.current !== runId) return
+        if (!runGate.isCurrentRun(runId)) return
         if (termRef.current.trim() !== searchQuery) return
         setIsOpen(true)
       } catch {
@@ -52,7 +53,7 @@ const usePlayerSearch = (scope) => {
         // unexpected failure from becoming an unhandled event-handler promise.
       }
     },
-    [scope],
+    [runGate, scope],
   )
 
   // Fires once typing pauses. The cleanup supersedes this run so a response
@@ -67,14 +68,13 @@ const usePlayerSearch = (scope) => {
       return undefined
     }
 
-    const runId = activeRunRef.current + 1
-    activeRunRef.current = runId
+    const runId = runGate.beginRun()
     searchAndOpen(searchQuery, runId)
 
     return () => {
-      activeRunRef.current += 1
+      runGate.supersedeRun(runId)
     }
-  }, [debouncedTerm, searchAndOpen])
+  }, [debouncedTerm, runGate, searchAndOpen])
 
   // The scope's results do not outlive the component; clear() also
   // invalidates whatever request is still in flight for it.
@@ -83,15 +83,15 @@ const usePlayerSearch = (scope) => {
 
     return () => {
       isMountedRef.current = false
-      activeRunRef.current += 1
+      runGate.invalidateRun()
       useUserSearchStore.getState().clear(scope)
     }
-  }, [scope])
+  }, [runGate, scope])
 
   const changeTerm = (value) => {
     setTerm(value)
     termRef.current = value
-    activeRunRef.current += 1
+    runGate.invalidateRun()
     const searchQuery = value.trim()
     if (
       skipNextDebouncedQueryRef.current &&
@@ -119,12 +119,14 @@ const usePlayerSearch = (scope) => {
 
     skipNextDebouncedQueryRef.current =
       debouncedTerm.trim() === searchQuery ? null : searchQuery
-    const runId = activeRunRef.current + 1
-    activeRunRef.current = runId
+    const runId = runGate.beginRun()
     searchAndOpen(searchQuery, runId)
   }
 
-  const close = useCallback(() => setIsOpen(false), [])
+  const close = useCallback(() => {
+    runGate.invalidateRun()
+    setIsOpen(false)
+  }, [runGate])
 
   return {
     changeTerm,

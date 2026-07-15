@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { SquareCheckBig } from 'lucide-react'
 
 /* The check sits on the saturated orange bubble, where near-luminance colors
    (slate grey, mid greens) go muddy. Sent is translucent white — the tone
@@ -10,11 +10,11 @@ const ReadReceiptCheck = ({
   sentColor = 'rgba(255, 255, 255, 0.65)',
 }) => (
   <span className="inline-flex items-center">
-    <Check
+    <SquareCheckBig
       aria-hidden="true"
-      className="h-4 w-4 transition-colors duration-300"
+      className="h-3.5 w-3.5 transition-colors duration-300"
       color={isRead ? readColor : sentColor}
-      strokeWidth={3.25}
+      strokeWidth={2.5}
     />
     <span className="sr-only">{isRead ? 'Read' : 'Sent'}</span>
   </span>

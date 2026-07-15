@@ -1,4 +1,4 @@
-const MAX_SUPPRESSED_CLOSED_ROOM_IDS = 20
+const MAX_REMEMBERED_ROOM_IDS = 20
 
 const normalizeRoomId = (roomId) => {
   const number = Number(roomId)
@@ -16,7 +16,7 @@ export const getOwnRoomIds = (rooms, ownUserId) => {
     .filter((roomId) => roomId != null)
 }
 
-export const rememberClosedRoomIds = (currentRoomIds, roomIds) => {
+export const rememberRoomIds = (currentRoomIds, roomIds) => {
   const nextRoomIds = [...currentRoomIds]
 
   roomIds.forEach((roomId) => {
@@ -27,13 +27,13 @@ export const rememberClosedRoomIds = (currentRoomIds, roomIds) => {
     nextRoomIds.push(normalizedRoomId)
   })
 
-  return nextRoomIds.slice(-MAX_SUPPRESSED_CLOSED_ROOM_IDS)
+  return nextRoomIds.slice(-MAX_REMEMBERED_ROOM_IDS)
 }
 
 export const resolveVisibleRooms = ({
   rooms,
   ownUserId,
-  suppressOwnRoom,
+  pendingLeftRoomIds = [],
   suppressedClosedRoomIds,
 }) => {
   const closedRoomIds = new Set(suppressedClosedRoomIds)
@@ -41,23 +41,26 @@ export const resolveVisibleRooms = ({
     (room) => !closedRoomIds.has(normalizeRoomId(room.id)),
   )
 
-  if (!suppressOwnRoom) {
-    return { rooms: roomsWithoutClosed }
-  }
-
-  const stillSeated =
-    !!ownUserId &&
-    roomsWithoutClosed.some((room) =>
-      room.players.some((player) => player.userId === ownUserId),
-    )
-
-  if (!stillSeated) {
-    return { rooms: roomsWithoutClosed, suppressOwnRoom: false }
-  }
-
-  return {
-    rooms: roomsWithoutClosed.filter(
-      (room) => !room.players.some((player) => player.userId === ownUserId),
+  // A room the player left stays hidden only while a snapshot still shows them
+  // seated in it — such a snapshot predates the leave. The first snapshot
+  // without their seat expires the id, so the room (now someone else's)
+  // renders normally again. Tracking ids instead of a boolean means starting
+  // the next create cannot un-hide the previous room (#429).
+  const showsOwnSeat = (room) =>
+    !!ownUserId && room.players.some((player) => player.userId === ownUserId)
+  const stillPendingRoomIds = pendingLeftRoomIds.filter((pendingRoomId) =>
+    roomsWithoutClosed.some(
+      (room) =>
+        normalizeRoomId(room.id) === pendingRoomId && showsOwnSeat(room),
     ),
+  )
+
+  const visibleRooms = roomsWithoutClosed.filter(
+    (room) => !stillPendingRoomIds.includes(normalizeRoomId(room.id)),
+  )
+
+  if (stillPendingRoomIds.length === pendingLeftRoomIds.length) {
+    return { rooms: visibleRooms }
   }
+  return { rooms: visibleRooms, pendingLeftRoomIds: stillPendingRoomIds }
 }

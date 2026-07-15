@@ -49,6 +49,7 @@ const makeDeps = ({
     },
     directMessageStore: {
       getState: () => ({
+        markConversationReadByFriend: rec('markConversationReadByFriend'),
         receiveMessage: rec('receiveDirectMessage'),
         receiveStopTyping: rec('receiveStopTyping'),
         receiveTyping: rec('receiveTyping'),
@@ -89,6 +90,7 @@ test('registers a handler for every event the server can send', () => {
     SOCKET_EVENTS.ROOMS_UPDATE,
     SOCKET_EVENTS.ROOM_ERROR,
     SOCKET_EVENTS.ROOM_CLOSED,
+    SOCKET_EVENTS.CHAT_CONVERSATION_READ,
     SOCKET_EVENTS.CHAT_MESSAGE,
     SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE,
     SOCKET_EVENTS.CHAT_TYPING,
@@ -220,6 +222,10 @@ test('chat events route to the chat store, passing the current user id on privat
 
   handlers[SOCKET_EVENTS.CHAT_MESSAGE]({ text: 'hi' })
   handlers[SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE]({ text: 'psst' })
+  handlers[SOCKET_EVENTS.CHAT_CONVERSATION_READ]({
+    conversationId: 7,
+    readAt: '2026-07-09T12:00:00.000Z',
+  })
   handlers[SOCKET_EVENTS.CHAT_TYPING]({ conversationId: 7 })
   handlers[SOCKET_EVENTS.CHAT_STOP_TYPING]({ conversationId: 7 })
   handlers[SOCKET_EVENTS.CHAT_ROOMS]({ rooms: [{ id: 'r1' }] })
@@ -227,6 +233,9 @@ test('chat events route to the chat store, passing the current user id on privat
   assert.deepEqual(calls.receiveRoomMessage, [[{ text: 'hi' }]])
   assert.deepEqual(calls.receivePrivateMessage, [[{ text: 'psst' }, 42]])
   assert.deepEqual(calls.receiveDirectMessage, [[{ text: 'psst' }, 42]])
+  assert.deepEqual(calls.markConversationReadByFriend, [
+    [{ conversationId: 7, readAt: '2026-07-09T12:00:00.000Z' }],
+  ])
   assert.deepEqual(calls.receiveTyping, [[{ conversationId: 7 }]])
   assert.deepEqual(calls.receiveStopTyping, [[{ conversationId: 7 }]])
   assert.deepEqual(calls.loadSocialNotifications, [[]])
@@ -266,6 +275,10 @@ test('session-data events are dropped once the session has ended (#391)', () => 
   handlers[SOCKET_EVENTS.ROOMS_UPDATE]([{ id: 1 }])
   handlers[SOCKET_EVENTS.CHAT_MESSAGE]({ text: 'late' })
   handlers[SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE]({ text: 'late psst' })
+  handlers[SOCKET_EVENTS.CHAT_CONVERSATION_READ]({
+    conversationId: 7,
+    readAt: '2026-07-09T12:00:00.000Z',
+  })
   handlers[SOCKET_EVENTS.CHAT_TYPING]({ conversationId: 7 })
   handlers[SOCKET_EVENTS.CHAT_STOP_TYPING]({ conversationId: 7 })
 
@@ -274,6 +287,7 @@ test('session-data events are dropped once the session has ended (#391)', () => 
   assert.equal(calls.setRooms, undefined)
   assert.equal(calls.receiveRoomMessage, undefined)
   assert.equal(calls.receivePrivateMessage, undefined)
+  assert.equal(calls.markConversationReadByFriend, undefined)
   assert.equal(calls.receiveTyping, undefined)
   assert.equal(calls.receiveStopTyping, undefined)
 

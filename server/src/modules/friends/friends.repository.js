@@ -102,6 +102,46 @@ const deleteFriendshipById = (id, db = prisma) => {
   })
 }
 
+const blockFriendshipById = (id, blockedById, db = prisma) => {
+  return db.friendship.update({
+    where: { id },
+    data: {
+      status: 'BLOCKED',
+      blockedById,
+    },
+    select: friendshipSelect,
+  })
+}
+
+const unblockFriendshipById = (id, db = prisma) => {
+  return db.friendship.update({
+    where: { id },
+    data: {
+      status: 'ACCEPTED',
+      blockedById: null,
+    },
+    select: friendshipSelect,
+  })
+}
+
+// Every relationship the user is part of, in any status, as a flat list keyed
+// later by the other user's id. Used to stamp block state onto a conversation
+// list in one query instead of one lookup per conversation.
+const listRelationshipsForUser = (userId) => {
+  return prisma.friendship.findMany({
+    where: {
+      OR: [{ requesterId: userId }, { addresseeId: userId }],
+    },
+    select: {
+      id: true,
+      requesterId: true,
+      addresseeId: true,
+      status: true,
+      blockedById: true,
+    },
+  })
+}
+
 const listAcceptedFriendshipsForUser = (userId) => {
   return prisma.friendship.findMany({
     where: {
@@ -137,6 +177,7 @@ const listPendingOutgoingRequestsForUser = (userId) => {
 
 module.exports = {
   acceptFriendRequestById,
+  blockFriendshipById,
   createFriendRequest,
   deleteFriendshipById,
   findFriendshipById,
@@ -145,5 +186,7 @@ module.exports = {
   listAcceptedFriendshipsForUser,
   listPendingIncomingRequestsForUser,
   listPendingOutgoingRequestsForUser,
+  listRelationshipsForUser,
+  unblockFriendshipById,
   withLockedFriendshipById,
 }

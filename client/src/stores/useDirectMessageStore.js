@@ -24,6 +24,15 @@ const requireToken = () => {
 }
 
 const getMessagesService = () => import('@/services/messages')
+const getFriendsService = () => import('@/services/friends')
+
+const setConversationBlockState = (conversations, friendId, blockState) => {
+  return conversations.map((conversation) =>
+    conversation.friend?.id === friendId
+      ? { ...conversation, blockState }
+      : conversation,
+  )
+}
 
 const sortConversations = (conversations) => {
   return [...conversations].sort((first, second) => {
@@ -241,6 +250,58 @@ const useDirectMessageStore = createSessionStore((set) => ({
       })
 
       return result.message
+    } catch (error) {
+      if (token && !isActiveToken(token)) return null
+      notifications.push(error.message, 'error')
+      return null
+    }
+  },
+
+  // Block/unblock reuse the friendship record on the server; here they only
+  // flip the affected conversation's blockState so the thread swaps between the
+  // composer and the blocked banner. The friend id is stable, so the update
+  // survives a conversation reorder.
+  blockUser: async (friendId) => {
+    const notifications = useNotificationStore.getState()
+
+    let token = null
+    try {
+      token = requireToken()
+      const { blockUser } = await getFriendsService()
+      const result = await blockUser(friendId, token)
+      if (!isActiveToken(token)) return null
+      set((state) => ({
+        conversations: setConversationBlockState(
+          state.conversations,
+          friendId,
+          result.blockState,
+        ),
+      }))
+      return result
+    } catch (error) {
+      if (token && !isActiveToken(token)) return null
+      notifications.push(error.message, 'error')
+      return null
+    }
+  },
+
+  unblockUser: async (friendId) => {
+    const notifications = useNotificationStore.getState()
+
+    let token = null
+    try {
+      token = requireToken()
+      const { unblockUser } = await getFriendsService()
+      const result = await unblockUser(friendId, token)
+      if (!isActiveToken(token)) return null
+      set((state) => ({
+        conversations: setConversationBlockState(
+          state.conversations,
+          friendId,
+          result.blockState,
+        ),
+      }))
+      return result
     } catch (error) {
       if (token && !isActiveToken(token)) return null
       notifications.push(error.message, 'error')

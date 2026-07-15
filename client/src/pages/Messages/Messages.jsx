@@ -40,6 +40,8 @@ const Messages = () => {
     (state) => state.loadConversations,
   )
   const loadMessages = useDirectMessageStore((state) => state.loadMessages)
+  const blockUser = useDirectMessageStore((state) => state.blockUser)
+  const unblockUser = useDirectMessageStore((state) => state.unblockUser)
   const pushNotification = useNotificationStore((state) => state.push)
 
   const selectedConversation = useMemo(
@@ -113,6 +115,12 @@ const Messages = () => {
 
   const sendMessage = (message) => {
     if (!selectedConversation?.friend?.id) return false
+    if (
+      selectedConversation.blockState &&
+      selectedConversation.blockState !== 'none'
+    ) {
+      return false
+    }
 
     const sent = useSocketStore
       .getState()
@@ -123,6 +131,16 @@ const Messages = () => {
     }
 
     return sent
+  }
+
+  const blockSelectedFriend = () => {
+    if (!selectedConversation?.friend?.id) return undefined
+    return blockUser(selectedConversation.friend.id)
+  }
+
+  const unblockSelectedFriend = () => {
+    if (!selectedConversation?.friend?.id) return undefined
+    return unblockUser(selectedConversation.friend.id)
   }
 
   // A compose send creates (or finds) the conversation first, delivers over
@@ -177,7 +195,9 @@ const Messages = () => {
                   ? messagesByConversation[selectedConversation.id] || []
                   : []
               }
+              onBlock={blockSelectedFriend}
               onSend={sendMessage}
+              onUnblock={unblockSelectedFriend}
             />
           )}
         </div>

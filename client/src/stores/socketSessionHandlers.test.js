@@ -91,6 +91,7 @@ test('registers a handler for every event the server can send', () => {
     SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE,
     SOCKET_EVENTS.CHAT_ROOMS,
     SOCKET_EVENTS.CHAT_ERROR,
+    SOCKET_EVENTS.SOCIAL_NOTIFICATIONS_CHANGED,
   ]
   assert.deepEqual(Object.keys(handlers).sort(), [...expected].sort())
   Object.values(handlers).forEach((handler) =>
@@ -222,6 +223,15 @@ test('chat events route to the chat store, passing the current user id on privat
   assert.deepEqual(calls.receiveDirectMessage, [[{ text: 'psst' }, 42]])
   assert.deepEqual(calls.loadSocialNotifications, [[]])
   assert.deepEqual(calls.syncChatRooms, [[[{ id: 'r1' }]]])
+})
+
+test('social notifications changed reloads the notification cache', () => {
+  const { deps, calls } = makeDeps()
+  const handlers = createSocketSessionHandlers(deps)
+
+  handlers[SOCKET_EVENTS.SOCIAL_NOTIFICATIONS_CHANGED]()
+
+  assert.deepEqual(calls.loadSocialNotifications, [[]])
 })
 
 test('room:closed coerces a numeric roomId and falls back to true', () => {

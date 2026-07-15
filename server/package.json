@@ -52,5 +52,10 @@
   },
   "devDependencies": {
     "prisma-erd-generator": "^2.4.3"
+  },
+  "overrides": {
+    "swagger-jsdoc": {
+      "glob": "^13.0.6"
+    }
   }
 }

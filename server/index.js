@@ -28,7 +28,11 @@ const verifyUploadsWritable = async () => {
 verifyUploadsWritable()
 
 const initWebSocket = require('./src/socket/socket.service')
+const {
+  setSocketServer,
+} = require('#modules/notifications/notifications.socket')
 const io = initWebSocket(server)
+setSocketServer(io)
 
 registerGracefulShutdown({ io, logger, prisma, server })
 

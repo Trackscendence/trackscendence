@@ -51,6 +51,9 @@ export const SOCKET_EVENTS = {
   CHAT_ROOM_JOIN: 'chat:room_join',
   CHAT_ROOMS: 'chat:rooms',
   CHAT_ERROR: 'chat:error',
+
+  // Social notifications
+  SOCIAL_NOTIFICATIONS_CHANGED: 'social:notifications_changed',
 }
 
 export default SOCKET_EVENTS

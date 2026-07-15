@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import ReadReceiptCheck from '@/components/ReadReceiptCheck'
 import { formatMessageTime } from '@/utils/formatMessageTime'
 
 const MessageBubble = ({ isOwn, isRead, message }) => (
@@ -17,15 +17,7 @@ const MessageBubble = ({ isOwn, isRead, message }) => (
         }`}
       >
         <span>{formatMessageTime(message.createdAt)}</span>
-        {isOwn ? (
-          <Check
-            aria-hidden="true"
-            className={`h-4 w-4 ${
-              isRead ? 'text-[#14532D]' : 'text-[#374151]'
-            }`}
-            strokeWidth={3.25}
-          />
-        ) : null}
+        {isOwn ? <ReadReceiptCheck isRead={isRead} /> : null}
       </div>
     </div>
   </div>

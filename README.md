@@ -127,7 +127,7 @@ To exceed the mandatory 14 points required for evaluation, our project implement
 | **User Mgt** | Remote Authentication (42)     | Major (2pts) | 🟢 Implemented | "Continue with 42" OAuth login with account provisioning and email-based account linking.   |
 | **Gaming**   | Web-based Game                 | Major (2pts) | 🟢 Implemented | Fully functional UNO game engine with card logic, drawing deck, and "UNO" catching rules.   |
 | **Gaming**   | Multiplayer 3+                 | Major (2pts) | 🟢 Implemented | Multiplayer lobby and game loop supporting up to 10 players at a table.                     |
-| **Gaming**   | AI Opponent / Bot Player       | Major (2pts) | 🟢 Implemented | Backend bot service implementing multiple strategy profiles for solo play (Bonus Module).    |
+| **Gaming**   | AI Opponent / Bot Player       | Major (2pts) | 🟢 Implemented | Backend bot service implementing multiple strategy profiles for solo play (Bonus Module).   |
 
 </details>
 
@@ -207,13 +207,13 @@ For how the app is deployed and how the CD pipeline ships to Railway, see the **
 
 _(Note: As per 42 evaluation guidelines, only active team members participating in the final evaluation are listed)._
 
-| GitHub Login | Intra 42 Login | Assigned Role(s)       | Responsibilities                                                                         |
-| ------------ | -------------- | ---------------------- | ---------------------------------------------------------------------------------------- |
-| `adshz`      | `szhong`       | Tech Lead & PO         | Product vision, technical decisions, core UNO engine, frontend, and overall architecture.|
-| `skyy`       | `smoore`       | Scrum Master & Dev     | Team organization, meeting facilitation, auth lockout thresholds, and Swagger schemas.   |
-| `olehov`     | `ogrativ`      | Security Lead & Dev    | TOTP 2FA engine, secure Friendship API limits, and SMTP password reset configuration.    |
-| `sergi`      | `srodrigo`     | Frontend Dev           | Real-time WebSocket connection lifecycle, basic chat flow, and frontend integration.     |
-| `demm05`     | `dmelnyk`      | Developer & QA         | QA validation, deck generation rules, Privacy & Terms screens, and miscellaneous tasks.  |
+| GitHub Login | Intra 42 Login | Assigned Role(s)    | Responsibilities                                                                          |
+| ------------ | -------------- | ------------------- | ----------------------------------------------------------------------------------------- |
+| `adshz`      | `szhong`       | Tech Lead & PO      | Product vision, technical decisions, core UNO engine, frontend, and overall architecture. |
+| `skyy`       | `smoore`       | Scrum Master & Dev  | Team organization, meeting facilitation, auth lockout thresholds, and Swagger schemas.    |
+| `olehov`     | `ogrativ`      | Security Lead & Dev | TOTP 2FA engine, secure Friendship API limits, and SMTP password reset configuration.     |
+| `sergi`      | `srodrigo`     | Frontend Dev        | Real-time WebSocket connection lifecycle, basic chat flow, and frontend integration.      |
+| `demm05`     | `dmelnyk`      | Developer & QA      | QA validation, deck generation rules, Privacy & Terms screens, and miscellaneous tasks.   |
 
 <details>
 <summary><strong>Click to view detailed individual contributions</strong></summary>
@@ -225,7 +225,7 @@ _(Note: As per 42 evaluation guidelines, only active team members participating 
 ### `smoore` (skyy)
 
 - **Contributions**: Implemented login credential normalization, secured account credentials database structures, defined initial API specs in Swagger comments, and implemented failed login lockout safety bounds.
-- **Challenges Faced**: Resolving edge cases with normalized usernames vs emails during signups and setting appropriate thresholds to avoid locking out legitimate users.
+- **Challenges Faced**: Resolving edge cases with normalized usernames vs emails during sign-ups and setting appropriate thresholds to avoid locking out legitimate users.
 
 ### `srodrigo` (sergi)
 

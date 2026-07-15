@@ -5,6 +5,7 @@ import { formatMessageTime } from '@/utils/formatMessageTime'
 import MessageComposer from '../MessageComposer'
 import BlockedBanner from './_components/BlockedBanner'
 import ThreadHeaderMenu from './_components/ThreadHeaderMenu'
+import TypingIndicator from './_components/TypingIndicator'
 
 const EmptyThread = () => (
   <div className="flex flex-1 items-center justify-center px-6 text-center">
@@ -21,10 +22,13 @@ const MessageThread = ({
   conversation,
   currentUserId,
   isConnected,
+  isFriendTyping,
   isLoading,
   messages,
   onBlock,
   onSend,
+  onStopTyping,
+  onTyping,
   onUnblock,
 }) => {
   if (!conversation) return <EmptyThread />
@@ -78,7 +82,7 @@ const MessageThread = ({
           </p>
         ) : null}
 
-        {!isLoading && messages.length === 0 ? (
+        {!isLoading && messages.length === 0 && !isFriendTyping ? (
           <div className="flex h-full items-center justify-center text-center">
             <div>
               <p className="text-sm font-black text-[#3d1200]">
@@ -121,6 +125,7 @@ const MessageThread = ({
               </div>
             )
           })}
+          {isFriendTyping ? <TypingIndicator friendName={friend.name} /> : null}
         </div>
       </div>
 
@@ -140,6 +145,8 @@ const MessageThread = ({
           autoFocus
           disabled={!conversation}
           onSend={onSend}
+          onStopTyping={onStopTyping}
+          onTyping={onTyping}
         />
       )}
     </section>

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import test, { beforeEach } from 'node:test'
-import useDirectMessageStore from './useDirectMessageStore.js'
+import useDirectMessageStore, {
+  TYPING_STALE_TIMEOUT_MS,
+} from './useDirectMessageStore.js'
 import { resetSessionStores } from './createSessionStore.js'
 import { setStoredToken, clearStoredToken } from '../services/tokenStorage.js'
 
@@ -77,6 +79,47 @@ test('active direct conversations do not gain unread count', () => {
   assert.equal(state.messagesByConversation[7][0].message, 'active hello')
 })
 
+test('direct-message typing state clears when stop-typing arrives', () => {
+  useDirectMessageStore.getState().receiveTyping({ conversationId: 7 })
+
+  assert.ok(useDirectMessageStore.getState().typingByConversation[7])
+
+  useDirectMessageStore.getState().receiveStopTyping({ conversationId: 7 })
+
+  assert.deepEqual(useDirectMessageStore.getState().typingByConversation, {})
+})
+
+test('direct-message typing state self-clears after the stale timeout', (t) => {
+  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 0 })
+
+  useDirectMessageStore.getState().receiveTyping({ conversationId: 7 })
+  t.mock.timers.tick(TYPING_STALE_TIMEOUT_MS - 1)
+
+  assert.ok(useDirectMessageStore.getState().typingByConversation[7])
+
+  t.mock.timers.tick(1)
+
+  assert.deepEqual(useDirectMessageStore.getState().typingByConversation, {})
+})
+
+test('receiving a direct message clears the typing indicator for that conversation', () => {
+  useDirectMessageStore.getState().receiveTyping({ conversationId: 7 })
+
+  useDirectMessageStore.getState().receiveMessage(
+    {
+      id: 4,
+      conversationId: 7,
+      senderId: 2,
+      message: 'sent while typing',
+      createdAt: '2026-07-09T12:02:30.000Z',
+      user: conversation.friend,
+    },
+    1,
+  )
+
+  assert.deepEqual(useDirectMessageStore.getState().typingByConversation, {})
+})
+
 test('duplicate direct-message socket echoes are ignored', () => {
   useDirectMessageStore.getState().reset()
 
@@ -103,6 +146,7 @@ test('session teardown clears direct-message data back to defaults', () => {
     activeConversationId: 7,
     conversations: [conversation],
     messagesByConversation: { 7: [{ id: 1, message: 'private' }] },
+    typingByConversation: { 7: { receivedAt: 0 } },
     unreadCount: 2,
   })
 
@@ -112,6 +156,7 @@ test('session teardown clears direct-message data back to defaults', () => {
   assert.equal(state.activeConversationId, null)
   assert.deepEqual(state.conversations, [])
   assert.deepEqual(state.messagesByConversation, {})
+  assert.deepEqual(state.typingByConversation, {})
   assert.equal(state.unreadCount, 0)
 })
 

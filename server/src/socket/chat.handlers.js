@@ -4,6 +4,7 @@ const messagesService = require('#modules/messages/messages.service')
 const logger = require('#utils/logger')
 
 const PRIVATE_ROOM_PREFIX = 'user:'
+const PRIVATE_TYPING_EVENTS = new Set(['chat:typing', 'chat:stop_typing'])
 
 const isObjectPayload = (data) => {
   return Boolean(data) && typeof data === 'object' && !Array.isArray(data)
@@ -52,6 +53,10 @@ const assertCanSendPrivateMessage = async ({
   )
 
   return relationship?.status === 'ACCEPTED'
+}
+
+const isExpectedTypingRejection = (error) => {
+  return ['BAD_REQUEST', 'FORBIDDEN', 'NOT_FOUND'].includes(error?.code)
 }
 
 const registerChatHandlers = (
@@ -199,6 +204,37 @@ const registerChatHandlers = (
       emitChatError(socket, 'Unable to send private message')
     }
   })
+
+  const handlePrivateTyping = (event) => async (data) => {
+    if (!PRIVATE_TYPING_EVENTS.has(event) || !isObjectPayload(data)) return
+
+    const recipient = getTrimmedString(data.recipient)
+    const recipientId = parsePrivateRecipientId(recipient)
+
+    if (!recipientId) return
+
+    try {
+      const conversation =
+        await directMessages.getExistingConversationForRecipient(
+          socket.user,
+          { recipientId },
+          { friendshipRepository: repository },
+        )
+
+      if (!conversation?.conversationId) return
+
+      io.to(recipient).emit(event, {
+        conversationId: conversation.conversationId,
+      })
+    } catch (error) {
+      if (!isExpectedTypingRejection(error)) {
+        logger.error('Failed to relay private typing event', error)
+      }
+    }
+  }
+
+  socket.on('chat:typing', handlePrivateTyping('chat:typing'))
+  socket.on('chat:stop_typing', handlePrivateTyping('chat:stop_typing'))
 }
 
 module.exports = {

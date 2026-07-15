@@ -23,7 +23,18 @@ const requireToken = () => {
   return token
 }
 
-const getMessagesService = () => import('@/services/messages')
+const defaultMessagesServiceLoader = () => import('@/services/messages')
+let messagesServiceLoader = defaultMessagesServiceLoader
+
+export const setMessagesServiceLoaderForTests = (loader) => {
+  messagesServiceLoader = loader
+}
+
+export const resetMessagesServiceLoaderForTests = () => {
+  messagesServiceLoader = defaultMessagesServiceLoader
+}
+
+const getMessagesService = () => messagesServiceLoader()
 const getFriendsService = () => import('@/services/friends')
 
 const setConversationBlockState = (conversations, friendId, blockState) => {

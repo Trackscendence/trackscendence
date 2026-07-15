@@ -5,6 +5,7 @@ import MessageComposer from '../MessageComposer'
 import BlockedBanner from './_components/BlockedBanner'
 import MessageBubble from './_components/MessageBubble'
 import ThreadHeaderMenu from './_components/ThreadHeaderMenu'
+import { getMessageReceiptState } from './_utils/readReceiptState'
 
 const EmptyThread = () => (
   <div className="flex flex-1 items-center justify-center px-6 text-center">
@@ -16,18 +17,6 @@ const EmptyThread = () => (
     </div>
   </div>
 )
-
-const getTimestamp = (value) => {
-  const timestamp = new Date(value).getTime()
-  return Number.isFinite(timestamp) ? timestamp : null
-}
-
-const isMessageReadAt = (message, lastReadTimestamp) => {
-  if (lastReadTimestamp === null) return false
-
-  const messageTimestamp = getTimestamp(message.createdAt)
-  return messageTimestamp !== null && messageTimestamp <= lastReadTimestamp
-}
 
 const MessageThread = ({
   conversation,
@@ -44,8 +33,6 @@ const MessageThread = ({
   const friend = getPlayerIdentity(conversation.friend)
   const blockState = conversation.blockState || 'none'
   const isBlocked = blockState !== 'none'
-  const friendLastReadTimestamp = getTimestamp(conversation.friendLastReadAt)
-  const viewerLastReadTimestamp = getTimestamp(conversation.lastReadAt)
 
   return (
     <section className="flex min-h-0 flex-col bg-white">
@@ -107,7 +94,11 @@ const MessageThread = ({
 
         <div className="flex flex-col gap-3">
           {messages.map((message) => {
-            const isOwn = String(message.senderId) === String(currentUserId)
+            const { isOwn, isRead } = getMessageReceiptState({
+              conversation,
+              currentUserId,
+              message,
+            })
 
             // Both sides carry the receipt: on my messages it tracks the
             // friend's cursor, on theirs it tracks mine — so each participant
@@ -116,10 +107,7 @@ const MessageThread = ({
               <MessageBubble
                 key={message.id}
                 isOwn={isOwn}
-                isRead={isMessageReadAt(
-                  message,
-                  isOwn ? friendLastReadTimestamp : viewerLastReadTimestamp,
-                )}
+                isRead={isRead}
                 message={message}
               />
             )

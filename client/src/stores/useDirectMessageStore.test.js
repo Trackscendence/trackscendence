@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
-import test, { beforeEach } from 'node:test'
-import useDirectMessageStore from './useDirectMessageStore.js'
+import test, { afterEach, beforeEach } from 'node:test'
+import useDirectMessageStore, {
+  resetMessagesServiceLoaderForTests,
+  setMessagesServiceLoaderForTests,
+} from './useDirectMessageStore.js'
 import { resetSessionStores } from './createSessionStore.js'
 import { setStoredToken, clearStoredToken } from '../services/tokenStorage.js'
 
@@ -18,6 +21,27 @@ beforeEach(() => {
   setStoredToken('session-token')
   useDirectMessageStore.getState().reset()
 })
+
+afterEach(() => {
+  resetMessagesServiceLoaderForTests()
+})
+
+const waitForAsyncReadMark = () =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 0)
+  })
+
+const stubReadService = ({ error, readAt } = {}) => {
+  const calls = []
+  setMessagesServiceLoaderForTests(() => ({
+    markConversationRead: async (conversationId, token) => {
+      calls.push({ conversationId, token })
+      if (error) throw error
+      return { readAt }
+    },
+  }))
+  return calls
+}
 
 const conversation = {
   id: 7,
@@ -53,7 +77,11 @@ test('incoming direct messages increment unread count for inactive conversations
   assert.equal(state.unreadCount, 3)
 })
 
-test('active direct conversations do not gain unread count', () => {
+test('active direct conversations do not gain unread count', async () => {
+  const calls = stubReadService({
+    readAt: '2026-07-09T12:01:30.000Z',
+  })
+
   useDirectMessageStore.getState().reset()
   useDirectMessageStore.setState({
     activeConversationId: 7,
@@ -75,6 +103,10 @@ test('active direct conversations do not gain unread count', () => {
   const state = useDirectMessageStore.getState()
   assert.equal(state.conversations[0].unreadCount, 2)
   assert.equal(state.messagesByConversation[7][0].message, 'active hello')
+
+  await waitForAsyncReadMark()
+
+  assert.deepEqual(calls, [{ conversationId: 7, token: 'session-token' }])
 })
 
 test('duplicate direct-message socket echoes are ignored', () => {
@@ -98,7 +130,11 @@ test('duplicate direct-message socket echoes are ignored', () => {
   )
 })
 
-test('incoming messages on the open thread advance my own read cursor', () => {
+test('incoming messages on the open thread post a read cursor', async () => {
+  const calls = stubReadService({
+    readAt: '2026-07-09T12:08:00.000Z',
+  })
+
   useDirectMessageStore.setState({
     activeConversationId: 7,
     conversations: [conversation],
@@ -120,9 +156,21 @@ test('incoming messages on the open thread advance my own read cursor', () => {
     useDirectMessageStore.getState().conversations[0].lastReadAt,
     '2026-07-09T12:06:00.000Z',
   )
+
+  await waitForAsyncReadMark()
+
+  assert.deepEqual(calls, [{ conversationId: 7, token: 'session-token' }])
+  assert.equal(
+    useDirectMessageStore.getState().conversations[0].lastReadAt,
+    '2026-07-09T12:08:00.000Z',
+  )
 })
 
-test('incoming messages on a background conversation leave my cursor alone', () => {
+test('incoming messages on a background conversation leave my cursor alone', async () => {
+  const calls = stubReadService({
+    readAt: '2026-07-09T12:08:00.000Z',
+  })
+
   useDirectMessageStore.setState({
     activeConversationId: null,
     conversations: [conversation],
@@ -143,6 +191,50 @@ test('incoming messages on a background conversation leave my cursor alone', () 
   assert.equal(
     useDirectMessageStore.getState().conversations[0].lastReadAt,
     undefined,
+  )
+
+  await waitForAsyncReadMark()
+
+  assert.deepEqual(calls, [])
+})
+
+test('older read endpoint responses do not move my cursor backward', async () => {
+  const calls = stubReadService({
+    readAt: '2026-07-09T12:05:00.000Z',
+  })
+
+  useDirectMessageStore.setState({
+    conversations: [conversation],
+  })
+
+  await useDirectMessageStore
+    .getState()
+    .markConversationRead(7, '2026-07-09T12:06:00.000Z')
+
+  assert.deepEqual(calls, [{ conversationId: 7, token: 'session-token' }])
+  assert.equal(
+    useDirectMessageStore.getState().conversations[0].lastReadAt,
+    '2026-07-09T12:06:00.000Z',
+  )
+})
+
+test('failed read endpoint calls keep the optimistic cursor', async () => {
+  const calls = stubReadService({
+    error: new Error('network down'),
+  })
+
+  useDirectMessageStore.setState({
+    conversations: [conversation],
+  })
+
+  await useDirectMessageStore
+    .getState()
+    .markConversationRead(7, '2026-07-09T12:06:00.000Z')
+
+  assert.deepEqual(calls, [{ conversationId: 7, token: 'session-token' }])
+  assert.equal(
+    useDirectMessageStore.getState().conversations[0].lastReadAt,
+    '2026-07-09T12:06:00.000Z',
   )
 })
 

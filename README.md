@@ -106,9 +106,9 @@ Our database relational schema is defined in Prisma and is automatically kept up
 
 _Note: Regenerate the ERD diagram inside the `/docs` folder with `npm run docs:erd --prefix server`._
 
-## 5. Target Modules (19 Points Target)
+## 5. Target Modules (21 Points Target)
 
-To exceed the mandatory 14 points required for evaluation, our roadmap implements the following modules (targeting a total of 19 points):
+To exceed the mandatory 14 points required for evaluation, our project implements the following modules (targeting a total of 21 points):
 
 <details>
 <summary><strong>Click to expand target modules status</strong></summary>
@@ -118,15 +118,16 @@ To exceed the mandatory 14 points required for evaluation, our roadmap implement
 | ------------ | ------------------------------ | ------------ | -------------- | ------------------------------------------------------------------------------------------- |
 | **Web**      | Framework for Frontend/Backend | Major (2pts) | 🟢 Implemented | Used React for the frontend and Express for the backend.                                    |
 | **Web**      | WebSockets                     | Major (2pts) | 🟢 Implemented | Real-time updates, graceful disconnections, and efficient broadcasting via Socket.IO.       |
-| **Web**      | User Chat                      | Major (2pts) | 🟡 In Progress | Live room messaging active; friendships, profile page view, and group lobbies in progress.  |
+| **Web**      | User Chat                      | Major (2pts) | 🟢 Implemented | Direct messages, chat channels, and social notifications fully functional.                  |
 | **Web**      | Public API                     | Major (2pts) | 🟢 Implemented | API-key-secured `/api/v1/public` endpoints with per-key rate limiting and Swagger docs.     |
 | **Web**      | Use an ORM                     | Minor (1pt)  | 🟢 Implemented | Used Prisma for type-safe relational mapping and migrations.                                |
 | **Web**      | Search Functionality           | Minor (1pt)  | 🟢 Implemented | Leaderboard search, multi-criteria filters, sorting, pagination, and user directory search. |
-| **Web**      | File Upload                    | Minor (1pt)  | 🔴 Planned     | Profile avatar upload and asset management system.                                          |
-| **User Mgt** | Standard User Management       | Major (2pts) | 🟡 In Progress | User register, login, session security, and 2FA completed; user settings in progress.       |
+| **Web**      | File Upload                    | Minor (1pt)  | 🟢 Implemented | Profile avatar uploads with byte-signature checks and storage limits via Multer.            |
+| **User Mgt** | Standard User Management       | Major (2pts) | 🟢 Implemented | Credentials signup, secure login, account freeze policies, password recovery, and TOTP 2FA. |
 | **User Mgt** | Remote Authentication (42)     | Major (2pts) | 🟢 Implemented | "Continue with 42" OAuth login with account provisioning and email-based account linking.   |
-| **Gaming**   | Web-based Game                 | Major (2pts) | 🟡 In Progress | Real-time multiplayer UNO engine logic under development.                                   |
-| **Gaming**   | Multiplayer 3+                 | Major (2pts) | 🟡 In Progress | Extending the game room structures to support 3 or more concurrent players.                 |
+| **Gaming**   | Web-based Game                 | Major (2pts) | 🟢 Implemented | Fully functional UNO game engine with card logic, drawing deck, and "UNO" catching rules.   |
+| **Gaming**   | Multiplayer 3+                 | Major (2pts) | 🟢 Implemented | Multiplayer lobby and game loop supporting up to 10 players at a table.                     |
+| **Gaming**   | AI Opponent / Bot Player       | Major (2pts) | 🟢 Implemented | Backend bot service implementing multiple strategy profiles for solo play (Bonus Module).    |
 
 </details>
 
@@ -206,42 +207,45 @@ For how the app is deployed and how the CD pipeline ships to Railway, see the **
 
 _(Note: As per 42 evaluation guidelines, only active team members participating in the final evaluation are listed)._
 
-| GitHub Login | Intra 42 Login | Assigned Role(s) | Responsibilities |
-| ------------ | -------------- | ---------------- | ---------------- |
-| `skyy`       | `smoore`       | _[TODO]_         | _[TODO]_         |
-| `sergi`      | `srodrigo`     | _[TODO]_         | _[TODO]_         |
-| `adshz`      | `szhong`       | _[TODO]_         | _[TODO]_         |
-| `olehov`     | `ogrativ`      | _[TODO]_         | _[TODO]_         |
-| `demm05`     | `dmelnyk`      | _[TODO]_         | _[TODO]_         |
+| GitHub Login | Intra 42 Login | Assigned Role(s)       | Responsibilities                                                                         |
+| ------------ | -------------- | ---------------------- | ---------------------------------------------------------------------------------------- |
+| `adshz`      | `szhong`       | Tech Lead & PO         | Product vision, technical decisions, core UNO engine, frontend, and overall architecture.|
+| `skyy`       | `smoore`       | Scrum Master & Dev     | Team organization, meeting facilitation, auth lockout thresholds, and Swagger schemas.   |
+| `olehov`     | `ogrativ`      | Security Lead & Dev    | TOTP 2FA engine, secure Friendship API limits, and SMTP password reset configuration.    |
+| `sergi`      | `srodrigo`     | Frontend Dev           | Real-time WebSocket connection lifecycle, basic chat flow, and frontend integration.     |
+| `demm05`     | `dmelnyk`      | Developer & QA         | QA validation, deck generation rules, Privacy & Terms screens, and miscellaneous tasks.  |
 
 <details>
 <summary><strong>Click to view detailed individual contributions</strong></summary>
 <br>
 
+> [!NOTE]
+> **Workflow Note:** Contributions were managed collaboratively through GitHub Pull Requests. The team peer-reviewed each other's code (with automated assistance from CodeRabbit and GitHub Copilot) and utilized squash-and-merge integration. Thus, individual branch histories are consolidated into main-branch PR merge commits.
+
 ### `smoore` (skyy)
 
-- **Contributions**: _[TODO]_
-- **Challenges Faced**: _[TODO]_
+- **Contributions**: Implemented login credential normalization, secured account credentials database structures, defined initial API specs in Swagger comments, and implemented failed login lockout safety bounds.
+- **Challenges Faced**: Resolving edge cases with normalized usernames vs emails during signups and setting appropriate thresholds to avoid locking out legitimate users.
 
 ### `srodrigo` (sergi)
 
-- **Contributions**: _[TODO]_
-- **Challenges Faced**: _[TODO]_
+- **Contributions**: Initialized the React and Express project skeletons, designed the initial Socket.IO backend service adapters, built the basic chat UI, and handled initial player seating coordinates in game rooms.
+- **Challenges Faced**: Handling concurrent connection interruptions in Socket.IO without dropping client session credentials.
 
 ### `szhong` (adshz)
 
-- **Contributions**: _[TODO]_
-- **Challenges Faced**: _[TODO]_
+- **Contributions**: Architected the frontend design and refactoring, introduced Zustand for robust client-side state management, authored the full 2-to-10 player UNO card turn-management engine, engineered socket-enforced turn/penalty timers, and resolved key database query bottlenecks.
+- **Challenges Faced**: Implementing concurrent state locking to resolve race conditions on simultaneous button-clicks by multiple players at the end of turn boundaries, and managing complex UI state syncs.
 
 ### `ogrativ` (olehov)
 
-- **Contributions**: _[TODO]_
-- **Challenges Faced**: _[TODO]_
+- **Contributions**: Implemented user setting controls for TOTP 2FA secret generation, confirmed recovery-code encryption wrappers, designed the friendship acceptance/blocking REST controller routes, and configured production-grade nodemailer transactional reset mail flows.
+- **Challenges Faced**: Managing asymmetric encryption schemes for recovery-code storage safely within the Postgres schema context.
 
 ### `dmelnyk` (demm05)
 
-- **Contributions**: _[TODO]_
-- **Challenges Faced**: _[TODO]_
+- **Contributions**: Developed baseline deck models and color-action-type lookup rules, implemented socket connection authentication layers, created the responsive Privacy Policy and Terms of Service screen layouts, and coordinated general QA validations.
+- **Challenges Faced**: Sanitizing rich text layouts for legal compliances while keeping structural rendering highly responsive across desktop and mobile browsers.
 
 </details>
 
@@ -251,4 +255,5 @@ _(Note: As per 42 evaluation guidelines, only active team members participating 
 
 - **Core Documentation**: [React Docs](https://react.dev/), [Zustand](https://zustand-demo.pmnd.rs/), [Prisma](https://www.prisma.io/docs), [Socket.io](https://socket.io/docs/v4/).
 - **AI Usage**:
-  - _[TODO: Describe how AI was used — specifying for which tasks and which parts of the project.]_
+  - **Pull Request Reviews**: Utilized AI assistants (primarily CodeRabbit, and GitHub Copilot reviews when not restricted by personal usage limits) to review Pull Requests and inspect code changes.
+  - **Research & Learning**: Used AI tools to research framework APIs, look up configurations, and learn new technical concepts, with exact usage varying by team member.

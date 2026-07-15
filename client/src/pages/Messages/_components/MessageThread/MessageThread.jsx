@@ -1,11 +1,12 @@
 import Avatar from '@/components/Avatar'
 import ProfileLink from '@/components/ProfileLink'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
-import { formatMessageTime } from '@/utils/formatMessageTime'
 import MessageComposer from '../MessageComposer'
 import BlockedBanner from './_components/BlockedBanner'
+import MessageBubble from './_components/MessageBubble'
 import ThreadHeaderMenu from './_components/ThreadHeaderMenu'
 import TypingIndicator from './_components/TypingIndicator'
+import { getMessageReceiptState } from './_utils/readReceiptState'
 
 const EmptyThread = () => (
   <div className="flex flex-1 items-center justify-center px-6 text-center">
@@ -97,32 +98,22 @@ const MessageThread = ({
 
         <div className="flex flex-col gap-3">
           {messages.map((message) => {
-            const isOwn = String(message.senderId) === String(currentUserId)
+            const { isOwn, isRead } = getMessageReceiptState({
+              conversation,
+              currentUserId,
+              message,
+            })
 
+            // Both sides carry the receipt: on my messages it tracks the
+            // friend's cursor, on theirs it tracks mine — so each participant
+            // sees what the other one knows.
             return (
-              <div
+              <MessageBubble
                 key={message.id}
-                className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[75%] rounded-lg px-4 py-2 ${
-                    isOwn
-                      ? 'bg-[#e86d2f] text-white'
-                      : 'border border-[#f0d9bd] bg-white text-[#3d1200]'
-                  }`}
-                >
-                  <p className="text-sm leading-6 break-words">
-                    {message.message}
-                  </p>
-                  <p
-                    className={`mt-1 text-right text-[10px] font-semibold ${
-                      isOwn ? 'text-white/70' : 'text-[#9a7050]'
-                    }`}
-                  >
-                    {formatMessageTime(message.createdAt)}
-                  </p>
-                </div>
-              </div>
+                isOwn={isOwn}
+                isRead={isRead}
+                message={message}
+              />
             )
           })}
           {isFriendTyping ? <TypingIndicator friendName={friend.name} /> : null}

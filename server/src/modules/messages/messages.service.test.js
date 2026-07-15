@@ -8,6 +8,8 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 const messagesService = require('./messages.service')
 
 const now = new Date('2026-07-09T12:00:00.000Z')
+const senderReadAt = new Date('2026-07-09T12:05:00.000Z')
+const friendReadAt = new Date('2026-07-09T12:10:00.000Z')
 
 const user = (overrides = {}) => ({
   id: 1,
@@ -29,6 +31,90 @@ const conversation = {
   userTwo: user({ id: 2, username: 'friend' }),
   messages: [],
 }
+
+describe('messagesService.toConversationDto', () => {
+  it("exposes the friend's last-read cursor for the viewer", () => {
+    const readConversation = {
+      ...conversation,
+      userOneLastReadAt: senderReadAt,
+      userTwoLastReadAt: friendReadAt,
+    }
+
+    assert.equal(
+      messagesService.toConversationDto(readConversation, 1).friendLastReadAt,
+      friendReadAt,
+    )
+    assert.equal(
+      messagesService.toConversationDto(readConversation, 2).friendLastReadAt,
+      senderReadAt,
+    )
+  })
+
+  it("exposes the viewer's own last-read cursor", () => {
+    const readConversation = {
+      ...conversation,
+      userOneLastReadAt: senderReadAt,
+      userTwoLastReadAt: friendReadAt,
+    }
+
+    assert.equal(
+      messagesService.toConversationDto(readConversation, 1).lastReadAt,
+      senderReadAt,
+    )
+    assert.equal(
+      messagesService.toConversationDto(readConversation, 2).lastReadAt,
+      friendReadAt,
+    )
+  })
+})
+
+describe('messagesService.markConversationRead', () => {
+  it('marks the conversation read and notifies the other participant', async () => {
+    let readCall = null
+    const readEvents = []
+    const repository = {
+      findConversationById: async () => conversation,
+      markConversationReadForUser: async (target, userId, readAt) => {
+        readCall = { conversationId: target.id, readAt, userId }
+        return target
+      },
+    }
+
+    const result = await messagesService.markConversationRead(
+      user(),
+      { conversationId: '11' },
+      { onConversationRead: (event) => readEvents.push(event), repository },
+    )
+
+    assert.ok(result.readAt instanceof Date)
+    assert.equal(readCall.conversationId, 11)
+    assert.equal(readCall.userId, 1)
+    assert.deepEqual(readEvents, [
+      { conversationId: 11, readAt: readCall.readAt, recipientId: 2 },
+    ])
+  })
+
+  it('rejects a non-participant without marking anything', async () => {
+    let marked = false
+    const repository = {
+      findConversationById: async () => conversation,
+      markConversationReadForUser: async () => {
+        marked = true
+      },
+    }
+
+    await assert.rejects(
+      () =>
+        messagesService.markConversationRead(
+          user({ id: 99 }),
+          { conversationId: '11' },
+          { repository },
+        ),
+      /Conversation not found/,
+    )
+    assert.equal(marked, false)
+  })
+})
 
 describe('messagesService.sendMessageToRecipient', () => {
   it('requires accepted friendship before creating a conversation', async () => {
@@ -170,18 +256,20 @@ describe('messagesService.getExistingConversationForRecipient', () => {
 describe('messagesService.markAllConversationsRead', () => {
   it('marks every conversation read for the user and reports zero unread', async () => {
     const readCalls = []
+    const readEvents = []
     const repository = {
       listConversationsForUser: async () => [
         { ...conversation, id: 11 },
         { ...conversation, id: 12 },
       ],
-      markConversationReadForUser: async (target, userId) => {
-        readCalls.push({ conversationId: target.id, userId })
+      markConversationReadForUser: async (target, userId, readAt) => {
+        readCalls.push({ conversationId: target.id, readAt, userId })
         return target
       },
     }
 
     const result = await messagesService.markAllConversationsRead(user(), {
+      onConversationRead: (event) => readEvents.push(event),
       repository,
     })
 
@@ -191,6 +279,18 @@ describe('messagesService.markAllConversationsRead', () => {
       [11, 12],
     )
     assert.ok(readCalls.every((call) => call.userId === 1))
+    assert.ok(readCalls.every((call) => call.readAt instanceof Date))
+    assert.deepEqual(
+      readEvents.map(({ conversationId, recipientId }) => ({
+        conversationId,
+        recipientId,
+      })),
+      [
+        { conversationId: 11, recipientId: 2 },
+        { conversationId: 12, recipientId: 2 },
+      ],
+    )
+    assert.ok(readEvents.every((event) => event.readAt === readCalls[0].readAt))
   })
 
   it('does nothing when the user has no conversations', async () => {
@@ -208,6 +308,47 @@ describe('messagesService.markAllConversationsRead', () => {
 
     assert.equal(result.unreadCount, 0)
     assert.equal(marked, false)
+  })
+})
+
+describe('messagesService.listMessages', () => {
+  it('notifies the other participant when a conversation is read', async () => {
+    let refreshedConversation = conversation
+    let readCall = null
+    const readEvents = []
+    const repository = {
+      findConversationById: async () => refreshedConversation,
+      listMessagesForConversation: async () => [],
+      markConversationReadForUser: async (target, userId, readAt) => {
+        readCall = { conversationId: target.id, readAt, userId }
+        refreshedConversation = { ...target, userOneLastReadAt: readAt }
+        return refreshedConversation
+      },
+    }
+    const friendshipRepository = {
+      findRelationshipBetweenUsers: async () => ({ status: 'ACCEPTED' }),
+    }
+
+    await messagesService.listMessages(
+      user(),
+      { conversationId: '11' },
+      {
+        friendshipRepository,
+        onConversationRead: (event) => readEvents.push(event),
+        repository,
+      },
+    )
+
+    assert.equal(readCall.conversationId, 11)
+    assert.equal(readCall.userId, 1)
+    assert.ok(readCall.readAt instanceof Date)
+    assert.deepEqual(readEvents, [
+      {
+        conversationId: 11,
+        readAt: readCall.readAt,
+        recipientId: 2,
+      },
+    ])
   })
 })
 

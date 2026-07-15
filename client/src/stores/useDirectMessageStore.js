@@ -32,7 +32,18 @@ const requireToken = () => {
   return token
 }
 
-const getMessagesService = () => import('@/services/messages')
+const defaultMessagesServiceLoader = () => import('@/services/messages')
+let messagesServiceLoader = defaultMessagesServiceLoader
+
+export const setMessagesServiceLoaderForTests = (loader) => {
+  messagesServiceLoader = loader
+}
+
+export const resetMessagesServiceLoaderForTests = () => {
+  messagesServiceLoader = defaultMessagesServiceLoader
+}
+
+const getMessagesService = () => messagesServiceLoader()
 const getFriendsService = () => import('@/services/friends')
 const getSocketService = () => import('../services/socket.js')
 
@@ -195,6 +206,35 @@ const getConversationUnreadTotal = (conversations) => {
     (total, conversation) => total + (conversation.unreadCount || 0),
     0,
   )
+}
+
+const getTimestamp = (value) => {
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : null
+}
+
+const shouldReplaceReadAt = (currentReadAt, nextReadAt) => {
+  const nextTimestamp = getTimestamp(nextReadAt)
+  if (nextTimestamp === null) return false
+
+  const currentTimestamp = getTimestamp(currentReadAt)
+  return currentTimestamp === null || nextTimestamp > currentTimestamp
+}
+
+const advanceOwnReadAt = (conversations, conversationId, readAt) => {
+  return conversations.map((conversation) => {
+    if (String(conversation.id) !== String(conversationId)) {
+      return conversation
+    }
+    if (!shouldReplaceReadAt(conversation.lastReadAt, readAt)) {
+      return conversation
+    }
+
+    return {
+      ...conversation,
+      lastReadAt: readAt,
+    }
+  })
 }
 
 // Session store (#391): holds the signed-in user's message content, so it is
@@ -450,9 +490,12 @@ const useDirectMessageStore = createSessionStore((set) => ({
 
     clearInboundTypingTimeout(message.conversationId)
 
+    const isIncoming = String(message.senderId) !== String(currentUserId)
+    const isActive =
+      useDirectMessageStore.getState().activeConversationId ===
+      message.conversationId
+
     set((state) => {
-      const isIncoming = String(message.senderId) !== String(currentUserId)
-      const isActive = state.activeConversationId === message.conversationId
       const existingConversation = state.conversations.find(
         (conversation) => conversation.id === message.conversationId,
       )
@@ -480,6 +523,65 @@ const useDirectMessageStore = createSessionStore((set) => ({
         unreadCount: getConversationUnreadTotal(conversations),
       }
     })
+
+    // A message that lands while its thread is on screen is read the moment
+    // it renders, so push the cursor to the server; that is what flips the
+    // sender's receipt live instead of waiting for the next thread open.
+    if (isIncoming && isActive) {
+      useDirectMessageStore
+        .getState()
+        .markConversationRead(message.conversationId, message.createdAt)
+    }
+  },
+
+  markConversationRead: async (conversationId, readAt) => {
+    const token = getActiveToken()
+    if (!token || !conversationId) return
+
+    // Advance the local cursor first so the incoming bubble flips at once.
+    set((state) => ({
+      conversations: advanceOwnReadAt(
+        state.conversations,
+        conversationId,
+        readAt,
+      ),
+    }))
+
+    try {
+      const { markConversationRead } = await getMessagesService()
+      const result = await markConversationRead(conversationId, token)
+      if (!isActiveToken(token)) return
+      set((state) => ({
+        conversations: advanceOwnReadAt(
+          state.conversations,
+          conversationId,
+          result.readAt,
+        ),
+      }))
+    } catch {
+      // The cursor resyncs from the conversation DTO on the next thread load.
+    }
+  },
+
+  markConversationReadByFriend: ({ conversationId, readAt } = {}) => {
+    if (!conversationId || !readAt) return
+    if (!getActiveToken()) return
+
+    set((state) => ({
+      conversations: state.conversations.map((conversation) => {
+        if (String(conversation.id) !== String(conversationId)) {
+          return conversation
+        }
+        if (!shouldReplaceReadAt(conversation.friendLastReadAt, readAt)) {
+          return conversation
+        }
+
+        return {
+          ...conversation,
+          friendLastReadAt: readAt,
+        }
+      }),
+    }))
   },
 
   receiveTyping: (payload) => {

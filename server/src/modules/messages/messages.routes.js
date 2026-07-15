@@ -12,6 +12,10 @@ router.post(
   '/conversations/read-all',
   messagesController.markAllConversationsRead,
 )
+router.post(
+  '/conversations/:conversationId/read',
+  messagesController.markConversationRead,
+)
 router.get(
   '/conversations/:conversationId/messages',
   messagesController.listMessages,

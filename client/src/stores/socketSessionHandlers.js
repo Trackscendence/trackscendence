@@ -134,6 +134,9 @@ export const createSocketSessionHandlers = ({
       directMessageStore?.getState().receiveMessage(data, currentUserId())
       socialNotificationStore?.getState().loadNotifications()
     }),
+    [SOCKET_EVENTS.CHAT_CONVERSATION_READ]: forActiveSession((data) => {
+      directMessageStore?.getState().markConversationReadByFriend(data)
+    }),
     [SOCKET_EVENTS.CHAT_TYPING]: forActiveSession((data) =>
       directMessageStore?.getState().receiveTyping(data),
     ),

@@ -32,6 +32,7 @@ const {
   setSocketServer,
 } = require('#modules/notifications/notifications.socket')
 const io = initWebSocket(server)
+app.set('io', io)
 setSocketServer(io)
 
 registerGracefulShutdown({ io, logger, prisma, server })

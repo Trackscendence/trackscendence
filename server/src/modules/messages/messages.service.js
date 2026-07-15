@@ -105,6 +105,8 @@ const toConversationDto = (
   return {
     id: conversation.id,
     friend: toMessageUser(friend),
+    friendLastReadAt: getLastReadAt(conversation, friend.id),
+    lastReadAt: getLastReadAt(conversation, viewerId),
     lastMessage: lastMessage ? toMessageDto(lastMessage) : null,
     unreadCount,
     isUnread: unreadCount > 0,
@@ -161,6 +163,24 @@ const getConversationOrThrow = async (conversationId, repository) => {
   const conversation = await repository.findConversationById(conversationId)
   if (!conversation) throw new NotFoundException('Conversation not found')
   return conversation
+}
+
+const notifyConversationRead = async (
+  conversation,
+  readerId,
+  readAt,
+  onConversationRead,
+) => {
+  if (!onConversationRead) return
+
+  const recipientId = getOtherUserIdFromConversation(conversation, readerId)
+  if (!recipientId) return
+
+  await onConversationRead({
+    conversationId: conversation.id,
+    readAt,
+    recipientId,
+  })
 }
 
 // The other user's id in each of the viewer's relationships, so a conversation
@@ -221,17 +241,54 @@ const listConversations = async (
   }
 }
 
+const markConversationRead = async (
+  user,
+  params,
+  { onConversationRead, repository = messagesRepository } = {},
+) => {
+  const conversationId = parsePositiveInteger(
+    params.conversationId,
+    'conversationId',
+  )
+  const conversation = await getConversationOrThrow(conversationId, repository)
+
+  if (!isConversationParticipant(conversation, user.id)) {
+    throw new NotFoundException('Conversation not found')
+  }
+
+  const readAt = new Date()
+  await repository.markConversationReadForUser(conversation, user.id, readAt)
+  await notifyConversationRead(
+    conversation,
+    user.id,
+    readAt,
+    onConversationRead,
+  )
+
+  return { readAt }
+}
+
 const markAllConversationsRead = async (
   user,
-  { repository = messagesRepository } = {},
+  { onConversationRead, repository = messagesRepository } = {},
 ) => {
   const conversations = await repository.listConversationsForUser(user.id)
   const readAt = new Date()
 
   await Promise.all(
-    conversations.map((conversation) =>
-      repository.markConversationReadForUser(conversation, user.id, readAt),
-    ),
+    conversations.map(async (conversation) => {
+      await repository.markConversationReadForUser(
+        conversation,
+        user.id,
+        readAt,
+      )
+      await notifyConversationRead(
+        conversation,
+        user.id,
+        readAt,
+        onConversationRead,
+      )
+    }),
   )
 
   return { unreadCount: 0 }
@@ -280,6 +337,7 @@ const listMessages = async (
   params,
   {
     friendshipRepository = friendsRepository,
+    onConversationRead,
     repository = messagesRepository,
   } = {},
 ) => {
@@ -293,7 +351,14 @@ const listMessages = async (
     throw new NotFoundException('Conversation not found')
   }
 
-  await repository.markConversationReadForUser(conversation, user.id)
+  const readAt = new Date()
+  await repository.markConversationReadForUser(conversation, user.id, readAt)
+  await notifyConversationRead(
+    conversation,
+    user.id,
+    readAt,
+    onConversationRead,
+  )
   const messages = await repository.listMessagesForConversation(
     conversationId,
     MESSAGE_HISTORY_LIMIT,
@@ -505,6 +570,7 @@ module.exports = {
   listConversations,
   listMessages,
   markAllConversationsRead,
+  markConversationRead,
   sendMessage,
   sendMessageToRecipient,
   toConversationDto,

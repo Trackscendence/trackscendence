@@ -51,13 +51,19 @@ const MessageThread = ({
             <h2 className="truncate text-lg font-black text-[#3d1200]">
               {friend.name}
             </h2>
-            <p className="text-xs font-semibold text-[#9a7050]">
-              {isConnected ? 'Online' : 'Reconnecting'}
-            </p>
+            {/* The status line reflects the viewer's own socket, not the
+                friend's presence, so it would read "Online" over a blocked
+                banner. Hide it once blocked. */}
+            {isBlocked ? null : (
+              <p className="text-xs font-semibold text-[#9a7050]">
+                {isConnected ? 'Online' : 'Reconnecting'}
+              </p>
+            )}
           </div>
         </ProfileLink>
 
         <ThreadHeaderMenu
+          key={conversation.id}
           blockState={blockState}
           friendName={friend.name}
           onBlock={onBlock}

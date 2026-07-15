@@ -13,12 +13,12 @@ const AuthLayout = () => {
   const nav = CONTEXTUAL_NAV[pathname] ?? { label: 'LOGIN', to: '/login' }
 
   return (
-    <div className="bg-surface-warm flex min-h-screen flex-col text-[#081934]">
-      <header className="flex items-start justify-between">
+    <div className="bg-surface-warm flex min-h-[100dvh] flex-col text-[#081934]">
+      <header className="flex items-start justify-between gap-3 px-4 pt-4 sm:px-6">
         <button
           onClick={() => navigate(-1)}
           aria-label="Go back"
-          className="flex size-11 items-start justify-start text-[#969595] transition hover:text-[#696969] focus-visible:ring-2 focus-visible:ring-[#081934] focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="flex size-10 items-start justify-start text-[#969595] transition hover:text-[#696969] focus-visible:ring-2 focus-visible:ring-[#081934] focus-visible:ring-offset-2 focus-visible:outline-none sm:size-11"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -37,7 +37,7 @@ const AuthLayout = () => {
         </button>
         <Link
           to={nav.to}
-          className="flex h-11 w-[138px] items-center justify-center rounded bg-[#51AFF1] text-xs font-semibold tracking-widest text-white transition-colors hover:bg-[#2F9EEA] focus-visible:ring-2 focus-visible:ring-[#081934] focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="flex h-10 w-[120px] items-center justify-center rounded bg-[#51AFF1] text-xs font-semibold tracking-widest text-white transition-colors hover:bg-[#2F9EEA] focus-visible:ring-2 focus-visible:ring-[#081934] focus-visible:ring-offset-2 focus-visible:outline-none sm:h-11 sm:w-[138px]"
         >
           {nav.label}
         </Link>

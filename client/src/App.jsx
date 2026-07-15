@@ -181,9 +181,11 @@ const App = () => {
     return (
       <div
         role="alert"
-        className="bg-surface-warm flex min-h-screen flex-col items-center justify-center px-6 text-center text-[#2A1A08]"
+        className="bg-surface-warm flex min-h-[100dvh] flex-col items-center justify-center px-4 text-center text-[#2A1A08] sm:px-6"
       >
-        <h1 className="text-3xl font-black uppercase">Server error</h1>
+        <h1 className="text-2xl font-black uppercase sm:text-3xl">
+          Server error
+        </h1>
         <p className="mt-3 max-w-md text-sm font-semibold text-[#2A1A08]/70">
           {bootError?.message || 'The server is not ready.'}
         </p>
@@ -195,9 +197,9 @@ const App = () => {
     return (
       <div
         role="alert"
-        className="bg-surface-warm flex min-h-screen flex-col items-center justify-center px-6 text-center text-[#2A1A08]"
+        className="bg-surface-warm flex min-h-[100dvh] flex-col items-center justify-center px-4 text-center text-[#2A1A08] sm:px-6"
       >
-        <h1 className="text-3xl font-black uppercase">
+        <h1 className="text-2xl font-black uppercase sm:text-3xl">
           Cannot reach the server
         </h1>
         <p className="mt-3 max-w-md text-sm font-semibold text-[#2A1A08]/70">

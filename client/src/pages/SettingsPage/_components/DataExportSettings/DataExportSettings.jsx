@@ -61,7 +61,7 @@ const DataExportSettings = ({ user }) => {
 
         <button
           type="button"
-          className="rounded-xl bg-[#2f6f86] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#24576a] focus-visible:ring-2 focus-visible:ring-[#2f6f86] focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-xl bg-[#2f6f86] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#24576a] focus-visible:ring-2 focus-visible:ring-[#2f6f86] focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           disabled={isExporting}
           onClick={handleExport}
         >

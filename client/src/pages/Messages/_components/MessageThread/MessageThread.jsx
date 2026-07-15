@@ -5,7 +5,7 @@ import { formatMessageTime } from '@/utils/formatMessageTime'
 import MessageComposer from '../MessageComposer'
 
 const EmptyThread = () => (
-  <div className="flex flex-1 items-center justify-center px-6 text-center">
+  <div className="flex flex-1 items-center justify-center px-4 py-8 text-center sm:px-6">
     <div>
       <p className="text-lg font-black text-[#3d1200]">Select a conversation</p>
       <p className="mt-1 text-sm text-[#9a7050]">
@@ -29,7 +29,7 @@ const MessageThread = ({
 
   return (
     <section className="flex min-h-0 flex-col bg-white">
-      <header className="flex items-center justify-between border-b border-[#f0d9bd] px-5 py-4">
+      <header className="flex items-center justify-between border-b border-[#f0d9bd] px-4 py-4 sm:px-5">
         <ProfileLink
           aria-label={`View ${friend.name}'s profile`}
           className="flex min-w-0 items-center gap-3 rounded-md transition hover:bg-[#fff4e8] focus:ring-2 focus:ring-[#3d1200]/20 focus:outline-none"
@@ -52,7 +52,7 @@ const MessageThread = ({
         </ProfileLink>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[#fff7ed] px-5 py-5">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[#fff7ed] px-4 py-4 sm:px-5 sm:py-5">
         {isLoading ? (
           <p className="text-center text-sm font-semibold text-[#9a7050]">
             Loading messages
@@ -82,7 +82,7 @@ const MessageThread = ({
                 className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[75%] rounded-lg px-4 py-2 ${
+                  className={`max-w-[85%] rounded-lg px-4 py-2 sm:max-w-[75%] ${
                     isOwn
                       ? 'bg-[#e86d2f] text-white'
                       : 'border border-[#f0d9bd] bg-white text-[#3d1200]'

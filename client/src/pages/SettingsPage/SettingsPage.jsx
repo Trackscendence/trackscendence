@@ -97,7 +97,7 @@ const renderSettingsSection = ({ activeKey, navigate, setActiveKey, user }) => {
         <div className="space-y-4 text-sm leading-6 text-[#6f5439]">
           <p>Save this guest profile before adding password or 2FA settings.</p>
           <button
-            className="rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none"
+            className="w-full rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none sm:w-auto"
             type="button"
             onClick={() => setActiveKey('account')}
           >
@@ -112,7 +112,7 @@ const renderSettingsSection = ({ activeKey, navigate, setActiveKey, user }) => {
     <>
       <SettingsCard title="Password">
         <button
-          className="rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="w-full rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none sm:w-auto"
           type="button"
           onClick={() => navigate('/change-password')}
         >
@@ -133,7 +133,7 @@ const SettingsPage = () => {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center py-10 text-sm font-medium text-[#8a6a52]">
+      <div className="flex items-center justify-center px-4 py-10 text-sm font-medium text-[#8a6a52]">
         Loading your account
       </div>
     )
@@ -142,16 +142,16 @@ const SettingsPage = () => {
   const section = SECTION_COPY[activeKey] ?? SECTION_COPY.account
 
   return (
-    <div className="-mx-5 -mt-8 -mb-12 min-h-[calc(100vh-8rem)] bg-[#fff2df] px-5 py-8">
+    <div className="-mx-4 -mt-6 -mb-10 min-h-[100dvh] bg-[#fff2df] px-4 py-6 sm:-mx-5 sm:-mt-8 sm:-mb-12 sm:px-5 sm:py-8">
       <div className="mx-auto w-full max-w-[1104px]">
-        <h1 className="text-3xl font-black tracking-[-0.025em] text-[#1c1410] sm:text-4xl">
+        <h1 className="text-2xl font-black tracking-[-0.025em] text-[#1c1410] sm:text-3xl lg:text-4xl">
           Settings
         </h1>
         <p className="mt-1.5 text-sm text-[#8a6845]">
           Manage your account and security.
         </p>
 
-        <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="mt-6 flex flex-col gap-6 sm:mt-8 sm:flex-row sm:items-start">
           <SettingsSidebar
             items={NAV_ITEMS}
             activeKey={activeKey}
@@ -160,7 +160,7 @@ const SettingsPage = () => {
 
           <div className="flex-1 space-y-6">
             <div>
-              <h2 className="text-2xl font-black tracking-[-0.025em] text-[#1c1410]">
+              <h2 className="text-xl font-black tracking-[-0.025em] text-[#1c1410] sm:text-2xl">
                 {section.title}
               </h2>
               <p className="mt-1 text-sm text-[#8a6845]">

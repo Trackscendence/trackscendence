@@ -9,7 +9,7 @@ const Session = () => {
 
   return (
     <div>
-      <div className="rounded-lg border border-[#d8dfd4] bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-[#d8dfd4] bg-white p-4 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold">Signed in</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">

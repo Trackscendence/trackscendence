@@ -43,9 +43,9 @@ const RelationshipActions = ({ profile, relationship }) => {
 
   if (action.kind === 'respond') {
     return (
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
         <Button
-          className="flex h-10 items-center justify-center gap-2 rounded-none whitespace-nowrap"
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-none whitespace-nowrap sm:w-auto sm:px-5"
           disabled={isSubmitting}
           fullWidth={false}
           type="button"
@@ -58,7 +58,7 @@ const RelationshipActions = ({ profile, relationship }) => {
           {isSubmitting ? 'Working' : 'Accept'}
         </Button>
         <Button
-          className="h-10 rounded-none whitespace-nowrap"
+          className="h-10 w-full rounded-none whitespace-nowrap sm:w-auto sm:px-5"
           disabled={isSubmitting}
           fullWidth={false}
           type="button"
@@ -76,7 +76,7 @@ const RelationshipActions = ({ profile, relationship }) => {
   if (action.kind === 'cancel') {
     return (
       <button
-        className="group h-10 shrink-0 border border-[#e86d2f] bg-white px-5 text-sm font-semibold whitespace-nowrap text-[#e86d2f] transition hover:border-[#b6523b] hover:bg-[#fdf1ee] hover:text-[#b6523b] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3d1200]/25 disabled:cursor-not-allowed disabled:opacity-60"
+        className="group h-10 w-full shrink-0 border border-[#e86d2f] bg-white px-4 text-sm font-semibold whitespace-nowrap text-[#e86d2f] transition hover:border-[#b6523b] hover:bg-[#fdf1ee] hover:text-[#b6523b] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3d1200]/25 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-5"
         disabled={isSubmitting}
         type="button"
         onClick={() => useProfileStore.getState().removeRelationship()}
@@ -90,7 +90,7 @@ const RelationshipActions = ({ profile, relationship }) => {
   return (
     <>
       <Button
-        className="flex h-10 items-center justify-center gap-2 rounded-none px-5 whitespace-nowrap"
+        className="flex h-10 w-full items-center justify-center gap-2 rounded-none px-4 whitespace-nowrap sm:w-auto sm:px-5"
         disabled={action.isDisabled || isSubmitting}
         fullWidth={false}
         type="button"

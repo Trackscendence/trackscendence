@@ -41,7 +41,7 @@ const LeaderboardSection = () => {
   }
 
   return (
-    <section className="space-y-4 bg-[#ffd099] p-6">
+    <section className="space-y-4 bg-[#ffd099] p-4 sm:p-6">
       <LeaderboardFilters
         defaultValues={DEFAULT_FILTERS}
         isSubmitting={isLoading}
@@ -49,11 +49,11 @@ const LeaderboardSection = () => {
       />
 
       {error ? (
-        <p className="bg-white px-5 py-4 text-sm font-semibold text-[#8a321f]">
+        <p className="bg-white px-4 py-4 text-sm font-semibold text-[#8a321f] sm:px-5">
           {error}
         </p>
       ) : isLoading ? (
-        <div className="bg-white px-5 py-8">
+        <div className="bg-white px-4 py-8 sm:px-5">
           <LoadingSpinner message="Loading leaderboard" />
         </div>
       ) : (

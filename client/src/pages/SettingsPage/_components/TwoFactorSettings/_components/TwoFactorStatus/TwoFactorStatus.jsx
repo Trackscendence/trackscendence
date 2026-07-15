@@ -50,9 +50,9 @@ const TwoFactorStatus = ({
         </span>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <button
-          className="rounded-xl bg-[#489E52] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3d8746] disabled:cursor-not-allowed disabled:bg-[#a9cbad]"
+          className="w-full rounded-xl bg-[#489E52] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#3d8746] disabled:cursor-not-allowed disabled:bg-[#a9cbad] sm:w-auto"
           type="button"
           disabled={isSubmitting}
           onClick={onStartSetup}
@@ -62,7 +62,7 @@ const TwoFactorStatus = ({
 
         {state !== 'disabled' && (
           <button
-            className="rounded-xl border border-[#d8cbbc] px-4 py-2.5 text-sm font-semibold text-[#6b5442] transition hover:border-[#b6523b] hover:text-[#b6523b] disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl border border-[#d8cbbc] px-4 py-2.5 text-sm font-semibold text-[#6b5442] transition hover:border-[#b6523b] hover:text-[#b6523b] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             type="button"
             disabled={isSubmitting}
             onClick={onDisable}

@@ -5,7 +5,7 @@ const ToastViewport = ({ notifications = [], onDismiss }) => {
   if (notifications.length === 0) return null
 
   return (
-    <div className="pointer-events-none fixed top-3 right-3 z-50 flex w-[min(calc(100vw-2rem),24rem)] flex-col gap-3">
+    <div className="pointer-events-none fixed top-3 right-3 left-3 z-50 flex w-auto flex-col gap-3 sm:left-auto sm:w-[min(calc(100vw-2rem),24rem)]">
       {notifications.map((notification) => (
         <div key={notification.id} className="pointer-events-auto">
           <Toast

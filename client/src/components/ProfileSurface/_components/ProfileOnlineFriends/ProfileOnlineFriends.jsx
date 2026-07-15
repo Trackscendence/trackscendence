@@ -6,7 +6,7 @@ const ProfileOnlineFriends = ({ friends = [], onShowFriends }) => {
 
   return (
     <section className="bg-white p-4">
-      <div className="mb-3 flex items-center justify-between gap-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-xs font-semibold tracking-wide text-[#3d1200] uppercase">
           Online Friends
         </h2>

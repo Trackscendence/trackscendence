@@ -18,7 +18,7 @@ const ProfileHeader = ({
 
   return (
     <header>
-      <div className="relative min-h-[260px] bg-[#ffd099] px-4 pt-6 pb-18 text-[#3d1200] sm:px-6 lg:px-8">
+      <div className="relative bg-[#ffd099] px-4 pt-5 pb-6 text-[#3d1200] sm:px-6 sm:pt-6 sm:pb-18 lg:px-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center lg:gap-10">
             <ProfileAvatar profile={profile} />
@@ -35,23 +35,25 @@ const ProfileHeader = ({
             </div>
           </div>
 
-          {isOwnProfile ? (
-            <Link
-              aria-label="Open settings"
-              to="/settings"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#ffbf80] focus:ring-2 focus:ring-[#3d1200]/25 focus:outline-none"
-            >
-              <Settings aria-hidden="true" className="h-5 w-5" />
-            </Link>
-          ) : (
-            <RelationshipActions
-              profile={profile}
-              relationship={relationship}
-            />
-          )}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+            {isOwnProfile ? (
+              <Link
+                aria-label="Open settings"
+                to="/settings"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#7a3810] transition hover:bg-[#ffbf80] focus:ring-2 focus:ring-[#3d1200]/25 focus:outline-none"
+              >
+                <Settings aria-hidden="true" className="h-5 w-5" />
+              </Link>
+            ) : (
+              <RelationshipActions
+                profile={profile}
+                relationship={relationship}
+              />
+            )}
+          </div>
         </div>
 
-        <div className="absolute bottom-0 left-0">
+        <div className="mt-6 lg:absolute lg:bottom-0 lg:left-0 lg:mt-0">
           <ProfileTabs activeTab={activeTab} onTabChange={onTabChange} />
         </div>
       </div>

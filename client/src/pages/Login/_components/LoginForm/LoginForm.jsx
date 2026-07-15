@@ -132,7 +132,7 @@ const LoginForm = ({
             <p className="text-sm font-medium text-[#081934]">
               Choose verification method
             </p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <Button
                 type="button"
                 variant={twoFactorMethod === 'totp' ? 'blue' : 'social'}

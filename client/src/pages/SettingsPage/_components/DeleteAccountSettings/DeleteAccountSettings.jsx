@@ -51,7 +51,7 @@ const DeleteAccountSettings = ({ user }) => {
 
         <button
           type="submit"
-          className="rounded-xl bg-[#b93820] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#9f2f1b] focus-visible:ring-2 focus-visible:ring-[#b93820] focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-xl bg-[#b93820] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#9f2f1b] focus-visible:ring-2 focus-visible:ring-[#b93820] focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           disabled={!canDelete}
         >
           {isDeleting ? 'Deleting account...' : 'Delete account'}

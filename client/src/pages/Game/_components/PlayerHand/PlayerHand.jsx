@@ -25,7 +25,7 @@ const PlayerHand = ({ cards, onCardClick, player }) => {
     <div className="w-full overflow-hidden">
       <ul
         aria-label={`${player.username}'s hand`}
-        className="flex min-h-[236px] items-end justify-center px-4 pt-6 pb-3"
+        className="flex min-h-[196px] items-end justify-center px-1 pt-4 pb-2 sm:min-h-[236px] sm:px-4 sm:pt-6 sm:pb-3"
       >
         {cards.map((card, cardPosition) => (
           <li

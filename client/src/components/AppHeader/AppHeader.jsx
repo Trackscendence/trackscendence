@@ -18,38 +18,48 @@ const AppHeader = ({ onCreateRoom }) => {
   const accountLabel = user.isGuest ? 'Guest session' : user.email
 
   return (
-    <header className="flex items-center justify-between border-b border-black/10 bg-white px-8 py-3">
-      <Link to="/lobby" aria-label="Go to the lobby">
-        <Logo />
-      </Link>
-      <div className="flex items-center gap-4">
-        {onCreateRoom ? (
-          <button
-            type="button"
-            onClick={onCreateRoom}
-            className="flex items-center gap-2 rounded-[14px] bg-[#E86D2F] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#c95b24]"
+    <header className="border-b border-black/10 bg-white">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-5 lg:px-8">
+        <div className="flex items-center justify-between gap-3">
+          <Link to="/lobby" aria-label="Go to the lobby">
+            <Logo />
+          </Link>
+          <div className="flex items-center gap-2">
+            <SocialNavActions />
+            <AccountMenu />
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {onCreateRoom ? (
+            <button
+              type="button"
+              onClick={onCreateRoom}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-[14px] bg-[#E86D2F] px-4 text-sm font-semibold text-white transition hover:bg-[#c95b24] sm:h-auto sm:w-auto"
+            >
+              + Room
+            </button>
+          ) : null}
+          <Link
+            to="/profile"
+            aria-label="Your profile"
+            className="flex w-full min-w-0 items-center gap-3 rounded-full px-2 py-1 transition hover:bg-black/5 sm:w-auto"
           >
-            + Room
-          </button>
-        ) : null}
-        <Link
-          to="/profile"
-          aria-label="Your profile"
-          className="flex items-center gap-3 rounded-full pr-2 transition hover:bg-black/5"
-        >
-          <Avatar
-            alt={identity.name}
-            initials={identity.initials}
-            size={46}
-            src={identity.avatarUrl || undefined}
-          />
-          <span className="flex flex-col">
-            <span className="text-lg text-black">{identity.name}</span>
-            <span className="text-xs text-[#2E2D2D]">{accountLabel}</span>
-          </span>
-        </Link>
-        <SocialNavActions />
-        <AccountMenu />
+            <Avatar
+              alt={identity.name}
+              initials={identity.initials}
+              size={42}
+              src={identity.avatarUrl || undefined}
+            />
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-base text-black sm:text-lg">
+                {identity.name}
+              </span>
+              <span className="hidden text-xs text-[#2E2D2D] sm:block">
+                {accountLabel}
+              </span>
+            </span>
+          </Link>
+        </div>
       </div>
     </header>
   )

@@ -40,12 +40,12 @@ const ProfileOverview = ({ friendsCount = 0, onShowGames, profile }) => {
       )}
 
       <section className="bg-white">
-        <div className="flex items-center justify-between gap-4 border-b border-[#fceee0] px-5 py-3">
+        <div className="flex flex-col gap-3 border-b border-[#fceee0] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <h2 className="text-sm font-semibold tracking-wide text-[#3d1200] uppercase">
             Recent Games
           </h2>
           <button
-            className="bg-[#ffd099] px-3 py-1 text-xs font-semibold text-[#e86d2f] transition hover:bg-[#e86d2f] hover:text-white focus:ring-2 focus:ring-[#e86d2f]/30 focus:outline-none"
+            className="w-full bg-[#ffd099] px-3 py-2 text-xs font-semibold text-[#e86d2f] transition hover:bg-[#e86d2f] hover:text-white focus:ring-2 focus:ring-[#e86d2f]/30 focus:outline-none sm:w-auto sm:py-1"
             type="button"
             onClick={onShowGames}
           >

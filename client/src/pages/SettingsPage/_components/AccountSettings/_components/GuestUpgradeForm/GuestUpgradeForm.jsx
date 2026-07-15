@@ -175,6 +175,7 @@ const GuestUpgradeForm = ({ initialUsername }) => {
       <div className="flex justify-end">
         <Button
           fullWidth={false}
+          className="w-full sm:w-auto"
           type="submit"
           variant="orange"
           disabled={isSubmitting || !termsAccepted || !privacyAccepted}

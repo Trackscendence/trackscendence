@@ -46,6 +46,8 @@ export const SOCKET_EVENTS = {
   // Chat (CHAT_MESSAGE and CHAT_PRIVATE_MESSAGE flow both directions)
   CHAT_MESSAGE: 'chat:message',
   CHAT_PRIVATE_MESSAGE: 'chat:private_message',
+  CHAT_TYPING: 'chat:typing',
+  CHAT_STOP_TYPING: 'chat:stop_typing',
   CHAT_ROOM_JOIN: 'chat:room_join',
   CHAT_ROOMS: 'chat:rooms',
   CHAT_ERROR: 'chat:error',

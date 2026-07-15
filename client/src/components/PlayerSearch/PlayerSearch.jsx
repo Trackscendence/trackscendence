@@ -19,7 +19,7 @@ const PlayerSearch = ({
   onSelectUser = null,
   placeholder = 'Search....',
   resultsPlacement = 'below',
-  scope = 'player-search',
+  scope,
   showIcon = false,
 }) => {
   const {

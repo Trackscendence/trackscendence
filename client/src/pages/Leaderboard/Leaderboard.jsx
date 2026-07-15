@@ -1,4 +1,4 @@
-import LeaderboardSection from './_components/LeaderboardSection'
+import LeaderboardSection from '@/components/LeaderboardSection'
 
 const Leaderboard = () => {
   return (

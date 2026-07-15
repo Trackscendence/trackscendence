@@ -49,6 +49,71 @@ describe('messagesService.toConversationDto', () => {
       senderReadAt,
     )
   })
+
+  it("exposes the viewer's own last-read cursor", () => {
+    const readConversation = {
+      ...conversation,
+      userOneLastReadAt: senderReadAt,
+      userTwoLastReadAt: friendReadAt,
+    }
+
+    assert.equal(
+      messagesService.toConversationDto(readConversation, 1).lastReadAt,
+      senderReadAt,
+    )
+    assert.equal(
+      messagesService.toConversationDto(readConversation, 2).lastReadAt,
+      friendReadAt,
+    )
+  })
+})
+
+describe('messagesService.markConversationRead', () => {
+  it('marks the conversation read and notifies the other participant', async () => {
+    let readCall = null
+    const readEvents = []
+    const repository = {
+      findConversationById: async () => conversation,
+      markConversationReadForUser: async (target, userId, readAt) => {
+        readCall = { conversationId: target.id, readAt, userId }
+        return target
+      },
+    }
+
+    const result = await messagesService.markConversationRead(
+      user(),
+      { conversationId: '11' },
+      { onConversationRead: (event) => readEvents.push(event), repository },
+    )
+
+    assert.ok(result.readAt instanceof Date)
+    assert.equal(readCall.conversationId, 11)
+    assert.equal(readCall.userId, 1)
+    assert.deepEqual(readEvents, [
+      { conversationId: 11, readAt: readCall.readAt, recipientId: 2 },
+    ])
+  })
+
+  it('rejects a non-participant without marking anything', async () => {
+    let marked = false
+    const repository = {
+      findConversationById: async () => conversation,
+      markConversationReadForUser: async () => {
+        marked = true
+      },
+    }
+
+    await assert.rejects(
+      () =>
+        messagesService.markConversationRead(
+          user({ id: 99 }),
+          { conversationId: '11' },
+          { repository },
+        ),
+      /Conversation not found/,
+    )
+    assert.equal(marked, false)
+  })
 })
 
 describe('messagesService.sendMessageToRecipient', () => {

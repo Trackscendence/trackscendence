@@ -52,6 +52,18 @@ const markAllConversationsRead = async (req, res, next) => {
   }
 }
 
+const markConversationRead = async (req, res, next) => {
+  try {
+    res.json(
+      await messagesService.markConversationRead(req.user, req.params, {
+        onConversationRead: getConversationReadNotifier(req),
+      }),
+    )
+  } catch (error) {
+    next(error)
+  }
+}
+
 const listMessages = async (req, res, next) => {
   try {
     res.json(
@@ -79,5 +91,6 @@ module.exports = {
   listConversations,
   listMessages,
   markAllConversationsRead,
+  markConversationRead,
   sendMessage,
 }

@@ -22,13 +22,11 @@ const getTimestamp = (value) => {
   return Number.isFinite(timestamp) ? timestamp : null
 }
 
-const isMessageReadByFriend = (message, friendLastReadTimestamp) => {
-  if (friendLastReadTimestamp === null) return false
+const isMessageReadAt = (message, lastReadTimestamp) => {
+  if (lastReadTimestamp === null) return false
 
   const messageTimestamp = getTimestamp(message.createdAt)
-  return (
-    messageTimestamp !== null && messageTimestamp <= friendLastReadTimestamp
-  )
+  return messageTimestamp !== null && messageTimestamp <= lastReadTimestamp
 }
 
 const MessageThread = ({
@@ -47,6 +45,7 @@ const MessageThread = ({
   const blockState = conversation.blockState || 'none'
   const isBlocked = blockState !== 'none'
   const friendLastReadTimestamp = getTimestamp(conversation.friendLastReadAt)
+  const viewerLastReadTimestamp = getTimestamp(conversation.lastReadAt)
 
   return (
     <section className="flex min-h-0 flex-col bg-white">
@@ -110,14 +109,17 @@ const MessageThread = ({
           {messages.map((message) => {
             const isOwn = String(message.senderId) === String(currentUserId)
 
+            // Both sides carry the receipt: on my messages it tracks the
+            // friend's cursor, on theirs it tracks mine — so each participant
+            // sees what the other one knows.
             return (
               <MessageBubble
                 key={message.id}
                 isOwn={isOwn}
-                isRead={
-                  isOwn &&
-                  isMessageReadByFriend(message, friendLastReadTimestamp)
-                }
+                isRead={isMessageReadAt(
+                  message,
+                  isOwn ? friendLastReadTimestamp : viewerLastReadTimestamp,
+                )}
                 message={message}
               />
             )

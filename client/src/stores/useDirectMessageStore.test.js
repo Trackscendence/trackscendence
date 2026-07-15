@@ -98,6 +98,54 @@ test('duplicate direct-message socket echoes are ignored', () => {
   )
 })
 
+test('incoming messages on the open thread advance my own read cursor', () => {
+  useDirectMessageStore.setState({
+    activeConversationId: 7,
+    conversations: [conversation],
+  })
+
+  useDirectMessageStore.getState().receiveMessage(
+    {
+      id: 4,
+      conversationId: 7,
+      senderId: 2,
+      message: 'seen live',
+      createdAt: '2026-07-09T12:06:00.000Z',
+      user: conversation.friend,
+    },
+    1,
+  )
+
+  assert.equal(
+    useDirectMessageStore.getState().conversations[0].lastReadAt,
+    '2026-07-09T12:06:00.000Z',
+  )
+})
+
+test('incoming messages on a background conversation leave my cursor alone', () => {
+  useDirectMessageStore.setState({
+    activeConversationId: null,
+    conversations: [conversation],
+  })
+
+  useDirectMessageStore.getState().receiveMessage(
+    {
+      id: 5,
+      conversationId: 7,
+      senderId: 2,
+      message: 'not seen yet',
+      createdAt: '2026-07-09T12:07:00.000Z',
+      user: conversation.friend,
+    },
+    1,
+  )
+
+  assert.equal(
+    useDirectMessageStore.getState().conversations[0].lastReadAt,
+    undefined,
+  )
+})
+
 test("read events update a non-open conversation's friend cursor", () => {
   useDirectMessageStore.setState({
     activeConversationId: null,

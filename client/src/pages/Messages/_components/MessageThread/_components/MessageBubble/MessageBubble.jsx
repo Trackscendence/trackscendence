@@ -17,7 +17,10 @@ const MessageBubble = ({ isOwn, isRead, message }) => (
         }`}
       >
         <span>{formatMessageTime(message.createdAt)}</span>
-        {isOwn ? <ReadReceiptCheck isRead={isRead} /> : null}
+        <ReadReceiptCheck
+          isRead={isRead}
+          sentColor={isOwn ? 'rgba(255, 255, 255, 0.75)' : '#9a7050'}
+        />
       </div>
     </div>
   </div>

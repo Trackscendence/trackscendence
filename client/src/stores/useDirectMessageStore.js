@@ -103,6 +103,22 @@ const shouldReplaceReadAt = (currentReadAt, nextReadAt) => {
   return currentTimestamp === null || nextTimestamp > currentTimestamp
 }
 
+const advanceOwnReadAt = (conversations, conversationId, readAt) => {
+  return conversations.map((conversation) => {
+    if (String(conversation.id) !== String(conversationId)) {
+      return conversation
+    }
+    if (!shouldReplaceReadAt(conversation.lastReadAt, readAt)) {
+      return conversation
+    }
+
+    return {
+      ...conversation,
+      lastReadAt: readAt,
+    }
+  })
+}
+
 // Session store (#391): holds the signed-in user's message content, so it is
 // cleared by resetSessionStores() at teardown, and every post-await write is
 // guarded so an in-flight response from a previous session cannot repopulate it.
@@ -328,9 +344,12 @@ const useDirectMessageStore = createSessionStore((set) => ({
     // that was just cleared for the next user (#391).
     if (!getActiveToken()) return
 
+    const isIncoming = String(message.senderId) !== String(currentUserId)
+    const isActive =
+      useDirectMessageStore.getState().activeConversationId ===
+      message.conversationId
+
     set((state) => {
-      const isIncoming = String(message.senderId) !== String(currentUserId)
-      const isActive = state.activeConversationId === message.conversationId
       const existingConversation = state.conversations.find(
         (conversation) => conversation.id === message.conversationId,
       )
@@ -354,6 +373,44 @@ const useDirectMessageStore = createSessionStore((set) => ({
         unreadCount: getConversationUnreadTotal(conversations),
       }
     })
+
+    // A message that lands while its thread is on screen is read the moment
+    // it renders, so push the cursor to the server; that is what flips the
+    // sender's receipt live instead of waiting for the next thread open.
+    if (isIncoming && isActive) {
+      useDirectMessageStore
+        .getState()
+        .markConversationRead(message.conversationId, message.createdAt)
+    }
+  },
+
+  markConversationRead: async (conversationId, readAt) => {
+    const token = getActiveToken()
+    if (!token || !conversationId) return
+
+    // Advance the local cursor first so the incoming bubble flips at once.
+    set((state) => ({
+      conversations: advanceOwnReadAt(
+        state.conversations,
+        conversationId,
+        readAt,
+      ),
+    }))
+
+    try {
+      const { markConversationRead } = await getMessagesService()
+      const result = await markConversationRead(conversationId, token)
+      if (!isActiveToken(token)) return
+      set((state) => ({
+        conversations: advanceOwnReadAt(
+          state.conversations,
+          conversationId,
+          result.readAt,
+        ),
+      }))
+    } catch {
+      // The cursor resyncs from the conversation DTO on the next thread load.
+    }
   },
 
   markConversationReadByFriend: ({ conversationId, readAt } = {}) => {

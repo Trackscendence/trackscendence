@@ -66,6 +66,10 @@ const createChatRooms = (overrides = {}) => ({
 })
 
 const createDirectMessages = (overrides = {}) => ({
+  getExistingConversationForRecipient: async (user, { recipientId }) => ({
+    conversationId: 11,
+    recipientId,
+  }),
   sendMessageToRecipient: async (user, { message, recipientId }) => ({
     id: 22,
     conversationId: 11,
@@ -265,6 +269,84 @@ describe('registerChatHandlers', () => {
         },
       },
     ])
+  })
+
+  it('relays private typing events only to the recipient user room', async () => {
+    const io = createIo()
+    const socket = createSocket()
+    registerTestChatHandlers(io, socket)
+
+    await socket.handlers['chat:typing']({
+      recipient: 'user:2',
+    })
+
+    assert.deepEqual(io.emissions, [
+      {
+        event: 'chat:typing',
+        room: 'user:2',
+        payload: {
+          conversationId: 11,
+        },
+      },
+    ])
+  })
+
+  it('relays private stop-typing events only to the recipient user room', async () => {
+    const io = createIo()
+    const socket = createSocket()
+    registerTestChatHandlers(io, socket)
+
+    await socket.handlers['chat:stop_typing']({
+      recipient: 'user:2',
+    })
+
+    assert.deepEqual(io.emissions, [
+      {
+        event: 'chat:stop_typing',
+        room: 'user:2',
+        payload: {
+          conversationId: 11,
+        },
+      },
+    ])
+  })
+
+  it('drops typing events when users have no existing conversation', async () => {
+    const io = createIo()
+    const socket = createSocket()
+    registerTestChatHandlers(io, socket, {
+      directMessages: {
+        getExistingConversationForRecipient: async () => null,
+      },
+    })
+
+    await socket.handlers['chat:typing']({
+      recipient: 'user:2',
+    })
+
+    assert.deepEqual(io.emissions, [])
+  })
+
+  it('drops typing events when the friendship check fails', async () => {
+    const io = createIo()
+    const socket = createSocket()
+    registerTestChatHandlers(io, socket, {
+      directMessages: {
+        getExistingConversationForRecipient: async () => {
+          const error = new Error(
+            'Direct messages are only available between friends',
+          )
+          error.code = 'FORBIDDEN'
+          throw error
+        },
+      },
+    })
+
+    await socket.handlers['chat:typing']({
+      recipient: 'user:2',
+    })
+
+    assert.deepEqual(io.emissions, [])
   })
 
   it('joins persisted chat rooms on registration', async () => {

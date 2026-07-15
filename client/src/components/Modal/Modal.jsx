@@ -34,7 +34,7 @@ const Modal = ({
       <div
         role="dialog"
         aria-modal="true"
-        className={`flex max-h-[80vh] flex-col rounded-lg border border-[#d8dfd4] bg-white p-6 shadow-lg ${
+        className={`flex max-h-[min(80vh,calc(100dvh-1.5rem))] w-full flex-col rounded-lg border border-[#d8dfd4] bg-white p-4 shadow-lg sm:max-h-[80vh] sm:p-6 ${
           SIZES[size] ?? SIZES.md
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -42,7 +42,7 @@ const Modal = ({
         {(title || onClose) && (
           <div className="mb-4 flex items-start justify-between gap-4">
             {title ? (
-              <h2 className="text-lg font-semibold">{title}</h2>
+              <h2 className="text-base font-semibold sm:text-lg">{title}</h2>
             ) : (
               <span />
             )}

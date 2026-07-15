@@ -31,7 +31,7 @@ const GameChatPanel = ({ gameId, onClose }) => {
   return (
     <section
       aria-label="Game chat"
-      className="absolute right-4 bottom-36 z-30 flex max-h-[min(26.5rem,calc(100svh-11rem))] w-[min(25.5rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl bg-[#FBC17A] shadow-xl"
+      className="absolute right-2 bottom-28 left-2 z-30 flex max-h-[min(28rem,calc(100dvh-7rem))] flex-col overflow-hidden rounded-2xl bg-[#FBC17A] shadow-xl sm:right-4 sm:bottom-36 sm:left-auto sm:max-h-[min(26.5rem,calc(100dvh-11rem))] sm:w-[min(25.5rem,calc(100vw-2rem))]"
     >
       <button
         aria-label="Close game chat"

@@ -48,7 +48,7 @@ const SettingsSidebar = ({ items, activeKey, onSelect }) => (
           aria-disabled={!item.enabled}
           aria-current={isActive ? 'page' : undefined}
           onClick={item.enabled ? () => onSelect(item.key) : undefined}
-          className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:outline-none ${tone}`}
+          className={`flex items-start gap-3 rounded-2xl px-3 py-2.5 text-left transition focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:outline-none sm:items-center ${tone}`}
         >
           <Icon name={item.key} />
           <span className="flex flex-col">

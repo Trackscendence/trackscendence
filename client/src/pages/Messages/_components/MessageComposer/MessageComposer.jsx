@@ -116,10 +116,10 @@ const MessageComposer = ({
 
   return (
     <form
-      className="border-t border-[#f0d9bd] bg-white px-5 py-4"
+      className="border-t border-[#f0d9bd] bg-white px-4 py-4 sm:px-5"
       onSubmit={handleSubmit}
     >
-      <div className="flex items-end gap-3">
+      <div className="flex items-end gap-2 sm:gap-3">
         <label className="sr-only" htmlFor="direct-message">
           Message
         </label>

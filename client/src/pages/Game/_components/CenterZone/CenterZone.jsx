@@ -47,7 +47,7 @@ const CenterZone = ({
   topCard,
 }) => {
   return (
-    <div className="flex scale-[0.8] flex-wrap items-center justify-center gap-[14px]">
+    <div className="flex scale-[0.64] flex-wrap items-center justify-center gap-[10px] sm:scale-[0.75] sm:gap-[14px] md:scale-[0.8]">
       <div className={`${FLANKER} justify-end`}>
         <DrawPile
           canDraw={canDraw}

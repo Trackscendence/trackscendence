@@ -8,7 +8,7 @@ const Logo = () => (
     alt="UNO!"
     width={60}
     height={60}
-    className="h-[60px] w-[60px] rounded-full object-contain"
+    className="h-12 w-12 rounded-full object-contain sm:h-[60px] sm:w-[60px]"
   />
 )
 

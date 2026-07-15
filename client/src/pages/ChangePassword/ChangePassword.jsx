@@ -12,14 +12,14 @@ const ChangePassword = () => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#1f2d28]">
+    <div className="flex min-h-[100dvh] flex-col bg-white text-[#1f2d28]">
       <header className="relative z-20 flex items-start">
-        <BackButton className="h-[27px] w-[138px] shrink-0" />
+        <BackButton className="h-10 w-full max-w-[160px] shrink-0 sm:h-[27px] sm:w-[138px]" />
       </header>
 
-      <main className="flex flex-1 items-center justify-center px-5 py-10">
+      <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-5 sm:py-10">
         <div className="w-full max-w-[414px]">
-          <h1 className="mb-8 text-center text-4xl font-semibold text-[#081934] uppercase">
+          <h1 className="mb-8 text-center text-3xl font-semibold text-[#081934] uppercase sm:text-4xl">
             Change password
           </h1>
 

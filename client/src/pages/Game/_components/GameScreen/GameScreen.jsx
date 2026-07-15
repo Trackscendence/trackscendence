@@ -18,7 +18,7 @@ const GameScreen = ({ children, gameId }) => {
   }, [clearRoomMessages, gameRoomId])
 
   return (
-    <main className="bg-surface-warm relative min-h-[100svh]">
+    <main className="bg-surface-warm relative min-h-[100svh] overflow-x-hidden">
       <ExitGameButton />
       <ChatPanelButton
         disabled={!gameId}

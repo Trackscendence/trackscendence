@@ -1,7 +1,7 @@
 const GameStartOverlay = () => {
   return (
-    <div className="animate-wr-overlay bg-surface-warm fixed inset-0 z-50 flex flex-col items-center justify-center">
-      <span className="animate-wr-scale-in text-[clamp(56px,8vw,112px)] font-black tracking-[-0.04em] text-[#2A1A08] motion-reduce:animate-none">
+    <div className="animate-wr-overlay bg-surface-warm fixed inset-0 z-50 flex flex-col items-center justify-center px-4 text-center">
+      <span className="animate-wr-scale-in text-[clamp(40px,11vw,112px)] font-black tracking-[-0.04em] text-[#2A1A08] motion-reduce:animate-none">
         Game On.
       </span>
       <span className="mt-4 text-sm font-medium text-[#9A7050]">

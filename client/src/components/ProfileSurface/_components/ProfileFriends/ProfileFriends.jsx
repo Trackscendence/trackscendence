@@ -20,7 +20,7 @@ const ProfileFriends = ({ friends, isOwnProfile }) => {
 
   return (
     <section className="bg-white">
-      <div className="border-b border-[#fceee0] px-5 py-3">
+      <div className="border-b border-[#fceee0] px-4 py-3 sm:px-5">
         <h2 className="text-sm font-semibold tracking-wide text-[#3d1200] uppercase">
           Friends ({friends.length})
         </h2>
@@ -29,7 +29,7 @@ const ProfileFriends = ({ friends, isOwnProfile }) => {
         {friends.map(({ friendSince, user }) => (
           <ProfileLink
             key={user.id}
-            className="flex items-center gap-3 px-5 py-3 transition hover:bg-[#fff8f2]"
+            className="flex items-center gap-3 px-4 py-3 transition hover:bg-[#fff8f2] sm:px-5"
             username={user.username}
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFB04F] text-xs font-bold text-white">

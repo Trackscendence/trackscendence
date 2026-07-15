@@ -8,9 +8,11 @@ const RoomCard = ({ room, onJoin }) => {
   const isJoinable = room.status === 'OPEN' && !isFull
 
   return (
-    <article className="flex flex-col gap-4 rounded-2xl border border-white/80 bg-white/65 p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+    <article className="flex flex-col gap-4 rounded-2xl border border-white/80 bg-white/65 p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:p-7">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-[#2A1A08]">{room.name}</h2>
+        <h2 className="min-w-0 flex-1 truncate text-lg font-bold text-[#2A1A08]">
+          {room.name}
+        </h2>
         <StatusBadge variant={badgeVariant} />
       </div>
       <p className="text-xs text-[#9A7050]">by {room.owner.username}</p>
@@ -24,7 +26,7 @@ const RoomCard = ({ room, onJoin }) => {
         <button
           type="button"
           onClick={onJoin}
-          className="rounded-[14px] border border-[#C8956A] py-2 text-sm font-semibold text-[#6A4A20] transition hover:bg-[rgba(200,149,106,0.1)]"
+          className="w-full rounded-[14px] border border-[#C8956A] py-2 text-sm font-semibold text-[#6A4A20] transition hover:bg-[rgba(200,149,106,0.1)]"
         >
           Join Room
         </button>

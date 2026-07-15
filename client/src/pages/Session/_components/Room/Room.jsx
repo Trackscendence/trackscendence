@@ -25,8 +25,8 @@ const Room = ({
   }
 
   return (
-    <section className="flex min-h-[28rem] flex-col bg-[#fbfcfa]">
-      <header className="border-b border-[#e1e6de] px-4 py-3">
+    <section className="flex min-h-[24rem] flex-col bg-[#fbfcfa] sm:min-h-[28rem]">
+      <header className="border-b border-[#e1e6de] px-3 py-3 sm:px-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-[#1f2b24]">
@@ -66,7 +66,7 @@ const Room = ({
           }
         />
       ) : null}
-      <ul className="flex-1 space-y-3 overflow-y-auto p-4">
+      <ul className="flex-1 space-y-3 overflow-y-auto p-3 sm:p-4">
         {!isJoinedChatRoom ? (
           <li className="rounded-md border border-dashed border-[#cbd5c5] px-4 py-6 text-center text-sm font-medium text-[#617267]">
             Join this room to read and send messages
@@ -80,7 +80,7 @@ const Room = ({
                 key={item.id}
               >
                 <div
-                  className={`max-w-[78%] rounded-md px-4 py-2 text-sm ${
+                  className={`max-w-[85%] rounded-md px-4 py-2 text-sm sm:max-w-[78%] ${
                     isOwnMessage
                       ? 'bg-[#2f7d61] text-white'
                       : 'bg-[#D9E7E0] text-[#1f2b24]'
@@ -100,7 +100,7 @@ const Room = ({
       </ul>
       {isJoinedChatRoom ? (
         <form
-          className="border-t border-[#e1e6de] bg-white p-4"
+          className="border-t border-[#e1e6de] bg-white p-3 sm:p-4"
           onSubmit={handleSubmit}
         >
           <label className="sr-only" htmlFor="chat-message">

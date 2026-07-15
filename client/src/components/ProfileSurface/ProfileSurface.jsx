@@ -25,8 +25,8 @@ const ProfileSurface = ({
         onTabChange={setActiveTab}
       />
 
-      <div className="mt-[28px] flex flex-col gap-7 lg:flex-row lg:gap-[66px]">
-        <main className="min-w-0 flex-1 bg-[#ffd099] p-4 sm:p-8">
+      <div className="mt-5 flex flex-col gap-6 lg:mt-[28px] lg:flex-row lg:gap-[66px]">
+        <main className="min-w-0 flex-1 bg-[#ffd099] p-4 sm:p-6 lg:p-8">
           {activeTab === 'overview' && (
             <ProfileOverview
               // The server's accepted-friendship total (#396), not the capped

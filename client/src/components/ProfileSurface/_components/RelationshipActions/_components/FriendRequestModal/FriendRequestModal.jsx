@@ -47,9 +47,9 @@ const FriendRequestModal = ({ displayName, isOpen, onClose }) => {
             before you play together. A request with a message is easier to
             recognize and becomes the first message of your conversation.
           </p>
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button
-              fullWidth={false}
+              className="w-full sm:w-auto"
               type="button"
               variant="orangeOutline"
               onClick={() => setStep('compose')}
@@ -58,7 +58,7 @@ const FriendRequestModal = ({ displayName, isOpen, onClose }) => {
             </Button>
             <Button
               disabled={isSubmitting}
-              fullWidth={false}
+              className="w-full sm:w-auto"
               type="button"
               variant="orange"
               onClick={() => send('')}
@@ -84,9 +84,9 @@ const FriendRequestModal = ({ displayName, isOpen, onClose }) => {
           <p className="text-right text-xs text-[#9a7050]">
             {message.length}/{MESSAGE_MAX_LENGTH}
           </p>
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button
-              fullWidth={false}
+              className="w-full sm:w-auto"
               type="button"
               variant="orangeOutline"
               onClick={() => setStep('choose')}
@@ -94,7 +94,7 @@ const FriendRequestModal = ({ displayName, isOpen, onClose }) => {
               Back
             </Button>
             <Button
-              className="flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2 sm:w-auto"
               disabled={isSubmitting || !message.trim()}
               fullWidth={false}
               type="submit"

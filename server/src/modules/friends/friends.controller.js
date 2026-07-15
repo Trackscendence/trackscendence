@@ -30,10 +30,24 @@ const deleteRelationship = async (req, res) => {
   res.json(result)
 }
 
+const blockUser = async (req, res) => {
+  const result = await friendsService.blockUser(req.user, req.params)
+
+  res.json(result)
+}
+
+const unblockUser = async (req, res) => {
+  const result = await friendsService.unblockUser(req.user, req.params)
+
+  res.json(result)
+}
+
 module.exports = {
+  blockUser,
   deleteRelationship,
   listFriendRequests,
   listFriends,
   respondToFriendRequest,
   sendFriendRequest,
+  unblockUser,
 }

@@ -41,3 +41,66 @@ describe('friendsService.toIncomingRequestSummary', () => {
     assert.equal(summary.message, 'hello before we chat')
   })
 })
+
+describe('friendsService.resolveBlockAction', () => {
+  it('blocks an accepted friend', () => {
+    assert.equal(
+      friendsService.resolveBlockAction({ status: 'ACCEPTED' }, 1),
+      'block',
+    )
+  })
+
+  it('is a no-op when the viewer already blocked the user', () => {
+    assert.equal(
+      friendsService.resolveBlockAction(
+        { status: 'BLOCKED', blockedById: 1 },
+        1,
+      ),
+      'noop',
+    )
+  })
+
+  it('refuses to block a user who has already blocked the viewer', () => {
+    assert.throws(() =>
+      friendsService.resolveBlockAction(
+        { status: 'BLOCKED', blockedById: 2 },
+        1,
+      ),
+    )
+  })
+
+  it('refuses to block a non-friend', () => {
+    assert.throws(() => friendsService.resolveBlockAction(null, 1))
+    assert.throws(() =>
+      friendsService.resolveBlockAction({ status: 'PENDING' }, 1),
+    )
+  })
+})
+
+describe('friendsService.resolveUnblockAction', () => {
+  it('unblocks a user the viewer blocked', () => {
+    assert.equal(
+      friendsService.resolveUnblockAction(
+        { status: 'BLOCKED', blockedById: 1 },
+        1,
+      ),
+      'unblock',
+    )
+  })
+
+  it('is a no-op when nothing is blocked', () => {
+    assert.equal(
+      friendsService.resolveUnblockAction({ status: 'ACCEPTED' }, 1),
+      'noop',
+    )
+  })
+
+  it('refuses to unblock a block the viewer did not create', () => {
+    assert.throws(() =>
+      friendsService.resolveUnblockAction(
+        { status: 'BLOCKED', blockedById: 2 },
+        1,
+      ),
+    )
+  })
+})

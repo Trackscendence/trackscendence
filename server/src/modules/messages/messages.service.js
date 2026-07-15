@@ -4,6 +4,10 @@ const NotFoundException = require('#exceptions/not-found.exception')
 const friendsRepository = require('#modules/friends/friends.repository')
 const messagesRepository = require('#modules/messages/messages.repository')
 const notificationsService = require('#modules/notifications/notifications.service')
+const {
+  BLOCK_STATE,
+  getBlockState,
+} = require('#modules/friends/friendBlockState')
 
 const DIRECT_MESSAGE_MAX_LENGTH = 500
 const MESSAGE_HISTORY_LIMIT = 100
@@ -89,7 +93,12 @@ const isConversationParticipant = (conversation, userId) => {
   return conversation.userOneId === userId || conversation.userTwoId === userId
 }
 
-const toConversationDto = (conversation, viewerId, unreadCount = 0) => {
+const toConversationDto = (
+  conversation,
+  viewerId,
+  unreadCount = 0,
+  blockState = BLOCK_STATE.NONE,
+) => {
   const lastMessage = conversation.messages?.[0] || null
   const friend = getFriendFromConversation(conversation, viewerId)
 
@@ -99,6 +108,7 @@ const toConversationDto = (conversation, viewerId, unreadCount = 0) => {
     lastMessage: lastMessage ? toMessageDto(lastMessage) : null,
     unreadCount,
     isUnread: unreadCount > 0,
+    blockState,
     updatedAt: conversation.updatedAt,
     createdAt: conversation.createdAt,
   }
@@ -130,6 +140,14 @@ const assertAcceptedFriends = async (
     secondUserId,
   )
 
+  if (relationship?.status === 'BLOCKED') {
+    throw new ForbiddenException(
+      relationship.blockedById === firstUserId
+        ? 'Unblock this user to send messages'
+        : 'You cannot send messages to this user',
+    )
+  }
+
   if (relationship?.status !== 'ACCEPTED') {
     throw new ForbiddenException(
       'Direct messages are only available between friends',
@@ -145,19 +163,53 @@ const getConversationOrThrow = async (conversationId, repository) => {
   return conversation
 }
 
+// The other user's id in each of the viewer's relationships, so a conversation
+// can be matched to its friendship (and thus its block state) without a lookup
+// per conversation.
+const buildRelationshipByFriendId = (relationships, viewerId) => {
+  const relationshipByFriendId = new Map()
+
+  for (const relationship of relationships) {
+    const friendId =
+      relationship.requesterId === viewerId
+        ? relationship.addresseeId
+        : relationship.requesterId
+    relationshipByFriendId.set(friendId, relationship)
+  }
+
+  return relationshipByFriendId
+}
+
 const listConversations = async (
   user,
-  { repository = messagesRepository } = {},
+  {
+    friendshipRepository = friendsRepository,
+    repository = messagesRepository,
+  } = {},
 ) => {
   const conversations = await repository.listConversationsForUser(user.id)
+  const relationships = await friendshipRepository.listRelationshipsForUser(
+    user.id,
+  )
+  const relationshipByFriendId = buildRelationshipByFriendId(
+    relationships,
+    user.id,
+  )
   const summaries = await Promise.all(
-    conversations.map(async (conversation) =>
-      toConversationDto(
+    conversations.map(async (conversation) => {
+      const friendId = getOtherUserIdFromConversation(conversation, user.id)
+      const blockState = getBlockState(
+        relationshipByFriendId.get(friendId),
+        user.id,
+      )
+
+      return toConversationDto(
         conversation,
         user.id,
         await getConversationUnreadCount(conversation, user.id, repository),
-      ),
-    ),
+        blockState,
+      )
+    }),
   )
 
   return {
@@ -226,7 +278,10 @@ const getOrCreateConversation = async (
 const listMessages = async (
   user,
   params,
-  { repository = messagesRepository } = {},
+  {
+    friendshipRepository = friendsRepository,
+    repository = messagesRepository,
+  } = {},
 ) => {
   const conversationId = parsePositiveInteger(
     params.conversationId,
@@ -246,8 +301,22 @@ const listMessages = async (
   const refreshedConversation =
     (await repository.findConversationById(conversationId)) || conversation
 
+  // Reading stays open after a block (like after an unfriend), but the thread
+  // needs the block state so it can swap the composer for the blocked banner.
+  const friendId = getOtherUserIdFromConversation(conversation, user.id)
+  const relationship = await friendshipRepository.findRelationshipBetweenUsers(
+    user.id,
+    friendId,
+  )
+  const blockState = getBlockState(relationship, user.id)
+
   return {
-    conversation: toConversationDto(refreshedConversation, user.id, 0),
+    conversation: toConversationDto(
+      refreshedConversation,
+      user.id,
+      0,
+      blockState,
+    ),
     messages: messages.reverse().map(toMessageDto),
   }
 }

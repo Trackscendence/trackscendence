@@ -35,3 +35,17 @@ export const deleteRelationship = (targetUserId, token) => {
     token,
   })
 }
+
+export const blockUser = (targetUserId, token) => {
+  return request(`/friends/${targetUserId}/block`, {
+    method: 'POST',
+    token,
+  })
+}
+
+export const unblockUser = (targetUserId, token) => {
+  return request(`/friends/${targetUserId}/unblock`, {
+    method: 'POST',
+    token,
+  })
+}

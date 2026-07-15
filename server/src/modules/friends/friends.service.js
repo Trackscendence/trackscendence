@@ -6,11 +6,61 @@ const NotFoundException = require('#exceptions/not-found.exception')
 const friendsRepository = require('#modules/friends/friends.repository')
 const messagesService = require('#modules/messages/messages.service')
 const notificationsService = require('#modules/notifications/notifications.service')
+const { BLOCK_STATE } = require('#modules/friends/friendBlockState')
 
 const FRIENDSHIP_STATUS = {
   PENDING: 'PENDING',
   ACCEPTED: 'ACCEPTED',
   BLOCKED: 'BLOCKED',
+}
+
+// A block only makes sense between current friends, so a block moves the
+// friendship ACCEPTED -> BLOCKED and an unblock moves it back. These resolvers
+// hold the state machine (and its no-op / conflict cases) as pure functions so
+// the transitions can be tested without a database.
+const BLOCK_DECISION = {
+  BLOCK: 'block',
+  UNBLOCK: 'unblock',
+  NOOP: 'noop',
+}
+
+const resolveBlockAction = (relationship, currentUserId) => {
+  if (!relationship) {
+    throw new NotFoundException(
+      'You can only block someone you are friends with',
+    )
+  }
+
+  if (relationship.status === FRIENDSHIP_STATUS.BLOCKED) {
+    // Already blocked by me: nothing to do. Blocked by them: not mine to change.
+    if (relationship.blockedById === currentUserId) return BLOCK_DECISION.NOOP
+    throw new ForbiddenException('You cannot block this user')
+  }
+
+  if (relationship.status !== FRIENDSHIP_STATUS.ACCEPTED) {
+    throw new BadRequestException(
+      'You can only block someone you are friends with',
+    )
+  }
+
+  return BLOCK_DECISION.BLOCK
+}
+
+const resolveUnblockAction = (relationship, currentUserId) => {
+  if (!relationship) {
+    throw new NotFoundException('Friendship not found')
+  }
+
+  // Nothing is blocked, so unblocking is a no-op rather than an error.
+  if (relationship.status !== FRIENDSHIP_STATUS.BLOCKED) {
+    return BLOCK_DECISION.NOOP
+  }
+
+  if (relationship.blockedById !== currentUserId) {
+    throw new ForbiddenException('Only the person who blocked can unblock')
+  }
+
+  return BLOCK_DECISION.UNBLOCK
 }
 
 const FRIEND_RESPONSE_ACTION = {
@@ -408,6 +458,72 @@ const deleteRelationship = async (user, params) => {
   )
 }
 
+const blockUser = async (user, params) => {
+  const targetUserId = validateTargetUserIdParam(params)
+
+  if (targetUserId === user.id) {
+    throw new BadRequestException('You cannot block yourself')
+  }
+
+  const relationship = await friendsRepository.findRelationshipBetweenUsers(
+    user.id,
+    targetUserId,
+  )
+  const decision = resolveBlockAction(relationship, user.id)
+
+  if (decision === BLOCK_DECISION.NOOP) {
+    return { message: 'User blocked', blockState: BLOCK_STATE.BLOCKED_BY_ME }
+  }
+
+  return await friendsRepository.withLockedFriendshipById(
+    relationship.id,
+    async (lockedRelationship, tx) => {
+      const lockedDecision = resolveBlockAction(lockedRelationship, user.id)
+
+      if (lockedDecision === BLOCK_DECISION.BLOCK) {
+        await friendsRepository.blockFriendshipById(
+          lockedRelationship.id,
+          user.id,
+          tx,
+        )
+      }
+
+      return { message: 'User blocked', blockState: BLOCK_STATE.BLOCKED_BY_ME }
+    },
+  )
+}
+
+const unblockUser = async (user, params) => {
+  const targetUserId = validateTargetUserIdParam(params)
+
+  if (targetUserId === user.id) {
+    throw new BadRequestException('You cannot unblock yourself')
+  }
+
+  const relationship = await friendsRepository.findRelationshipBetweenUsers(
+    user.id,
+    targetUserId,
+  )
+  const decision = resolveUnblockAction(relationship, user.id)
+
+  if (decision === BLOCK_DECISION.NOOP) {
+    return { message: 'User unblocked', blockState: BLOCK_STATE.NONE }
+  }
+
+  return await friendsRepository.withLockedFriendshipById(
+    relationship.id,
+    async (lockedRelationship, tx) => {
+      const lockedDecision = resolveUnblockAction(lockedRelationship, user.id)
+
+      if (lockedDecision === BLOCK_DECISION.UNBLOCK) {
+        await friendsRepository.unblockFriendshipById(lockedRelationship.id, tx)
+      }
+
+      return { message: 'User unblocked', blockState: BLOCK_STATE.NONE }
+    },
+  )
+}
+
 const listFriends = async (user) => {
   const friendships = await friendsRepository.listAcceptedFriendshipsForUser(
     user.id,
@@ -433,11 +549,15 @@ const listFriendRequests = async (user) => {
 }
 
 module.exports = {
+  blockUser,
   deleteRelationship,
   listFriendRequests,
   listFriends,
+  resolveBlockAction,
+  resolveUnblockAction,
   respondToFriendRequest,
   sendFriendRequest,
   toIncomingRequestSummary,
+  unblockUser,
   validateRequestMessage,
 }

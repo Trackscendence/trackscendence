@@ -10,6 +10,8 @@ router.get('/', friendsController.listFriends)
 router.get('/requests', friendsController.listFriendRequests)
 router.post('/request', friendsController.sendFriendRequest)
 router.post('/respond', friendsController.respondToFriendRequest)
+router.post('/:targetUserId/block', friendsController.blockUser)
+router.post('/:targetUserId/unblock', friendsController.unblockUser)
 router.delete('/:targetUserId', friendsController.deleteRelationship)
 
 module.exports = router

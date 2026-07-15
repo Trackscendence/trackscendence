@@ -3,6 +3,8 @@ import ProfileLink from '@/components/ProfileLink'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import { formatMessageTime } from '@/utils/formatMessageTime'
 import MessageComposer from '../MessageComposer'
+import BlockedBanner from './_components/BlockedBanner'
+import ThreadHeaderMenu from './_components/ThreadHeaderMenu'
 
 const EmptyThread = () => (
   <div className="flex flex-1 items-center justify-center px-6 text-center">
@@ -21,11 +23,15 @@ const MessageThread = ({
   isConnected,
   isLoading,
   messages,
+  onBlock,
   onSend,
+  onUnblock,
 }) => {
   if (!conversation) return <EmptyThread />
 
   const friend = getPlayerIdentity(conversation.friend)
+  const blockState = conversation.blockState || 'none'
+  const isBlocked = blockState !== 'none'
 
   return (
     <section className="flex min-h-0 flex-col bg-white">
@@ -45,11 +51,24 @@ const MessageThread = ({
             <h2 className="truncate text-lg font-black text-[#3d1200]">
               {friend.name}
             </h2>
-            <p className="text-xs font-semibold text-[#9a7050]">
-              {isConnected ? 'Online' : 'Reconnecting'}
-            </p>
+            {/* The status line reflects the viewer's own socket, not the
+                friend's presence, so it would read "Online" over a blocked
+                banner. Hide it once blocked. */}
+            {isBlocked ? null : (
+              <p className="text-xs font-semibold text-[#9a7050]">
+                {isConnected ? 'Online' : 'Reconnecting'}
+              </p>
+            )}
           </div>
         </ProfileLink>
+
+        <ThreadHeaderMenu
+          key={conversation.id}
+          blockState={blockState}
+          friendName={friend.name}
+          onBlock={onBlock}
+          onUnblock={onUnblock}
+        />
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-[#fff7ed] px-5 py-5">
@@ -105,15 +124,24 @@ const MessageThread = ({
         </div>
       </div>
 
-      {/* Keyed per conversation: switching chats remounts the composer, so
-          the draft never leaks across conversations and the cursor lands in
-          the input every time a chat opens. */}
-      <MessageComposer
-        key={conversation.id}
-        autoFocus
-        disabled={!conversation}
-        onSend={onSend}
-      />
+      {/* A blocked conversation stays readable, but sending is closed off: the
+          banner replaces the composer so there is no disabled input to fight
+          with. Keyed per conversation, the composer remounts on switch so the
+          draft never leaks across chats and the cursor lands in the input. */}
+      {isBlocked ? (
+        <BlockedBanner
+          blockState={blockState}
+          friendName={friend.name}
+          onUnblock={onUnblock}
+        />
+      ) : (
+        <MessageComposer
+          key={conversation.id}
+          autoFocus
+          disabled={!conversation}
+          onSend={onSend}
+        />
+      )}
     </section>
   )
 }

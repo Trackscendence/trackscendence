@@ -264,14 +264,18 @@ describe('friend-gated direct-message lifecycle (#392)', () => {
       listMessagesForConversation: async () => [...savedMessages],
       markConversationReadForUser: async () => conversation,
     }
+    const friendshipRepository = {
+      findRelationshipBetweenUsers: async () => null,
+    }
 
     for (const participantId of [1, 2]) {
       const result = await messagesService.listMessages(
         user({ id: participantId }),
         { conversationId: '11' },
-        { repository },
+        { friendshipRepository, repository },
       )
       assert.equal(result.messages[0].message, 'from before the unfriend')
+      assert.equal(result.conversation.blockState, 'none')
     }
   })
 
@@ -280,13 +284,18 @@ describe('friend-gated direct-message lifecycle (#392)', () => {
       listConversationsForUser: async () => [conversation],
       countUnreadMessagesForConversation: async () => 0,
     }
+    const friendshipRepository = {
+      listRelationshipsForUser: async () => [],
+    }
 
     const result = await messagesService.listConversations(user({ id: 2 }), {
+      friendshipRepository,
       repository,
     })
 
     assert.equal(result.conversations.length, 1)
     assert.equal(result.conversations[0].id, conversation.id)
+    assert.equal(result.conversations[0].blockState, 'none')
   })
 
   it('reuses the same conversation with history intact after re-friending', async () => {
@@ -317,4 +326,97 @@ describe('friend-gated direct-message lifecycle (#392)', () => {
   it.todo(
     'a future delete-conversation endpoint purges history for both participants',
   )
+})
+
+// Blocking reuses the friendship BLOCKED status. Sending is refused with a
+// block-aware reason, and reading stays open but carries the block state so the
+// thread can show the blocked banner.
+describe('blocked direct-message lifecycle', () => {
+  it('refuses to send when the viewer has blocked the recipient', async () => {
+    let createdMessage = false
+    const repository = {
+      findConversationById: async () => conversation,
+      createMessage: async () => {
+        createdMessage = true
+      },
+    }
+    const friendshipRepository = {
+      findRelationshipBetweenUsers: async () => ({
+        status: 'BLOCKED',
+        blockedById: 1,
+      }),
+    }
+
+    await assert.rejects(
+      () =>
+        messagesService.sendMessage(
+          user(),
+          { conversationId: '11' },
+          { message: 'let me back in' },
+          { friendshipRepository, repository },
+        ),
+      /Unblock this user to send messages/,
+    )
+    assert.equal(createdMessage, false)
+  })
+
+  it('refuses to send when the recipient has blocked the viewer', async () => {
+    const friendshipRepository = {
+      findRelationshipBetweenUsers: async () => ({
+        status: 'BLOCKED',
+        blockedById: 2,
+      }),
+    }
+
+    await assert.rejects(
+      () =>
+        messagesService.sendMessageToRecipient(
+          user(),
+          { message: 'hello?', recipientId: 2 },
+          { friendshipRepository, repository: {} },
+        ),
+      /You cannot send messages to this user/,
+    )
+  })
+
+  it('reports blockedByMe on the thread the blocker opens', async () => {
+    const repository = {
+      findConversationById: async () => conversation,
+      listMessagesForConversation: async () => [],
+      markConversationReadForUser: async () => conversation,
+    }
+    const friendshipRepository = {
+      findRelationshipBetweenUsers: async () => ({
+        status: 'BLOCKED',
+        blockedById: 1,
+      }),
+    }
+
+    const result = await messagesService.listMessages(
+      user(),
+      { conversationId: '11' },
+      { friendshipRepository, repository },
+    )
+
+    assert.equal(result.conversation.blockState, 'blockedByMe')
+  })
+
+  it('stamps block state onto the conversation list', async () => {
+    const repository = {
+      listConversationsForUser: async () => [conversation],
+      countUnreadMessagesForConversation: async () => 0,
+    }
+    const friendshipRepository = {
+      listRelationshipsForUser: async () => [
+        { requesterId: 1, addresseeId: 2, status: 'BLOCKED', blockedById: 1 },
+      ],
+    }
+
+    const result = await messagesService.listConversations(user(), {
+      friendshipRepository,
+      repository,
+    })
+
+    assert.equal(result.conversations[0].blockState, 'blockedByMe')
+  })
 })

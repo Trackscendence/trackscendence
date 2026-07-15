@@ -1,26 +1,20 @@
 import { Check } from 'lucide-react'
 
-/* On the saturated orange bubble no flat green stays legible (the brand green
-   sits at ~1.3:1 contrast), so the read state seats the check on a white disc
-   instead. Sent state is translucent white — the tone that reads as grey on
-   the bubble without going muddy. */
+/* The check sits on the saturated orange bubble, where near-luminance colors
+   (slate grey, mid greens) go muddy. Sent is translucent white — the tone
+   that reads as grey on the bubble — and read is a purple that stays visible
+   through hue contrast with the orange. */
 const ReadReceiptCheck = ({
   isRead,
-  readColor = '#3fbf4e',
+  readColor = '#7f6ec4',
   sentColor = 'rgba(255, 255, 255, 0.65)',
 }) => (
-  <span
-    className={`inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors duration-300 ${
-      isRead ? 'bg-white' : ''
-    }`}
-  >
+  <span className="inline-flex items-center">
     <Check
       aria-hidden="true"
-      className={`transition-colors duration-300 ${
-        isRead ? 'h-[11px] w-[11px]' : 'h-4 w-4'
-      }`}
+      className="h-4 w-4 transition-colors duration-300"
       color={isRead ? readColor : sentColor}
-      strokeWidth={isRead ? 4 : 3.25}
+      strokeWidth={3.25}
     />
     <span className="sr-only">{isRead ? 'Read' : 'Sent'}</span>
   </span>

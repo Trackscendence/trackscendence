@@ -2,24 +2,19 @@ import { searchUsers } from '@/services/users'
 import useAuthStore from '@/stores/useAuthStore'
 import { createSessionStore } from './createSessionStore'
 import { isActiveToken } from './sessionGuard'
+import {
+  nextSearchToken,
+  isCurrentSearchToken,
+  invalidateSearchScope,
+  resetSearchTokens,
+} from './searchRequestTokens'
 
 // Search state is keyed by scope so every mounted search box reads and writes
 // only its own slice: one box can never clear or reorder another box's results.
 // Request tokens are per scope for the same reason; each token is unique so a
-// slow, older response cannot match a newer request after clear/reset. The
-// session guard is the cross-session complement: it drops a response whose
-// session ended mid-flight (#391).
-const searchRequestTokenByScope = new Map()
-
-const nextRequestToken = (scope) => {
-  const requestToken = Symbol(scope)
-  searchRequestTokenByScope.set(scope, requestToken)
-  return requestToken
-}
-
-const invalidateScope = (scope) => {
-  searchRequestTokenByScope.delete(scope)
-}
+// slow, older response cannot match a newer request after clear/reset (see
+// searchRequestTokens.js). The session guard is the cross-session complement:
+// it drops a response whose session ended mid-flight (#391).
 
 const getScopeState = (scopes, scope) =>
   scopes[scope] || {
@@ -38,7 +33,7 @@ const useUserSearchStore = createSessionStore((set) => ({
   scopes: {},
 
   search: async (scope, { query = '', page = 1 } = {}) => {
-    const requestToken = nextRequestToken(scope)
+    const requestToken = nextSearchToken(scope)
     const token = useAuthStore.getState().token
     set((state) => ({
       scopes: {
@@ -52,7 +47,7 @@ const useUserSearchStore = createSessionStore((set) => ({
     }))
     try {
       const response = await searchUsers({ query, page }, token)
-      if (searchRequestTokenByScope.get(scope) !== requestToken) return false
+      if (!isCurrentSearchToken(scope, requestToken)) return false
       if (!isActiveToken(token)) return false
       set((state) => ({
         scopes: {
@@ -68,7 +63,7 @@ const useUserSearchStore = createSessionStore((set) => ({
       }))
       return true
     } catch (error) {
-      if (searchRequestTokenByScope.get(scope) !== requestToken) return false
+      if (!isCurrentSearchToken(scope, requestToken)) return false
       if (!isActiveToken(token)) return false
       set((state) => ({
         scopes: {
@@ -89,7 +84,7 @@ const useUserSearchStore = createSessionStore((set) => ({
   // should keep the old list stable during the debounce window, but the old
   // request must not be allowed to commit after the term changed.
   invalidate: (scope) => {
-    invalidateScope(scope)
+    invalidateSearchScope(scope)
   },
 
   // Clearing also invalidates any in-flight search for the scope: deleting its
@@ -97,7 +92,7 @@ const useUserSearchStore = createSessionStore((set) => ({
   // repopulate a box the user already emptied or unmounted. New requests get a
   // fresh Symbol, so an old response cannot match after the key is reused.
   clear: (scope) => {
-    invalidateScope(scope)
+    invalidateSearchScope(scope)
     set((state) => {
       if (!(scope in state.scopes)) return state
       const scopes = { ...state.scopes }
@@ -109,7 +104,7 @@ const useUserSearchStore = createSessionStore((set) => ({
   reset: () => {
     // Symbols are never reused, so clearing the token map invalidates every
     // in-flight response without leaving long-lived scope keys behind.
-    searchRequestTokenByScope.clear()
+    resetSearchTokens()
     set({ scopes: {} })
   },
 }))

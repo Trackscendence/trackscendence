@@ -11,7 +11,10 @@ const roomService = require('#modules/room/room.service')
 const devRunner = require('#modules/game/dev-runner.service')
 const { buildGameStatePayload } = require('#modules/game/game.contract')
 const { registerChatHandlers } = require('./chat.handlers')
-const { runExclusiveRoomAction } = require('./room-action-guard')
+const {
+  enqueueRoomAction,
+  runExclusiveRoomAction,
+} = require('./room-action-guard')
 
 // Grace timers for players who dropped mid-game, keyed by userId. Module
 // scoped on purpose: the timer must survive the socket that scheduled it and
@@ -489,11 +492,36 @@ const registerHandlers = (io, socket) => {
     await broadcastRooms(io)
   }
 
+  // One FIFO per user across every room lifecycle event (#429): a leave or
+  // end must finish before a follow-up create/seat/join runs, or the entry
+  // action still sees the old seat and hands back the room the player just
+  // left — the lobby's ghost room. Entry actions additionally dedupe through
+  // the exclusive guard, so a double-clicked "+ Room" is skipped, not queued.
+  const roomLifecycleKey = `room-lifecycle:${socket.user.id}`
+
   const runRoomEntryAction = async (actionName, action) => {
-    const result = await runExclusiveRoomAction(
-      `room-entry:${socket.user.id}`,
-      action,
-    )
+    const result = await runExclusiveRoomAction(roomLifecycleKey, async () => {
+      // A player who walked away from a running game — navigated off /game by
+      // any route other than the exit button, so neither game:leave nor a
+      // disconnect fired — is still seated in its IN_GAME room. That seat
+      // blocks every entry path (createRoom throws "You are already in a game
+      // room"; seat/join hand back the stale room) until the abandoned game
+      // finishes on its own. Any explicit room entry is a decision to start
+      // over, so end that stranded game first. A no-op when the player has no
+      // game in flight, which is the common case, so a routine seat pays
+      // nothing extra. room:leave stays out of this on purpose: it fires
+      // during the waiting-room -> game handoff and must never touch the game
+      // that just started. A failed abandon is logged and the entry action
+      // still runs: if the seat really was stranded, the action's own error
+      // path reports it, and an unguarded rejection here would escape the
+      // socket.on listener as an unhandled rejection.
+      try {
+        await abandonActiveGame(io, socket.user.id)
+      } catch (error) {
+        logger.error('Failed to abandon stranded game', error)
+      }
+      return action()
+    })
     if (result.skipped) {
       logger.info(
         `Ignored duplicate ${actionName} for user ${socket.user.username}`,
@@ -581,15 +609,17 @@ const registerHandlers = (io, socket) => {
   })
 
   socket.on('room:leave', async () => {
-    try {
-      const leftRoom = await roomService.leaveOpenRoom(socket.user.id)
-      if (leftRoom) {
-        await broadcastRooms(io)
+    await enqueueRoomAction(roomLifecycleKey, async () => {
+      try {
+        const leftRoom = await roomService.leaveOpenRoom(socket.user.id)
+        if (leftRoom) {
+          await broadcastRooms(io)
+        }
+      } catch (error) {
+        logger.error('Failed to leave room', error)
+        socket.emit('room_error', { message: 'Unable to leave the room' })
       }
-    } catch (error) {
-      logger.error('Failed to leave room', error)
-      socket.emit('room_error', { message: 'Unable to leave the room' })
-    }
+    })
   })
 
   // Owner-only "End the room" (#221): closes the whole OPEN room instead of
@@ -597,25 +627,27 @@ const registerHandlers = (io, socket) => {
   // room:closed so their waiting room hands back to the lobby, and the grid
   // drops the room right away via the broadcast.
   socket.on('room:end', async () => {
-    try {
-      const endedRoom = await roomService.endOwnedRoom(socket.user.id)
-      if (!endedRoom) {
-        return socket.emit('room_error', {
-          message: 'You can only end a room you own',
+    await enqueueRoomAction(roomLifecycleKey, async () => {
+      try {
+        const endedRoom = await roomService.endOwnedRoom(socket.user.id)
+        if (!endedRoom) {
+          return socket.emit('room_error', {
+            message: 'You can only end a room you own',
+          })
+        }
+        pendingDevRunsByRoom.delete(endedRoom.id)
+        clearDevRoomExpiration(endedRoom.id)
+        endedRoom.players.forEach((player) => {
+          io.to(`user:${player.userId}`).emit('room:closed', {
+            roomId: endedRoom.id,
+          })
         })
+        await broadcastRooms(io)
+      } catch (error) {
+        logger.error('Failed to end room', error)
+        socket.emit('room_error', { message: 'Unable to end the room' })
       }
-      pendingDevRunsByRoom.delete(endedRoom.id)
-      clearDevRoomExpiration(endedRoom.id)
-      endedRoom.players.forEach((player) => {
-        io.to(`user:${player.userId}`).emit('room:closed', {
-          roomId: endedRoom.id,
-        })
-      })
-      await broadcastRooms(io)
-    } catch (error) {
-      logger.error('Failed to end room', error)
-      socket.emit('room_error', { message: 'Unable to end the room' })
-    }
+    })
   })
 
   // Lobby page hydration: send the room list to just this socket; later

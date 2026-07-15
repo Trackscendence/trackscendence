@@ -486,6 +486,31 @@ const sendMessageToRecipient = async (
   }
 }
 
+const getExistingConversationForRecipient = async (
+  user,
+  { recipientId },
+  deps = {},
+) => {
+  const targetUserId = parsePositiveInteger(recipientId, 'recipientId')
+  const repository = deps.repository || messagesRepository
+
+  await assertAcceptedFriends(user.id, targetUserId, {
+    repository: deps.friendshipRepository || friendsRepository,
+  })
+
+  const conversation = await repository.findConversationByUsers(
+    user.id,
+    targetUserId,
+  )
+
+  if (!conversation) return null
+
+  return {
+    conversationId: conversation.id,
+    recipientId: targetUserId,
+  }
+}
+
 const createConversationFromAcceptedRequest = async (
   relationship,
   { repository = messagesRepository, db } = {},
@@ -540,6 +565,7 @@ module.exports = {
   DIRECT_MESSAGE_MAX_LENGTH,
   assertAcceptedFriends,
   createConversationFromAcceptedRequest,
+  getExistingConversationForRecipient,
   getOrCreateConversation,
   listConversations,
   listMessages,

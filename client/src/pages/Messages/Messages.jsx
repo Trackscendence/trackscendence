@@ -30,6 +30,9 @@ const Messages = () => {
   const messagesByConversation = useDirectMessageStore(
     (state) => state.messagesByConversation,
   )
+  const typingByConversation = useDirectMessageStore(
+    (state) => state.typingByConversation,
+  )
   const setActiveConversation = useDirectMessageStore(
     (state) => state.setActiveConversation,
   )
@@ -41,6 +44,8 @@ const Messages = () => {
   )
   const loadMessages = useDirectMessageStore((state) => state.loadMessages)
   const blockUser = useDirectMessageStore((state) => state.blockUser)
+  const sendStopTyping = useDirectMessageStore((state) => state.sendStopTyping)
+  const sendTyping = useDirectMessageStore((state) => state.sendTyping)
   const unblockUser = useDirectMessageStore((state) => state.unblockUser)
   const pushNotification = useNotificationStore((state) => state.push)
 
@@ -133,6 +138,16 @@ const Messages = () => {
     return sent
   }
 
+  const sendSelectedConversationTyping = () => {
+    if (!selectedConversation?.friend?.id) return false
+    return sendTyping(`user:${selectedConversation.friend.id}`)
+  }
+
+  const sendSelectedConversationStopTyping = () => {
+    if (!selectedConversation?.friend?.id) return false
+    return sendStopTyping(`user:${selectedConversation.friend.id}`)
+  }
+
   const blockSelectedFriend = () => {
     if (!selectedConversation?.friend?.id) return undefined
     return blockUser(selectedConversation.friend.id)
@@ -189,6 +204,10 @@ const Messages = () => {
               conversation={selectedConversation}
               currentUserId={user?.id}
               isConnected={isConnected}
+              isFriendTyping={Boolean(
+                selectedConversation &&
+                typingByConversation[selectedConversation.id],
+              )}
               isLoading={isLoadingMessages}
               messages={
                 selectedConversation
@@ -197,6 +216,8 @@ const Messages = () => {
               }
               onBlock={blockSelectedFriend}
               onSend={sendMessage}
+              onStopTyping={sendSelectedConversationStopTyping}
+              onTyping={sendSelectedConversationTyping}
               onUnblock={unblockSelectedFriend}
             />
           )}

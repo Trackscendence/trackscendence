@@ -6,7 +6,7 @@ import { createSessionStore } from './createSessionStore'
 import { isActiveToken } from './sessionGuard'
 import {
   getOwnRoomIds,
-  rememberClosedRoomIds,
+  rememberRoomIds,
   resolveVisibleRooms,
 } from './roomVisibility'
 
@@ -58,11 +58,13 @@ const getDefaultState = () => ({
   // True while a room-grid page (lobby, waiting room) is watching `rooms_update`
   // broadcasts, so a socket reconnect can re-join the server-side `rooms` room.
   watchingRooms: false,
-  // Suppresses the player's own room in incoming `rooms_update`s after they
-  // leave, until the server confirms, so a late in-flight broadcast can't
-  // re-show it (order-independent; still correct once multiple concurrent
-  // rooms exist — it only ever hides the player's OWN room).
-  suppressOwnRoom: false,
+  // Rooms the player has left whose departure the server has not yet
+  // confirmed: incoming `rooms_update`s hide these ids while they still show
+  // the player seated, so a late in-flight broadcast can't re-show a just-left
+  // room. Id-based on purpose — a follow-up create must not un-hide the
+  // previous room (#429); each id expires once a snapshot shows the player
+  // unseated (see resolveVisibleRooms).
+  pendingLeftRoomIds: [],
   // Closed rooms are hidden by id as well as by ownership. This keeps an older
   // room-list response from showing a room the owner already ended.
   suppressedClosedRoomIds: [],
@@ -155,7 +157,7 @@ const useGameStore = createSessionStore((set) => ({
       return resolveVisibleRooms({
         rooms,
         ownUserId,
-        suppressOwnRoom: state.suppressOwnRoom,
+        pendingLeftRoomIds: state.pendingLeftRoomIds,
         suppressedClosedRoomIds: state.suppressedClosedRoomIds,
       })
     }),
@@ -167,7 +169,7 @@ const useGameStore = createSessionStore((set) => ({
 
       return {
         roomClosed: roomId,
-        suppressedClosedRoomIds: rememberClosedRoomIds(
+        suppressedClosedRoomIds: rememberRoomIds(
           state.suppressedClosedRoomIds,
           [roomId],
         ),
@@ -195,18 +197,22 @@ const useGameStore = createSessionStore((set) => ({
   // Quick-start seat: join a visible open room when one exists, otherwise open
   // a default room. The game starts once the room fills.
   seatRoom: (capacity) => {
-    set({ suppressOwnRoom: false })
+    set({ pendingLeftRoomIds: [] })
     socket.emit(SOCKET_EVENTS.ROOM_SEAT, capacity != null ? { capacity } : {})
   },
   // Explicit create from the lobby or the first-player quick-start picker.
-  // This always asks the server to open a room owned by this player.
+  // This always asks the server to open a room owned by this player. Unlike
+  // seat/join, create keeps pendingLeftRoomIds: the server orders the pending
+  // leave before this create, so the new room always has a fresh id and the
+  // old one must stay hidden until the leave is confirmed (#429).
   createRoom: (capacity) => {
-    set({ suppressOwnRoom: false })
     socket.emit(SOCKET_EVENTS.ROOM_CREATE, capacity != null ? { capacity } : {})
   },
-  // Join a specific open room by id (the lobby grid's join button).
+  // Join a specific open room by id (the lobby grid's join button). Seat and
+  // join can legitimately re-enter a room the player just left, so they clear
+  // the pending-left ids or the rejoined room would stay hidden.
   joinRoomById: (roomId) => {
-    set({ suppressOwnRoom: false })
+    set({ pendingLeftRoomIds: [] })
     socket.emit(SOCKET_EVENTS.ROOM_JOIN, { roomId })
   },
   fillRoomWithBots: () => socket.emit(SOCKET_EVENTS.ROOM_FILL_BOTS),
@@ -216,7 +222,15 @@ const useGameStore = createSessionStore((set) => ({
   // left while the authoritative rooms_update is in flight (#221).
   leaveRoom: () => {
     socket.emit(SOCKET_EVENTS.ROOM_LEAVE)
-    set({ suppressOwnRoom: true })
+    set((state) => {
+      const ownUserId = useAuthStore.getState().user?.id
+      return {
+        pendingLeftRoomIds: rememberRoomIds(
+          state.pendingLeftRoomIds,
+          getOwnRoomIds(state.rooms, ownUserId),
+        ),
+      }
+    })
     useGameStore.getState().dropOwnRoom()
   },
   endRoom: () => {
@@ -224,8 +238,7 @@ const useGameStore = createSessionStore((set) => ({
     set((state) => {
       const ownUserId = useAuthStore.getState().user?.id
       return {
-        suppressOwnRoom: true,
-        suppressedClosedRoomIds: rememberClosedRoomIds(
+        suppressedClosedRoomIds: rememberRoomIds(
           state.suppressedClosedRoomIds,
           getOwnRoomIds(state.rooms, ownUserId),
         ),

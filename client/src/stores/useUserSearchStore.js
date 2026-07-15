@@ -2,20 +2,19 @@ import { searchUsers } from '@/services/users'
 import useAuthStore from '@/stores/useAuthStore'
 import { createSessionStore } from './createSessionStore'
 import { isActiveToken } from './sessionGuard'
+import {
+  nextSearchToken,
+  isCurrentSearchToken,
+  invalidateSearchScope,
+  resetSearchTokens,
+} from './searchRequestTokens'
 
-// Search state is keyed by scope so every mounted search box reads and
-// writes only its own slice: one box can never clear or reorder another
-// box's results. Request ids are per scope for the same reason; they are
-// monotonic so a slow, older response cannot overwrite a newer one. The
-// session guard is the cross-session complement: it drops a response whose
-// session ended mid-flight (#391).
-const searchRequestIdByScope = new Map()
-
-const nextRequestId = (scope) => {
-  const requestId = (searchRequestIdByScope.get(scope) || 0) + 1
-  searchRequestIdByScope.set(scope, requestId)
-  return requestId
-}
+// Search state is keyed by scope so every mounted search box reads and writes
+// only its own slice: one box can never clear or reorder another box's results.
+// Request tokens are per scope for the same reason; each token is unique so a
+// slow, older response cannot match a newer request after clear/reset (see
+// searchRequestTokens.js). The session guard is the cross-session complement:
+// it drops a response whose session ended mid-flight (#391).
 
 const getScopeState = (scopes, scope) =>
   scopes[scope] || {
@@ -33,8 +32,8 @@ const getScopeState = (scopes, scope) =>
 const useUserSearchStore = createSessionStore((set) => ({
   scopes: {},
 
-  search: async (scope, { q = '', page = 1 } = {}) => {
-    const requestId = nextRequestId(scope)
+  search: async (scope, { query = '', page = 1 } = {}) => {
+    const requestToken = nextSearchToken(scope)
     const token = useAuthStore.getState().token
     set((state) => ({
       scopes: {
@@ -47,9 +46,9 @@ const useUserSearchStore = createSessionStore((set) => ({
       },
     }))
     try {
-      const response = await searchUsers({ q, page }, token)
-      if (searchRequestIdByScope.get(scope) !== requestId) return
-      if (!isActiveToken(token)) return
+      const response = await searchUsers({ query, page }, token)
+      if (!isCurrentSearchToken(scope, requestToken)) return false
+      if (!isActiveToken(token)) return false
       set((state) => ({
         scopes: {
           ...state.scopes,
@@ -62,9 +61,10 @@ const useUserSearchStore = createSessionStore((set) => ({
           },
         },
       }))
+      return true
     } catch (error) {
-      if (searchRequestIdByScope.get(scope) !== requestId) return
-      if (!isActiveToken(token)) return
+      if (!isCurrentSearchToken(scope, requestToken)) return false
+      if (!isActiveToken(token)) return false
       set((state) => ({
         scopes: {
           ...state.scopes,
@@ -76,14 +76,23 @@ const useUserSearchStore = createSessionStore((set) => ({
           },
         },
       }))
+      return true
     }
   },
 
-  // Clearing also invalidates any in-flight search for the scope: the id
-  // bump turns a late response into a no-op instead of letting it repopulate
-  // a box the user already emptied (or one that unmounted).
+  // Invalidate without clearing visible results. Typing a new long-enough term
+  // should keep the old list stable during the debounce window, but the old
+  // request must not be allowed to commit after the term changed.
+  invalidate: (scope) => {
+    invalidateSearchScope(scope)
+  },
+
+  // Clearing also invalidates any in-flight search for the scope: deleting its
+  // current token turns a late response into a no-op instead of letting it
+  // repopulate a box the user already emptied or unmounted. New requests get a
+  // fresh Symbol, so an old response cannot match after the key is reused.
   clear: (scope) => {
-    nextRequestId(scope)
+    invalidateSearchScope(scope)
     set((state) => {
       if (!(scope in state.scopes)) return state
       const scopes = { ...state.scopes }
@@ -93,12 +102,9 @@ const useUserSearchStore = createSessionStore((set) => ({
   },
 
   reset: () => {
-    // Bump (never drop) every scope's id so all in-flight searches are
-    // invalidated. Emptying the map instead would restart ids at 1, and a
-    // pre-reset response could then match a post-reset request's id.
-    for (const scope of searchRequestIdByScope.keys()) {
-      nextRequestId(scope)
-    }
+    // Symbols are never reused, so clearing the token map invalidates every
+    // in-flight response without leaving long-lived scope keys behind.
+    resetSearchTokens()
     set({ scopes: {} })
   },
 }))

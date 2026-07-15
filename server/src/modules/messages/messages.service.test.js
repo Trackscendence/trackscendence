@@ -181,6 +181,78 @@ describe('messagesService.sendMessageToRecipient', () => {
   })
 })
 
+describe('messagesService.getExistingConversationForRecipient', () => {
+  it('returns the existing conversation id after accepted-friend validation', async () => {
+    let createdConversation = false
+    const repository = {
+      findConversationByUsers: async () => conversation,
+      findOrCreateConversationForUsers: async () => {
+        createdConversation = true
+      },
+    }
+    const friendshipRepository = {
+      findRelationshipBetweenUsers: async () => ({ status: 'ACCEPTED' }),
+    }
+
+    const result = await messagesService.getExistingConversationForRecipient(
+      user(),
+      { recipientId: 2 },
+      { friendshipRepository, repository },
+    )
+
+    assert.deepEqual(result, {
+      conversationId: 11,
+      recipientId: 2,
+    })
+    assert.equal(createdConversation, false)
+  })
+
+  it('does not look up a conversation when the friendship is not accepted', async () => {
+    let lookedUpConversation = false
+    const repository = {
+      findConversationByUsers: async () => {
+        lookedUpConversation = true
+      },
+    }
+    const friendshipRepository = {
+      findRelationshipBetweenUsers: async () => null,
+    }
+
+    await assert.rejects(
+      () =>
+        messagesService.getExistingConversationForRecipient(
+          user(),
+          { recipientId: 2 },
+          { friendshipRepository, repository },
+        ),
+      /only available between friends/,
+    )
+    assert.equal(lookedUpConversation, false)
+  })
+
+  it('returns null without creating a missing conversation', async () => {
+    let createdConversation = false
+    const repository = {
+      findConversationByUsers: async () => null,
+      findOrCreateConversationForUsers: async () => {
+        createdConversation = true
+      },
+    }
+    const friendshipRepository = {
+      findRelationshipBetweenUsers: async () => ({ status: 'ACCEPTED' }),
+    }
+
+    const result = await messagesService.getExistingConversationForRecipient(
+      user(),
+      { recipientId: 2 },
+      { friendshipRepository, repository },
+    )
+
+    assert.equal(result, null)
+    assert.equal(createdConversation, false)
+  })
+})
+
 describe('messagesService.markAllConversationsRead', () => {
   it('marks every conversation read for the user and reports zero unread', async () => {
     const readCalls = []

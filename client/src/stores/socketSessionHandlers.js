@@ -137,6 +137,15 @@ export const createSocketSessionHandlers = ({
     [SOCKET_EVENTS.CHAT_CONVERSATION_READ]: forActiveSession((data) => {
       directMessageStore?.getState().markConversationReadByFriend(data)
     }),
+    [SOCKET_EVENTS.CHAT_TYPING]: forActiveSession((data) =>
+      directMessageStore?.getState().receiveTyping(data),
+    ),
+    [SOCKET_EVENTS.CHAT_STOP_TYPING]: forActiveSession((data) =>
+      directMessageStore?.getState().receiveStopTyping(data),
+    ),
+    [SOCKET_EVENTS.SOCIAL_NOTIFICATIONS_CHANGED]: forActiveSession(() =>
+      socialNotificationStore?.getState().loadNotifications(),
+    ),
     [SOCKET_EVENTS.CHAT_ROOMS]: forActiveSession((data) => {
       if (Array.isArray(data?.rooms)) {
         chatStore.getState().syncChatRooms(data.rooms)

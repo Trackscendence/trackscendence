@@ -51,6 +51,8 @@ const makeDeps = ({
       getState: () => ({
         markConversationReadByFriend: rec('markConversationReadByFriend'),
         receiveMessage: rec('receiveDirectMessage'),
+        receiveStopTyping: rec('receiveStopTyping'),
+        receiveTyping: rec('receiveTyping'),
       }),
     },
     authStore: {
@@ -91,8 +93,11 @@ test('registers a handler for every event the server can send', () => {
     SOCKET_EVENTS.CHAT_CONVERSATION_READ,
     SOCKET_EVENTS.CHAT_MESSAGE,
     SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE,
+    SOCKET_EVENTS.CHAT_TYPING,
+    SOCKET_EVENTS.CHAT_STOP_TYPING,
     SOCKET_EVENTS.CHAT_ROOMS,
     SOCKET_EVENTS.CHAT_ERROR,
+    SOCKET_EVENTS.SOCIAL_NOTIFICATIONS_CHANGED,
   ]
   assert.deepEqual(Object.keys(handlers).sort(), [...expected].sort())
   Object.values(handlers).forEach((handler) =>
@@ -221,6 +226,8 @@ test('chat events route to the chat store, passing the current user id on privat
     conversationId: 7,
     readAt: '2026-07-09T12:00:00.000Z',
   })
+  handlers[SOCKET_EVENTS.CHAT_TYPING]({ conversationId: 7 })
+  handlers[SOCKET_EVENTS.CHAT_STOP_TYPING]({ conversationId: 7 })
   handlers[SOCKET_EVENTS.CHAT_ROOMS]({ rooms: [{ id: 'r1' }] })
 
   assert.deepEqual(calls.receiveRoomMessage, [[{ text: 'hi' }]])
@@ -229,8 +236,19 @@ test('chat events route to the chat store, passing the current user id on privat
   assert.deepEqual(calls.markConversationReadByFriend, [
     [{ conversationId: 7, readAt: '2026-07-09T12:00:00.000Z' }],
   ])
+  assert.deepEqual(calls.receiveTyping, [[{ conversationId: 7 }]])
+  assert.deepEqual(calls.receiveStopTyping, [[{ conversationId: 7 }]])
   assert.deepEqual(calls.loadSocialNotifications, [[]])
   assert.deepEqual(calls.syncChatRooms, [[[{ id: 'r1' }]]])
+})
+
+test('social notifications changed reloads the notification cache', () => {
+  const { deps, calls } = makeDeps()
+  const handlers = createSocketSessionHandlers(deps)
+
+  handlers[SOCKET_EVENTS.SOCIAL_NOTIFICATIONS_CHANGED]()
+
+  assert.deepEqual(calls.loadSocialNotifications, [[]])
 })
 
 test('room:closed coerces a numeric roomId and falls back to true', () => {
@@ -261,6 +279,8 @@ test('session-data events are dropped once the session has ended (#391)', () => 
     conversationId: 7,
     readAt: '2026-07-09T12:00:00.000Z',
   })
+  handlers[SOCKET_EVENTS.CHAT_TYPING]({ conversationId: 7 })
+  handlers[SOCKET_EVENTS.CHAT_STOP_TYPING]({ conversationId: 7 })
 
   assert.equal(calls.setLobbyCount, undefined)
   assert.equal(calls.setGameState, undefined)
@@ -268,6 +288,8 @@ test('session-data events are dropped once the session has ended (#391)', () => 
   assert.equal(calls.receiveRoomMessage, undefined)
   assert.equal(calls.receivePrivateMessage, undefined)
   assert.equal(calls.markConversationReadByFriend, undefined)
+  assert.equal(calls.receiveTyping, undefined)
+  assert.equal(calls.receiveStopTyping, undefined)
 
   // Transport-state events stay live so isConnected remains accurate.
   handlers[SOCKET_EVENTS.DISCONNECT]()

@@ -5,6 +5,7 @@ import {
   getTournaments,
   joinTournament as joinTournamentRequest,
   leaveTournament as leaveTournamentRequest,
+  startTournament as startTournamentRequest,
 } from '@/services/tournament'
 import { createSessionStore } from './createSessionStore.js'
 import { isActiveToken } from './sessionGuard'
@@ -109,6 +110,28 @@ const useTournamentStore = createSessionStore((set, get) => {
           set({ activeTournament: response?.tournament ?? null })
         }
       } catch (error) {
+        if (isActiveToken(token)) {
+          set({ error: error.message })
+        }
+      } finally {
+        endRequest()
+      }
+    },
+
+    startTournament: async () => {
+      const tournamentId = get().activeTournament?.id
+      if (!tournamentId) return
+
+      const token = useAuthStore.getState().token
+      beginRequest()
+      try {
+        const response = await startTournamentRequest(tournamentId, token)
+        if (isActiveToken(token)) {
+          set({ activeTournament: response?.tournament ?? null })
+        }
+      } catch (error) {
+        // The server refuses non-creators (403) and brackets that are not
+        // full or no longer OPEN (409); both read fine in the page banner.
         if (isActiveToken(token)) {
           set({ error: error.message })
         }

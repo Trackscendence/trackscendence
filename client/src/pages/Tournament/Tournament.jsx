@@ -43,6 +43,12 @@ const Tournament = () => {
     await loadTournaments()
   }
 
+  const handleStart = async () => {
+    const { startTournament, loadTournaments } = useTournamentStore.getState()
+    await startTournament()
+    await loadTournaments()
+  }
+
   const renderContent = () => {
     if (isLoading && !activeTournament && tournaments.length === 0) {
       return <Spinner className="text-[#9A7050]" size={28} />
@@ -66,6 +72,7 @@ const Tournament = () => {
           prizePoints={activeTournament.prizePoints}
           size={activeTournament.size}
           onLeave={handleLeave}
+          onStart={handleStart}
         />
       )
     }

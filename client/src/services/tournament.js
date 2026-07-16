@@ -26,6 +26,15 @@ export const joinTournament = (id, token) => {
   })
 }
 
+// Creator-only: kicks off a full OPEN tournament. The response is the same
+// detail shape, now RUNNING with the first round's matches populated.
+export const startTournament = (id, token) => {
+  return request(`/tournaments/${encodeURIComponent(id)}/start`, {
+    method: 'POST',
+    token,
+  })
+}
+
 export const leaveTournament = (id, token) => {
   return request(`/tournaments/${encodeURIComponent(id)}/leave`, {
     method: 'POST',

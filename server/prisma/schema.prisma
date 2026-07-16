@@ -68,6 +68,12 @@ model User {
   socialNotifications              SocialNotification[] @relation("SocialNotificationRecipient")
   socialNotificationsTriggered     SocialNotification[] @relation("SocialNotificationActor")
   apiKeys                          ApiKey[]
+  tournamentsCreated               Tournament[] @relation("TournamentCreator")
+  tournamentsWon                   Tournament[] @relation("TournamentWinner")
+  tournamentEntries                TournamentPlayer[]
+  tournamentMatchesAsPlayerA       TournamentMatch[] @relation("TournamentMatchPlayerA")
+  tournamentMatchesAsPlayerB       TournamentMatch[] @relation("TournamentMatchPlayerB")
+  tournamentMatchesWon             TournamentMatch[] @relation("TournamentMatchWinner")
 
   @@index([deletedAt])
   @@index([isBot])
@@ -127,6 +133,7 @@ model Game {
   startedAt   DateTime     @default(now())
   endedAt     DateTime?
   players     GamePlayer[]
+  tournamentMatches TournamentMatch[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -206,6 +213,87 @@ model RoomPlayer {
 
   @@unique([roomId, userId])
   @@index([userId])
+}
+
+enum TournamentStatus {
+  OPEN
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+model Tournament {
+  id           Int              @id @default(autoincrement())
+  name         String
+  status       TournamentStatus @default(OPEN)
+  // Bracket size, 4 or 8 in v1 (validated in the service).
+  size         Int
+  prizePoints  Int              @default(0)
+  // 0 while OPEN, 1-based once RUNNING.
+  currentRound Int              @default(0)
+  totalRounds  Int
+  createdById  Int
+  winnerId     Int?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  createdBy User               @relation("TournamentCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  winner    User?              @relation("TournamentWinner", fields: [winnerId], references: [id], onDelete: SetNull)
+  players   TournamentPlayer[]
+  matches   TournamentMatch[]
+
+  // The list endpoint filters by status and sorts newest first.
+  @@index([status, createdAt])
+  @@index([createdById])
+}
+
+model TournamentPlayer {
+  id           Int       @id @default(autoincrement())
+  tournamentId Int
+  userId       Int
+  // Assigned when the bracket locks (start).
+  seed         Int?
+  // Set when the player loses a match.
+  eliminatedAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, userId])
+  // Hot read: a user's active tournament.
+  @@index([userId])
+}
+
+model TournamentMatch {
+  id           Int      @id @default(autoincrement())
+  tournamentId Int
+  // 1-based round number.
+  round        Int
+  // 0-based position within the round.
+  slot         Int
+  playerAId    Int?
+  playerBId    Int?
+  winnerId     Int?
+  // Runtime UUID of the live in-memory game, same convention as Room.gameId.
+  liveGameId   String?
+  // Persisted Game row once the match's game has been flushed to Postgres.
+  gameId       Int?
+  // DB Room hosting this match while it is being played.
+  roomId       Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tournament  Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  playerA     User?      @relation("TournamentMatchPlayerA", fields: [playerAId], references: [id], onDelete: SetNull)
+  playerB     User?      @relation("TournamentMatchPlayerB", fields: [playerBId], references: [id], onDelete: SetNull)
+  matchWinner User?      @relation("TournamentMatchWinner", fields: [winnerId], references: [id], onDelete: SetNull)
+  game        Game?      @relation(fields: [gameId], references: [id], onDelete: SetNull)
+
+  @@unique([tournamentId, round, slot])
+  // The bracket read is by tournament (covered by the unique above); the result
+  // bridge looks a match up by its live game id when the in-memory game ends.
+  @@index([liveGameId])
 }
 
 model Friendship {

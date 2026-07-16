@@ -29,14 +29,14 @@ const TurnBanner = ({ isMyTurn, activePlayerName, expiresAt }) => {
 
   return (
     <div
-      className="flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 shadow-md"
+      className="flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full bg-black/70 px-3 py-2 shadow-md sm:px-4"
       role="status"
     >
       <span
         aria-hidden="true"
         className="h-2.5 w-2.5 rounded-full bg-red-500"
       />
-      <span className="text-sm font-semibold tracking-wide text-[#FFB04F]">
+      <span className="truncate text-xs font-semibold tracking-wide text-[#FFB04F] sm:text-sm">
         {label}
       </span>
       {seconds !== null && (

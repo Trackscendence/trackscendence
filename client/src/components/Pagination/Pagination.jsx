@@ -11,21 +11,23 @@ const Pagination = ({ pagination, onPageChange, disabled = false }) => {
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
       <Button
         variant="orangeOutline"
         fullWidth={false}
+        className="w-full sm:w-auto"
         disabled={disabled || page <= 1}
         onClick={() => onPageChange(page - 1)}
       >
         Previous
       </Button>
-      <span className="text-sm font-semibold text-[#7a3810]">
+      <span className="text-center text-sm font-semibold text-[#7a3810]">
         Page {page} of {totalPages}
       </span>
       <Button
         variant="orangeOutline"
         fullWidth={false}
+        className="w-full sm:w-auto"
         disabled={disabled || page >= totalPages}
         onClick={() => onPageChange(page + 1)}
       >

@@ -53,9 +53,9 @@ const Login = () => {
   if (isAuthenticated) return <Navigate to={from} replace />
 
   return (
-    <div className="flex flex-1 items-center justify-center px-5 py-10">
+    <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-5 sm:py-10">
       <div className="w-full max-w-[414px]">
-        <h1 className="mb-8 text-center text-5xl font-semibold text-[#081934]">
+        <h1 className="mb-8 text-center text-4xl font-semibold text-[#081934] sm:text-5xl">
           LOG IN
         </h1>
 

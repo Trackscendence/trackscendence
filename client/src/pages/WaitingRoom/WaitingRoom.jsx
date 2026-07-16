@@ -188,7 +188,7 @@ const WaitingRoom = () => {
   // hold on the loader while the room list settles.
   if (!myRoom) {
     return (
-      <div className="bg-surface-waiting flex h-screen flex-col items-center justify-center">
+      <div className="bg-surface-waiting flex min-h-[100dvh] flex-col items-center justify-center px-4">
         {phase === 'choosing' ? (
           <QuickStartModal
             isOpen

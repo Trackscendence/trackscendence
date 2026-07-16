@@ -10,28 +10,32 @@ const ProfileLayout = () => {
   const showSearch = pathname === '/profile'
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-white text-[#1f2d28]">
-      {/* Back and Lobby stay flush in the top corners; the search sits between
-          them on the same line, top-aligned with the two tabs. */}
-      <header className="relative z-20 flex items-start gap-4">
-        <BackButton className="h-[27px] w-[138px] shrink-0" />
-
-        <div className="flex flex-1 justify-center px-4">
-          {showSearch ? (
-            <PlayerSearch className="mx-auto max-w-md" scope="profile-header" />
-          ) : null}
-        </div>
-
-        <LobbyChip className="h-[27px] w-[138px] shrink-0" />
+    <div className="relative flex min-h-[100dvh] flex-col bg-white text-[#1f2d28]">
+      {/* Desktop: Back and Lobby flush in the top corners with the search
+          centered between them. Mobile: the two chips share the top row and
+          the search wraps onto its own full-width line below. */}
+      <header className="relative z-20 flex flex-wrap items-start gap-3 p-3 sm:flex-nowrap sm:gap-4 sm:p-0">
+        <BackButton className="h-10 flex-1 sm:h-[27px] sm:w-[138px] sm:flex-none" />
+        {showSearch ? (
+          <div className="order-3 w-full sm:order-none sm:w-auto sm:flex-1 sm:px-4">
+            <PlayerSearch
+              className="mx-auto w-full max-w-md"
+              scope="profile-header"
+            />
+          </div>
+        ) : (
+          <div className="hidden flex-1 sm:block" />
+        )}
+        <LobbyChip className="order-2 h-10 flex-1 sm:order-none sm:h-[27px] sm:w-[138px] sm:flex-none" />
       </header>
 
-      <main className="w-full flex-1 px-5 pt-8 pb-12">
+      <main className="w-full flex-1 px-4 pt-6 pb-10 sm:px-5 sm:pt-8 sm:pb-12">
         <div className="mx-auto w-full max-w-[1344px]">
           <Outlet />
         </div>
       </main>
       <footer className="border-t border-[#d8dfd4] bg-white py-4">
-        <div className="flex w-full items-center justify-center gap-6 px-5 text-xs text-[#50635a]">
+        <div className="flex w-full flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 text-center text-xs text-[#50635a] sm:px-5">
           <Link to="/privacy-policy" className="hover:text-[#1f2d28]">
             Privacy Policy
           </Link>

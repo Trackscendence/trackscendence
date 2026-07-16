@@ -5,7 +5,7 @@
 const PassTurnButton = ({ onPassClick }) => {
   return (
     <button
-      className="focus-visible:ring-offset-surface-warm rounded-full bg-black px-6 py-2 text-sm font-black tracking-wide text-white uppercase shadow-md transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none"
+      className="focus-visible:ring-offset-surface-warm rounded-full bg-black px-4 py-1.5 text-xs font-black tracking-wide text-white uppercase shadow-md transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none sm:px-6 sm:py-2 sm:text-sm"
       onClick={onPassClick}
       type="button"
     >

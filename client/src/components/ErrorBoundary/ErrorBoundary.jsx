@@ -14,7 +14,7 @@ class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         this.props.fallback || (
-          <div className="flex min-h-screen items-center justify-center bg-[#f4f7f2] p-5 text-[#1f2d28]">
+          <div className="flex min-h-[100dvh] items-center justify-center bg-[#f4f7f2] p-4 text-[#1f2d28] sm:p-5">
             <div className="max-w-md text-center">
               <h1 className="text-xl font-semibold">Something went wrong</h1>
               <p className="mt-2 text-sm text-[#50635a]">

@@ -24,7 +24,7 @@ const SignupSuccess = () => {
   }, [countdown, navigate])
 
   return (
-    <div className="flex flex-1 items-center justify-center px-5 py-10">
+    <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-5 sm:py-10">
       <div className="w-full max-w-[414px] text-center">
         <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-[#0196FF]">
           {showCheck ? (
@@ -48,7 +48,7 @@ const SignupSuccess = () => {
           )}
         </div>
 
-        <h1 className="mb-4 text-4xl font-semibold text-[#081934] uppercase">
+        <h1 className="mb-4 text-3xl font-semibold text-[#081934] uppercase sm:text-4xl">
           Account created
         </h1>
 

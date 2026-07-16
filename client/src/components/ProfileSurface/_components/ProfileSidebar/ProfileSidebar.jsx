@@ -7,7 +7,7 @@ const ProfileSidebar = ({ friends, leaderboard, onShowFriends, profile }) => {
   const stats = profile.stats || {}
 
   return (
-    <aside className="space-y-5 bg-[#ffd099] p-6 lg:w-[358px] lg:shrink-0">
+    <aside className="space-y-5 bg-[#ffd099] p-4 sm:p-6 lg:w-[358px] lg:shrink-0">
       <ProfileOnlineFriends friends={friends} onShowFriends={onShowFriends} />
 
       <section className="bg-white p-4 text-center">

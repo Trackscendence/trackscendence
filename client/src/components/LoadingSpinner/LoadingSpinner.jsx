@@ -32,7 +32,7 @@ const LoadingSpinner = ({
 
   return (
     <div
-      className={`flex min-h-screen flex-col items-center justify-center px-6 text-center ${className}`}
+      className={`flex min-h-[100dvh] flex-col items-center justify-center px-4 text-center sm:px-6 ${className}`}
     >
       <div className="mb-6 flex gap-3">
         {PIPS.map((pip) => (
@@ -43,7 +43,7 @@ const LoadingSpinner = ({
         ))}
       </div>
 
-      <h1 className="text-[clamp(72px,11vw,160px)] leading-none font-black tracking-[-0.04em] text-[#2A1A08] uppercase">
+      <h1 className="max-w-full px-2 text-[clamp(48px,11vw,160px)] leading-[0.9] font-black tracking-[-0.04em] break-words text-[#2A1A08] uppercase sm:px-0 sm:text-[clamp(72px,11vw,160px)]">
         {displayWord}
       </h1>
 

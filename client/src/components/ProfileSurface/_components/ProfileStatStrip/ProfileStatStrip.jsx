@@ -12,7 +12,7 @@ const ProfileStatStrip = ({ stats = {} }) => {
   ]
 
   return (
-    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
+    <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1.5 sm:mt-4 sm:flex sm:flex-wrap sm:gap-y-3">
       {summaryStats.map((item) => (
         <div key={item.label} className="flex items-baseline gap-1.5">
           <span className="text-lg font-semibold text-[#3d1200]">

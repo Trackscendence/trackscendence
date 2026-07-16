@@ -32,7 +32,7 @@ const ProfileLeaderboard = ({ leaderboard = [], profile }) => {
         </p>
         <Link
           aria-label="View full leaderboard"
-          className="bg-[#ffd099] px-3 py-1 text-[10px] font-bold tracking-wide text-[#3d1200] uppercase transition hover:bg-[#f2652a] hover:text-white focus:ring-2 focus:ring-[#f2652a]/35 focus:outline-none"
+          className="bg-[#ffd099] px-3 py-2 text-[10px] font-bold tracking-wide text-[#3d1200] uppercase transition hover:bg-[#f2652a] hover:text-white focus:ring-2 focus:ring-[#f2652a]/35 focus:outline-none sm:py-1"
           to="/leaderboard"
         >
           More

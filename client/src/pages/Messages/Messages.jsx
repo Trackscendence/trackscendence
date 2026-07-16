@@ -179,11 +179,11 @@ const Messages = () => {
   }
 
   return (
-    <div className="bg-surface-warm flex min-h-screen flex-col text-[#3d1200]">
+    <div className="bg-surface-warm flex min-h-[100dvh] flex-col text-[#3d1200]">
       <AppHeader />
 
-      <main className="flex flex-1 px-6 py-6">
-        <div className="mx-auto grid h-[calc(100vh-8.25rem)] w-full max-w-[1240px] grid-cols-1 overflow-hidden rounded-lg border border-[#e6c9a8] bg-white shadow-[0_18px_45px_rgba(61,18,0,0.08)] lg:grid-cols-[360px_minmax(0,1fr)]">
+      <main className="flex flex-1 px-4 py-4 sm:px-6 sm:py-6">
+        <div className="mx-auto grid w-full max-w-[1240px] grid-cols-1 overflow-visible rounded-lg border border-[#e6c9a8] bg-white shadow-[0_18px_45px_rgba(61,18,0,0.08)] lg:h-[calc(100dvh-8.25rem)] lg:grid-cols-[360px_minmax(0,1fr)] lg:overflow-hidden">
           <ConversationList
             activeConversationId={isComposing ? null : activeConversationId}
             conversations={visibleConversations}

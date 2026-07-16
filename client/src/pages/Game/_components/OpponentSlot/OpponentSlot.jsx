@@ -17,14 +17,16 @@ const OpponentSlot = ({ isActive = false, orientation = 'top', player }) => {
   const labelClass = isTop ? 'flex-row' : 'flex-row md:flex-col'
 
   return (
-    <div className={`flex gap-4 ${layoutClass}`}>
-      <div className={`flex shrink-0 items-center gap-3 ${labelClass}`}>
+    <div className={`flex gap-2 sm:gap-4 ${layoutClass}`}>
+      <div
+        className={`flex shrink-0 items-center gap-2 sm:gap-3 ${labelClass}`}
+      >
         <span
           className={`rounded-full p-1 ${isActive ? 'shadow-[0_0_22px_6px_rgba(255,176,79,0.35)] ring-4 ring-[#4ADE80]' : ''}`}
         >
           <OpponentAvatar player={player} />
         </span>
-        <p className="text-center text-[28px] leading-none font-semibold text-black">
+        <p className="max-w-[120px] truncate text-center text-[20px] leading-none font-semibold text-black sm:max-w-[160px] sm:text-[24px] md:max-w-none md:text-[28px]">
           {player.username}
         </p>
       </div>

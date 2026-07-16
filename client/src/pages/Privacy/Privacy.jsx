@@ -4,7 +4,7 @@ const LAST_UPDATED = 'June 2026'
 
 const PrivacyPolicy = () => {
   return (
-    <main className="min-h-screen bg-[#f4f7f2] px-5 py-12 text-[#1f2d28]">
+    <main className="min-h-[100dvh] bg-[#f4f7f2] px-4 py-8 text-[#1f2d28] sm:px-5 sm:py-12">
       <div className="mx-auto max-w-2xl">
         <p className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase">
           Trackscendence

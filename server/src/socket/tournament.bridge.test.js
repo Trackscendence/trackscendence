@@ -290,6 +290,35 @@ describe('tournament bridge (#456)', () => {
             'user:40',
           ])
 
+          // Live bracket (#457): every player got the fresh bracket on their
+          // user room, and each pairing was told where its game lives.
+          const updates = io.emitted.filter(
+            (record) => record.event === 'tournament:updated',
+          )
+          assert.deepEqual(
+            [...new Set(updates.map((record) => record.room))].sort(),
+            ['user:10', 'user:20', 'user:30', 'user:40'],
+          )
+          assert.equal(updates[0].payload.tournament.id, state.id)
+          const matchReadies = io.emitted.filter(
+            (record) => record.event === 'tournament:match_ready',
+          )
+          assert.deepEqual(matchReadies.map((record) => record.room).sort(), [
+            'user:10',
+            'user:20',
+            'user:30',
+            'user:40',
+          ])
+          const readyForTen = matchReadies.find(
+            (record) => record.room === 'user:10',
+          )
+          assert.deepEqual(readyForTen.payload, {
+            tournamentId: state.id,
+            matchId: semiOne.id,
+            gameId: semiOne.liveGameId,
+            roomId: semiOne.roomId,
+          })
+
           // Semifinals: 20 beats 10, then 30 beats 40. Each result closes the
           // match's room and, once both are in, seats and starts the final.
           await finishGame(semiOne.liveGameId, 20)
@@ -308,6 +337,14 @@ describe('tournament bridge (#456)', () => {
 
           assert.equal(state.status, 'COMPLETED')
           assert.equal(state.winnerId, 30)
+
+          // The final result's broadcast carries the completed bracket, so
+          // clients render the champion without another fetch (#457).
+          const lastUpdate = io.emitted
+            .filter((record) => record.event === 'tournament:updated')
+            .at(-1)
+          assert.equal(lastUpdate.payload.tournament.status, 'COMPLETED')
+          assert.equal(lastUpdate.payload.tournament.winnerId, 30)
 
           // The persisted Game rows were stamped onto their matches in order.
           assert.deepEqual(
@@ -388,6 +425,42 @@ describe('tournament bridge (#456)', () => {
           await teardownLiveGames()
         }
       },
+    )
+  })
+
+  it('clears the leaver and mirrors the shrunken roster on leave (#457)', async () => {
+    io.emitted.length = 0
+    const { state } = createTournamentFixture({ playerIds: [10, 20, 30] })
+    const repository = {
+      removePlayerFromTournament: async (tournamentId, userId) => {
+        state.players = state.players.filter(
+          (player) => player.userId !== userId,
+        )
+        return { tournament: state }
+      },
+    }
+
+    await tournamentService.leaveTournament({ id: 30 }, state.id, {
+      repository,
+    })
+    await drainBridge(state.id)
+
+    const updates = io.emitted.filter(
+      (record) => record.event === 'tournament:updated',
+    )
+    // The leaver is told they no longer have an active tournament...
+    const leaverUpdate = updates.find((record) => record.room === 'user:30')
+    assert.equal(leaverUpdate.payload.tournament, null)
+    // ...while the remaining players get the fresh roster.
+    const stayerRooms = updates
+      .filter((record) => record.payload.tournament)
+      .map((record) => record.room)
+      .sort()
+    assert.deepEqual(stayerRooms, ['user:10', 'user:20'])
+    assert.equal(
+      updates.find((record) => record.room === 'user:10').payload.tournament
+        .playerCount,
+      2,
     )
   })
 

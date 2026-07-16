@@ -55,6 +55,10 @@ export const SOCKET_EVENTS = {
 
   // Social notifications
   SOCIAL_NOTIFICATIONS_CHANGED: 'social:notifications_changed',
+
+  // Tournaments (live bracket pushed to each entered player)
+  TOURNAMENT_UPDATED: 'tournament:updated',
+  TOURNAMENT_MATCH_READY: 'tournament:match_ready',
 }
 
 export default SOCKET_EVENTS

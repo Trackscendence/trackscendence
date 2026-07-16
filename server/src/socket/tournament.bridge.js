@@ -10,6 +10,12 @@
  * every lobby room uses, and stamps the resulting liveGameId/roomId on the
  * match so the game-end hooks can find their way back. Uninitialized (unit
  * tests exercising the service alone), the service's emissions are no-ops.
+ *
+ * It is also the live-bracket feed (#457): every domain event is mirrored to
+ * the entered players as `tournament:updated` over their `user:${id}` rooms
+ * (v1 has no spectator sockets, so per-user delivery needs no page-level room
+ * join), and a freshly started match additionally tells its two players where
+ * their game is with `tournament:match_ready`.
  */
 
 const logger = require('#utils/logger')
@@ -27,7 +33,27 @@ const {
   startMatchIfRoomFull,
 } = require('./socket.handlers')
 
+// Socket event names this bridge emits. The client mirrors them in
+// client/src/services/socketEvents.js; keep the wire strings in sync.
+const TOURNAMENT_UPDATED_EVENT = 'tournament:updated'
+const TOURNAMENT_MATCH_READY_EVENT = 'tournament:match_ready'
+
 let initialized = false
+
+/**
+ * Mirrors the fresh bracket to every entered player. A null tournament (sent
+ * individually on leave/cancel) tells that client it no longer has an active
+ * tournament.
+ */
+const emitTournamentUpdate = (io, userId, tournament) => {
+  io.to(`user:${userId}`).emit(TOURNAMENT_UPDATED_EVENT, { tournament })
+}
+
+const broadcastTournamentUpdate = (io, tournament) => {
+  tournament.players.forEach((player) => {
+    emitTournamentUpdate(io, player.id, tournament)
+  })
+}
 
 /**
  * Starts one ready match: room, seats, game. Runs inside the tournament's
@@ -95,7 +121,20 @@ const startReadyMatch = async (io, tournament, readyMatch, checkGameEnd) => {
       `Tournament match ${match.id} was already claimed; ` +
         `game ${liveMatch.gameId} is not linked to the bracket`,
     )
+    return
   }
+
+  // Deep link (#457): tell both players where their bracket game lives, so a
+  // client anywhere in the app can route straight to it (the same pattern as
+  // the reconnect-time active_game event).
+  playerIds.forEach((userId) => {
+    io.to(`user:${userId}`).emit(TOURNAMENT_MATCH_READY_EVENT, {
+      tournamentId: tournament.id,
+      matchId: match.id,
+      gameId: liveMatch.gameId,
+      roomId: room.id,
+    })
+  })
 }
 
 /**
@@ -113,6 +152,9 @@ const initTournamentBridge = (io) => {
   // advancement. Different tournaments proceed independently.
   const onBracketAdvance = ({ tournament, readyMatches = [] }) => {
     enqueueRoomAction(`tournament:${tournament.id}`, async () => {
+      // The bracket change reaches every player before their next game does,
+      // so a client never sees a game_start it cannot place in the bracket.
+      broadcastTournamentUpdate(io, tournament)
       for (const readyMatch of readyMatches) {
         try {
           await startReadyMatch(io, tournament, readyMatch, checkGameEnd)
@@ -133,8 +175,51 @@ const initTournamentBridge = (io) => {
     )
   }
 
+  // Sign-up phase changes carry no matches to start, only bracket mirrors.
+  // Queued under the same key so an update can never overtake an advancement.
+  const onRosterChange = ({ tournament }) => {
+    enqueueRoomAction(`tournament:${tournament.id}`, async () => {
+      broadcastTournamentUpdate(io, tournament)
+    }).catch((error) =>
+      logger.error(
+        `Tournament ${tournament.id} update broadcast failed`,
+        error,
+      ),
+    )
+  }
+
+  // The leaver's active tournament is gone; everyone else sees the roster
+  // shrink. A cancelled tournament stops being anyone's active tournament,
+  // mirroring what GET /tournaments/active would now return for them.
+  const onPlayerLeft = ({ tournament, leftUserId }) => {
+    enqueueRoomAction(`tournament:${tournament.id}`, async () => {
+      emitTournamentUpdate(io, leftUserId, null)
+      broadcastTournamentUpdate(io, tournament)
+    }).catch((error) =>
+      logger.error(`Tournament ${tournament.id} leave broadcast failed`, error),
+    )
+  }
+
+  const onCancelled = ({ tournament }) => {
+    enqueueRoomAction(`tournament:${tournament.id}`, async () => {
+      tournament.players.forEach((player) => {
+        emitTournamentUpdate(io, player.id, null)
+      })
+    }).catch((error) =>
+      logger.error(
+        `Tournament ${tournament.id} cancel broadcast failed`,
+        error,
+      ),
+    )
+  }
+
   tournamentEvents.on(TOURNAMENT_EVENTS.STARTED, onBracketAdvance)
   tournamentEvents.on(TOURNAMENT_EVENTS.MATCH_RESULT, onBracketAdvance)
+  tournamentEvents.on(TOURNAMENT_EVENTS.PLAYER_JOINED, onRosterChange)
+  tournamentEvents.on(TOURNAMENT_EVENTS.PLAYER_LEFT, onPlayerLeft)
+  tournamentEvents.on(TOURNAMENT_EVENTS.CANCELLED, onCancelled)
+  // COMPLETED needs no extra subscription: the final's MATCH_RESULT already
+  // carries the completed bracket (status, winnerId) to every player.
 }
 
 module.exports = { initTournamentBridge }

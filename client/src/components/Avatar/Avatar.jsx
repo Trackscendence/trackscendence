@@ -1,6 +1,10 @@
+// `color` overrides the default initials fill. It is an inline style, not a
+// class, because callers derive it from data (e.g. a hash of the player id in
+// the tournament bracket), so it cannot be a static utility class.
 const Avatar = ({
   alt = '',
   className = '',
+  color,
   initials = '',
   online,
   size = 40,
@@ -22,7 +26,11 @@ const Avatar = ({
           aria-label={alt}
           className={`flex items-center justify-center rounded-full bg-[#FFB04F] font-semibold text-white ${className}`}
           role="img"
-          style={{ width: size, height: size }}
+          style={{
+            width: size,
+            height: size,
+            ...(color ? { backgroundColor: color } : {}),
+          }}
         >
           {initials}
         </div>

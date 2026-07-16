@@ -7,6 +7,13 @@ import buildBracketView, {
 
 const player = (id, name) => ({ id, name })
 
+const entrant = (id, username, seed, eliminatedAt = null) => ({
+  id,
+  username,
+  seed,
+  eliminatedAt,
+})
+
 // Mirrors the design mock: eight players, quarterfinals decided, semifinals
 // seated but unplayed, final not created yet.
 const eightPlayerTournament = () => ({
@@ -16,6 +23,16 @@ const eightPlayerTournament = () => ({
   totalRounds: 3,
   playerCount: 8,
   prizePoints: 500,
+  players: [
+    entrant('u1', 'Jordan', 1),
+    entrant('u2', 'Spencer', 8, '2026-07-14T20:00:00Z'),
+    entrant('u3', 'Alex', 4),
+    entrant('u4', 'Mia', 5, '2026-07-14T20:05:00Z'),
+    entrant('u5', 'Parker', 2, '2026-07-14T20:10:00Z'),
+    entrant('u6', 'Tyler', 7),
+    entrant('u7', 'Chris', 3),
+    entrant('u8', 'Dana', 6, '2026-07-14T20:15:00Z'),
+  ],
   rounds: [
     {
       label: 'Quarterfinals',
@@ -138,6 +155,52 @@ describe('buildBracketView', () => {
     for (const slot of view.rounds[2].matches[0].slots) {
       assert.equal(slot.state, 'tbd')
       assert.equal(slot.color, undefined)
+    }
+  })
+
+  it('threads seed and tournament status onto every filled slot', () => {
+    const view = buildBracketView(eightPlayerTournament())
+    const [jordan, spencer] = view.rounds[0].matches[0].slots
+
+    assert.equal(jordan.seed, 1)
+    assert.equal(jordan.tournamentStatus, 'active')
+    assert.equal(jordan.description, 'Seed 1 · Still in')
+
+    assert.equal(spencer.seed, 8)
+    assert.equal(spencer.tournamentStatus, 'eliminated')
+    assert.equal(spencer.description, 'Seed 8 · Eliminated')
+  })
+
+  it('marks the winner as champion once winnerId is set', () => {
+    const view = buildBracketView({
+      ...eightPlayerTournament(),
+      status: 'COMPLETED',
+      winnerId: 'u1',
+    })
+    const [jordan] = view.rounds[0].matches[0].slots
+
+    assert.equal(jordan.tournamentStatus, 'champion')
+    assert.equal(jordan.description, 'Seed 1 · Champion')
+  })
+
+  it('copes with a player missing from the roster', () => {
+    const tournament = eightPlayerTournament()
+    tournament.players = tournament.players.filter(
+      (rosterEntry) => rosterEntry.id !== 'u1',
+    )
+    const view = buildBracketView(tournament)
+    const [jordan] = view.rounds[0].matches[0].slots
+
+    assert.equal(jordan.seed, null)
+    assert.equal(jordan.description, 'Still in')
+  })
+
+  it('leaves TBD placeholder slots without seed or description', () => {
+    const view = buildBracketView(eightPlayerTournament())
+
+    for (const slot of view.rounds[2].matches[0].slots) {
+      assert.equal(slot.seed, undefined)
+      assert.equal(slot.description, undefined)
     }
   })
 

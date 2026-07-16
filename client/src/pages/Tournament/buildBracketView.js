@@ -40,7 +40,26 @@ const matchCountForRound = (playerCount, roundIndex) =>
 
 const toInitials = (name = '') => name.trim().slice(0, 2).toUpperCase()
 
-const toSlot = (player, winnerId, matchKey, seatIndex) => {
+// Human wording for the tournament-level status, used verbatim by the hover
+// card and as the profile link's screen-reader description.
+const STATUS_LABELS = {
+  champion: 'Champion',
+  eliminated: 'Eliminated',
+  active: 'Still in',
+}
+
+// Tournament-level status, as opposed to slot.state which is per match: a
+// quarterfinal winner is 'winner' in that match yet still 'active' overall.
+// Losing any match means elimination in a single-elimination bracket, so a
+// lost slot reads 'eliminated' even if the roster has not caught up yet.
+const toTournamentStatus = (player, state, roster) => {
+  if (state === 'eliminated') return 'eliminated'
+  if (roster.winnerId && player.id === roster.winnerId) return 'champion'
+  if (roster.byId.get(player.id)?.eliminatedAt) return 'eliminated'
+  return 'active'
+}
+
+const toSlot = (player, winnerId, matchKey, seatIndex, roster) => {
   if (!player) {
     return { key: `${matchKey}-seat-${seatIndex}`, state: 'tbd' }
   }
@@ -50,6 +69,9 @@ const toSlot = (player, winnerId, matchKey, seatIndex) => {
     state = player.id === winnerId ? 'winner' : 'eliminated'
   }
 
+  const seed = roster.byId.get(player.id)?.seed ?? null
+  const tournamentStatus = toTournamentStatus(player, state, roster)
+
   return {
     key: `${matchKey}-${player.id}`,
     name: player.name,
@@ -57,10 +79,16 @@ const toSlot = (player, winnerId, matchKey, seatIndex) => {
     avatarUrl: player.avatarUrl || null,
     color: toAvatarColor(player.id, state),
     state,
+    seed,
+    tournamentStatus,
+    description:
+      seed != null
+        ? `Seed ${seed} · ${STATUS_LABELS[tournamentStatus]}`
+        : STATUS_LABELS[tournamentStatus],
   }
 }
 
-const toMatch = (match, roundIndex, matchIndex) => {
+const toMatch = (match, roundIndex, matchIndex, roster) => {
   const key = match?.id
     ? `match-${match.id}`
     : `round-${roundIndex}-match-${matchIndex}`
@@ -69,16 +97,16 @@ const toMatch = (match, roundIndex, matchIndex) => {
   return {
     key,
     slots: [
-      toSlot(players[0], match?.winnerId, key, 0),
-      toSlot(players[1], match?.winnerId, key, 1),
+      toSlot(players[0], match?.winnerId, key, 0, roster),
+      toSlot(players[1], match?.winnerId, key, 1, roster),
     ],
   }
 }
 
-const toRound = (round, roundIndex, playerCount) => {
+const toRound = (round, roundIndex, playerCount, roster) => {
   const expectedMatches = matchCountForRound(playerCount, roundIndex)
   const matches = Array.from({ length: expectedMatches }, (unused, index) =>
-    toMatch(round?.matches?.[index], roundIndex, index),
+    toMatch(round?.matches?.[index], roundIndex, index, roster),
   )
 
   return {
@@ -109,13 +137,22 @@ const buildBracketView = (tournament) => {
   const playerCount = tournament.playerCount ?? 0
   const totalRounds = tournament.totalRounds ?? tournament.rounds?.length ?? 0
 
+  // Index the roster once so every slot can look up its seed and
+  // eliminated-or-not without scanning the players array again.
+  const roster = {
+    byId: new Map(
+      (tournament.players ?? []).map((entrant) => [entrant.id, entrant]),
+    ),
+    winnerId: tournament.winnerId ?? null,
+  }
+
   return {
     name: tournament.name,
     summary: `Round ${tournament.currentRound} of ${totalRounds} · ${playerCount} players`,
     prizePoints: tournament.prizePoints ?? null,
     champion: toChampion(tournament),
     rounds: Array.from({ length: totalRounds }, (unused, index) =>
-      toRound(tournament.rounds?.[index], index, playerCount),
+      toRound(tournament.rounds?.[index], index, playerCount, roster),
     ),
   }
 }

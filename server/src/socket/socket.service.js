@@ -1,6 +1,7 @@
 const { Server } = require('socket.io')
 const { authenticate } = require('./socket.middleware')
 const registerHandlers = require('./socket.handlers')
+const { initTournamentBridge } = require('./tournament.bridge')
 
 const logger = require('#utils/logger')
 
@@ -10,6 +11,8 @@ const initWebSocket = (server) => {
   })
 
   io.use(authenticate)
+  // Tournament domain events start driving rooms and games from here on.
+  initTournamentBridge(io)
 
   io.on('connection', (socket) => {
     // Under LOG_LEVEL=debug, trace every inbound event in one place so a

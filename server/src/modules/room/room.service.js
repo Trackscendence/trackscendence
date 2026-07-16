@@ -250,6 +250,32 @@ const createRoomForOwner = async (owner, { capacity, name } = {}) => {
 }
 
 /**
+ * Opens a room for a server-arranged pairing (a tournament match) and seats
+ * every player immediately. Unlike the user-facing creation paths there is no
+ * "already in a room" refusal: any OPEN seat a player still holds is released
+ * first, so the room is born full without breaking the one-active-room
+ * invariant — and that same invariant then blocks these players from seating
+ * anywhere else while the match runs. The first player owns the room. The
+ * caller starts the match right away, so the room is never offered to
+ * strangers in the lobby.
+ *
+ * @param {{ name: string, playerIds: number[] }} pairing players in seat order
+ * @returns {Promise<Object>} the full room DTO, ready to claim for a game
+ */
+const createRoomForMatch = async ({ name, playerIds }) => {
+  for (const userId of playerIds) {
+    await leaveOpenRoom(userId)
+  }
+  const room = await roomRepository.createRoomWithPlayers({
+    name,
+    capacity: playerIds.length,
+    ownerId: playerIds[0],
+    playerIds,
+  })
+  return toRoomDto(room)
+}
+
+/**
  * Fills the caller's open room with server-owned bot users. Only the room owner
  * can fill empty seats, so another seated user cannot unexpectedly start the
  * owner's room. Bot seats use the same serializable RoomPlayer insert path as
@@ -496,6 +522,7 @@ module.exports = {
   seatUser,
   createRoom,
   createRoomForOwner,
+  createRoomForMatch,
   fillOpenRoomWithBots,
   joinRoom,
   leaveOpenRoom,

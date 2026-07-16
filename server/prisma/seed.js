@@ -17,6 +17,7 @@ const {
   refreshUserRanks,
   updateLifetimeStatsForUsers,
 } = require('#modules/game/game.stats')
+const { nextSeat } = require('#modules/tournament/tournament.engine')
 
 // The password every seeded account shares. Log in as `dev` with this.
 const DEV_PASSWORD = 'DevPass123!'
@@ -139,6 +140,20 @@ const CONVERSATIONS = [
   },
 ]
 
+// An in-progress tournament, frozen between rounds so the bracket page has a
+// real mid-run state to render: all four quarterfinals decided, both
+// semifinals seated and waiting, the final still empty. `quarterfinalWinners`
+// names the winning side ('A' or 'B') of each round-1 slot; round 1 pairs
+// seed order as (1v2), (3v4), (5v6), (7v8) into slots 0-3.
+const TOURNAMENT = {
+  name: 'Friday Fury Cup',
+  size: 8,
+  prizePoints: 500,
+  totalRounds: 3,
+  currentRound: 2,
+  quarterfinalWinners: ['A', 'B', 'A', 'B'],
+}
+
 const emailFor = (user) => user.email || `${user.username}@trackscendence.local`
 
 const orderedPair = (firstId, secondId) =>
@@ -241,6 +256,7 @@ async function main() {
   }
 
   await seedSocialGraph(primary, friends, requesters)
+  await seedTournament(primary, friends, requesters)
 
   return {
     primary: primary.username,
@@ -368,12 +384,96 @@ async function seedSocialGraph(primary, friends, requesters) {
   }
 }
 
+// Seeds the RUNNING tournament described by TOURNAMENT. Eight seeded users
+// fill the bracket: the primary account, its six friends, and the first
+// requester. Quarterfinal winners advance into the semifinals through the
+// same `nextSeat` rule the live bracket uses, so the seeded state matches
+// what playing round 1 for real would have produced. No match carries a
+// liveGameId/gameId/roomId — these matches were never played through the
+// engine. Deleted (by name + creator, cascading to players and matches) and
+// rebuilt on every run so re-seeding never duplicates the tournament.
+async function seedTournament(primary, friends, requesters) {
+  // Bracket entrants in seed order 1..8.
+  const players = [primary, ...friends, requesters[0]]
+
+  await prisma.tournament.deleteMany({
+    where: { name: TOURNAMENT.name, createdById: primary.id },
+  })
+
+  const tournament = await prisma.tournament.create({
+    data: {
+      name: TOURNAMENT.name,
+      status: 'RUNNING',
+      size: TOURNAMENT.size,
+      prizePoints: TOURNAMENT.prizePoints,
+      currentRound: TOURNAMENT.currentRound,
+      totalRounds: TOURNAMENT.totalRounds,
+      createdById: primary.id,
+    },
+  })
+
+  for (const [seedIndex, player] of players.entries()) {
+    await prisma.tournamentPlayer.create({
+      data: {
+        tournamentId: tournament.id,
+        userId: player.id,
+        seed: seedIndex + 1,
+      },
+    })
+  }
+
+  // Quarterfinals: decided. Losers get eliminatedAt stamps staggered five
+  // minutes apart, as if the round played out match by match over an evening.
+  const firstEliminationAt = Date.now() - 60 * 60_000
+  const semifinalSeats = [{}, {}]
+  for (const [slot, winningSide] of TOURNAMENT.quarterfinalWinners.entries()) {
+    const playerA = players[slot * 2]
+    const playerB = players[slot * 2 + 1]
+    const winner = winningSide === 'A' ? playerA : playerB
+    const loser = winningSide === 'A' ? playerB : playerA
+
+    await prisma.tournamentMatch.create({
+      data: {
+        tournamentId: tournament.id,
+        round: 1,
+        slot,
+        playerAId: playerA.id,
+        playerBId: playerB.id,
+        winnerId: winner.id,
+      },
+    })
+    await prisma.tournamentPlayer.update({
+      where: {
+        tournamentId_userId: { tournamentId: tournament.id, userId: loser.id },
+      },
+      data: { eliminatedAt: new Date(firstEliminationAt + slot * 5 * 60_000) },
+    })
+
+    const seat = nextSeat(1, slot)
+    const seatField = seat.side === 'A' ? 'playerAId' : 'playerBId'
+    semifinalSeats[seat.slot][seatField] = winner.id
+  }
+
+  // Semifinals: seated from the quarterfinal winners, not yet played.
+  for (const [slot, seat] of semifinalSeats.entries()) {
+    await prisma.tournamentMatch.create({
+      data: { tournamentId: tournament.id, round: 2, slot, ...seat },
+    })
+  }
+
+  // Final: exists but empty — the semifinals decide who sits in it.
+  await prisma.tournamentMatch.create({
+    data: { tournamentId: tournament.id, round: 3, slot: 0 },
+  })
+}
+
 main()
   .then((summary) => {
     console.log(
       `Seed complete: log in as "${summary.primary}" / ${DEV_PASSWORD}. ` +
         `${summary.friends} friends, ${summary.requests} pending requests, ` +
-        `${summary.conversations} direct-message threads, and game history populated.`,
+        `${summary.conversations} direct-message threads, game history, ` +
+        `and the "${TOURNAMENT.name}" tournament populated.`,
     )
   })
   .catch((error) => {

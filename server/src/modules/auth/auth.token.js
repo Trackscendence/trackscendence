@@ -3,6 +3,10 @@ const jwt = require('jsonwebtoken')
 const config = require('#utils/config')
 
 const TWO_FACTOR_CHALLENGE_PURPOSE = 'login-2fa'
+// One symmetric secret, so HS256 is the only algorithm we use. Pin it on both
+// sign and verify so verify rejects any other algorithm (e.g. an HS384/HS512
+// token forged with the same secret) instead of accepting whatever the token asks for.
+const JWT_ALGORITHM = 'HS256'
 const OAUTH_STATE_PURPOSE = 'oauth-42-state'
 
 const getBearerToken = (authorizationHeader) => {
@@ -28,7 +32,7 @@ const signAccessToken = (user) => {
       tokenVersion: user.tokenVersion,
     },
     config.JWT_SECRET,
-    { expiresIn: config.JWT_EXPIRES_IN },
+    { algorithm: JWT_ALGORITHM, expiresIn: config.JWT_EXPIRES_IN },
   )
 }
 
@@ -41,7 +45,10 @@ const signTwoFactorChallengeToken = (user, challengeVersion) => {
       challengeVersion,
     },
     config.JWT_SECRET,
-    { expiresIn: config.TWO_FACTOR_CHALLENGE_EXPIRES_IN },
+    {
+      algorithm: JWT_ALGORITHM,
+      expiresIn: config.TWO_FACTOR_CHALLENGE_EXPIRES_IN,
+    },
   )
 }
 
@@ -56,12 +63,14 @@ const signOAuthStateToken = () => {
       jti: crypto.randomUUID(),
     },
     config.JWT_SECRET,
-    { expiresIn: config.FORTYTWO_STATE_EXPIRES_IN },
+    { algorithm: JWT_ALGORITHM, expiresIn: config.FORTYTWO_STATE_EXPIRES_IN },
   )
 }
 
 const verifyOAuthStateToken = (token) => {
-  const payload = jwt.verify(token, config.JWT_SECRET)
+  const payload = jwt.verify(token, config.JWT_SECRET, {
+    algorithms: [JWT_ALGORITHM],
+  })
 
   if (payload.purpose !== OAUTH_STATE_PURPOSE) {
     throw new jwt.JsonWebTokenError('invalid oauth state purpose')
@@ -71,11 +80,11 @@ const verifyOAuthStateToken = (token) => {
 }
 
 const verifyAccessToken = (token) => {
-  return jwt.verify(token, config.JWT_SECRET)
+  return jwt.verify(token, config.JWT_SECRET, { algorithms: [JWT_ALGORITHM] })
 }
 
 const verifyTwoFactorChallengeToken = (token) => {
-  return jwt.verify(token, config.JWT_SECRET)
+  return jwt.verify(token, config.JWT_SECRET, { algorithms: [JWT_ALGORITHM] })
 }
 
 const isTokenError = (error) => {

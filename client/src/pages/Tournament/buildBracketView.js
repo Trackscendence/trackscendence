@@ -1,11 +1,10 @@
-// Shapes the tournament store state into render-ready bracket rounds (#444).
-// The server has no tournament module yet, so this file is the client-side
-// contract the backend epic must serve: a tournament carries name,
-// currentRound/totalRounds, playerCount, prizePoints, and rounds of matches
-// where each match holds up to two players and an optional winnerId. Missing
-// rounds and empty seats become TBD placeholder slots so the bracket always
-// draws the full tree. Plain JS with no aliased imports so node --test can
-// load it directly.
+// Shapes the tournament detail payload into render-ready bracket rounds
+// (#444/#458). The input is the server's tournament detail shape: name,
+// currentRound/totalRounds, playerCount, prizePoints, winnerId, a players
+// roster, and rounds of matches where each match holds up to two players and
+// an optional winnerId. Missing rounds and empty seats become TBD placeholder
+// slots so the bracket always draws the full tree. Plain JS with no aliased
+// imports so node --test can load it directly.
 
 const ROUND_LABELS_BY_MATCH_COUNT = {
   1: 'Final',
@@ -92,6 +91,18 @@ const toRound = (round, roundIndex, playerCount) => {
   }
 }
 
+// A completed tournament names its champion via winnerId; resolve it against
+// the roster so the view can show the winner without re-deriving it.
+const toChampion = (tournament) => {
+  if (!tournament.winnerId) return null
+
+  const winner = tournament.players?.find(
+    (candidate) => candidate.id === tournament.winnerId,
+  )
+
+  return winner ? { name: winner.username } : null
+}
+
 const buildBracketView = (tournament) => {
   if (!tournament) return null
 
@@ -102,6 +113,7 @@ const buildBracketView = (tournament) => {
     name: tournament.name,
     summary: `Round ${tournament.currentRound} of ${totalRounds} · ${playerCount} players`,
     prizePoints: tournament.prizePoints ?? null,
+    champion: toChampion(tournament),
     rounds: Array.from({ length: totalRounds }, (unused, index) =>
       toRound(tournament.rounds?.[index], index, playerCount),
     ),

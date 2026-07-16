@@ -141,6 +141,26 @@ describe('buildBracketView', () => {
     }
   })
 
+  it('resolves the champion from winnerId against the roster', () => {
+    const tournament = {
+      ...eightPlayerTournament(),
+      status: 'COMPLETED',
+      winnerId: 'u1',
+      players: [
+        { id: 'u1', username: 'Jordan', seed: 1, eliminatedAt: null },
+        { id: 'u2', username: 'Spencer', seed: 2, eliminatedAt: '2026-07-15' },
+      ],
+    }
+
+    assert.deepEqual(buildBracketView(tournament).champion, {
+      name: 'Jordan',
+    })
+  })
+
+  it('has no champion while the tournament is undecided', () => {
+    assert.equal(buildBracketView(eightPlayerTournament()).champion, null)
+  })
+
   it('labels generated rounds by bracket size', () => {
     const view = buildBracketView({
       name: 'Fresh Cup',

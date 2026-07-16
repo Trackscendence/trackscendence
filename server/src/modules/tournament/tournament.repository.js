@@ -300,10 +300,12 @@ const startTournament = (tournamentId, { seededPlayerIds, matches }) => {
       return { error: TOURNAMENT_ERRORS.NOT_FULL }
     }
 
+    // Seeds are 1-based: they are shown to players and the seed fixture
+    // writes them the same way.
     for (const [seedIndex, userId] of seededPlayerIds.entries()) {
       await tx.tournamentPlayer.update({
         where: { tournamentId_userId: { tournamentId, userId } },
-        data: { seed: seedIndex },
+        data: { seed: seedIndex + 1 },
       })
     }
 

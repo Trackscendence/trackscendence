@@ -1132,9 +1132,6 @@ const resetPassword = async (payload) => {
 }
 
 module.exports = {
-  INVALID_CREDENTIALS_MESSAGE,
-  buildGuestIdentity,
-  buildFortyTwoProfile,
   changePassword,
   completeTwoFactorLogin,
   confirmTwoFactorSetup,
@@ -1150,10 +1147,14 @@ module.exports = {
   register,
   requestPasswordReset,
   resetPassword,
-  resolveAvailableUsername,
-  sanitizeFortyTwoLogin,
   setupTwoFactor,
   upgradeGuestAccount,
+  // Test seams: internal helpers with no production consumers outside this
+  // file, exported only so auth.service.test.js can unit-test them directly.
+  buildFortyTwoProfile,
+  buildGuestIdentity,
+  resolveAvailableUsername,
+  sanitizeFortyTwoLogin,
   validateFortyTwoCallbackInput,
   validateLoginInput,
   validateRegistrationInput,

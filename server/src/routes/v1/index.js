@@ -8,6 +8,7 @@ const messages = require('#modules/messages/messages.routes')
 const notifications = require('#modules/notifications/notifications.routes')
 const publicApi = require('#modules/public/public.routes')
 const system = require('#modules/system/system.routes')
+const tournament = require('#modules/tournament/tournament.routes')
 const users = require('#modules/users/users.routes')
 
 const v1Router = Router()
@@ -22,5 +23,6 @@ v1Router.use('/game', game)
 v1Router.use('/messages', messages)
 v1Router.use('/notifications', notifications)
 v1Router.use('/public', publicApi)
+v1Router.use('/tournaments', tournament)
 
 module.exports = v1Router

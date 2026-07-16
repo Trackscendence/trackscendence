@@ -15,10 +15,12 @@ const SLOT_STATE_CLASSES = {
 
 // The card cannot use overflow-hidden to clip its rows to the radius (that
 // would also clip the floating hover card), so the first and last rows round
-// their own outer corners instead.
+// their own outer corners instead. The white hairline is an outer shadow
+// ring rather than a real border: a border insets the row curve by its own
+// width and the radius mismatch leaves an unpainted fringe at each corner.
 const ROW_CLASSES = 'flex min-h-[38px] items-center gap-2 px-2.5 py-[7px]'
 
-const ROW_CORNER_CLASSES = 'first:rounded-t-[9px] last:rounded-b-[9px]'
+const ROW_CORNER_CLASSES = 'first:rounded-t-[10px] last:rounded-b-[10px]'
 
 // One match card: two seat rows with avatar and name. A filled row links to
 // the player's profile and floats a BracketPlayerCard while hovered or
@@ -28,7 +30,7 @@ const ROW_CORNER_CLASSES = 'first:rounded-t-[9px] last:rounded-b-[9px]'
 // presenter); empty seats read as TBD until the previous round feeds them.
 const BracketMatch = ({ slots }) => {
   return (
-    <div className="w-full divide-y divide-[rgba(0,0,0,0.07)] rounded-[10px] border-[0.5px] border-white/90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
+    <div className="w-full divide-y divide-[rgba(0,0,0,0.07)] rounded-[10px] shadow-[0_0_0_0.5px_rgba(255,255,255,0.9),0_2px_6px_rgba(0,0,0,0.06)]">
       {slots.map((slot) =>
         slot.state === 'tbd' ? (
           <div

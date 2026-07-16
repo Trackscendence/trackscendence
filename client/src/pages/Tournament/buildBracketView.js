@@ -13,6 +13,29 @@ const ROUND_LABELS_BY_MATCH_COUNT = {
   4: 'Quarterfinals',
 }
 
+// The four avatar fills from the bracket design. A player's colour is a
+// deterministic hash of their id, so it follows them from round to round and
+// is stable across renders and clients. Eliminated players go grey.
+export const AVATAR_COLOR_PALETTE = ['#E03325', '#489E52', '#384E88', '#51AFF1']
+
+export const ELIMINATED_AVATAR_COLOR = '#C9B8A8'
+
+const hashPlayerId = (playerId) => {
+  const value = String(playerId)
+  let hash = 0
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0
+  }
+
+  return hash
+}
+
+const toAvatarColor = (playerId, state) =>
+  state === 'eliminated'
+    ? ELIMINATED_AVATAR_COLOR
+    : AVATAR_COLOR_PALETTE[hashPlayerId(playerId) % AVATAR_COLOR_PALETTE.length]
+
 const matchCountForRound = (playerCount, roundIndex) =>
   Math.max(1, Math.round(playerCount / 2 ** (roundIndex + 1)))
 
@@ -33,6 +56,7 @@ const toSlot = (player, winnerId, matchKey, seatIndex) => {
     name: player.name,
     initials: toInitials(player.name),
     avatarUrl: player.avatarUrl || null,
+    color: toAvatarColor(player.id, state),
     state,
   }
 }

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import buildBracketView from './buildBracketView.js'
+import buildBracketView, {
+  AVATAR_COLOR_PALETTE,
+  ELIMINATED_AVATAR_COLOR,
+} from './buildBracketView.js'
 
 const player = (id, name) => ({ id, name })
 
@@ -88,6 +91,53 @@ describe('buildBracketView', () => {
     assert.equal(finalRound.matches.length, 1)
     for (const slot of finalRound.matches[0].slots) {
       assert.equal(slot.state, 'tbd')
+    }
+  })
+
+  it('gives every surviving player a deterministic palette colour', () => {
+    const allSlots = (view) =>
+      view.rounds.flatMap((round) =>
+        round.matches.flatMap((match) => match.slots),
+      )
+    const firstView = buildBracketView(eightPlayerTournament())
+    const secondView = buildBracketView(eightPlayerTournament())
+
+    // Same input, same colours — the hash has no randomness in it.
+    assert.deepEqual(
+      allSlots(firstView).map((slot) => slot.color),
+      allSlots(secondView).map((slot) => slot.color),
+    )
+
+    // The colour follows the player between rounds: Jordan wins the
+    // quarterfinal and reappears in the semifinal with the same colour.
+    const jordanQuarterfinal = firstView.rounds[0].matches[0].slots[0]
+    const jordanSemifinal = firstView.rounds[1].matches[0].slots[0]
+    assert.equal(jordanQuarterfinal.name, 'Jordan')
+    assert.equal(jordanSemifinal.name, 'Jordan')
+    assert.equal(jordanQuarterfinal.color, jordanSemifinal.color)
+    assert.ok(AVATAR_COLOR_PALETTE.includes(jordanQuarterfinal.color))
+
+    for (const slot of allSlots(firstView)) {
+      if (slot.state === 'pending' || slot.state === 'winner') {
+        assert.ok(AVATAR_COLOR_PALETTE.includes(slot.color))
+      }
+    }
+  })
+
+  it('renders eliminated players grey', () => {
+    const view = buildBracketView(eightPlayerTournament())
+    const [, spencer] = view.rounds[0].matches[0].slots
+
+    assert.equal(spencer.state, 'eliminated')
+    assert.equal(spencer.color, ELIMINATED_AVATAR_COLOR)
+  })
+
+  it('leaves TBD placeholder slots without a colour', () => {
+    const view = buildBracketView(eightPlayerTournament())
+
+    for (const slot of view.rounds[2].matches[0].slots) {
+      assert.equal(slot.state, 'tbd')
+      assert.equal(slot.color, undefined)
     }
   })
 

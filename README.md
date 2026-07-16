@@ -50,7 +50,7 @@ _This project has been created as part of the 42 curriculum by smoore, srodrigo,
 
 Our multiplayer engine implements the classic rules of UNO:
 
-- **Players & Age**: Supports **2 to 10 players**, recommended for ages 7+.
+- **Players & Age**: Supports **2 to 6 players**, recommended for ages 7+.
 - **Setup**: Every player is dealt **7 cards** face down. Remaining cards form the _Draw Pile_. The top card is flipped face up to form the _Discard Pile_.
 - **Gameplay**:
   - The player to the left of the dealer starts.

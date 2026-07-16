@@ -29,7 +29,7 @@ _This project has been created as part of the 42 curriculum by smoore, srodrigo,
 6. [Getting Started](#6-getting-started)
 7. [Developer Documentation](#7-developer-documentation)
 8. [Team Information](#8-team-information)
-9. [Resources & AI Usage](#9-resources--ai-usage)
+9. [Resources & Artificial Intelligence Usage](#9-resources--ai-usage)
 
 ---
 
@@ -86,6 +86,44 @@ For detailed configurations, endpoints, flowcharts, and Postman setups:
 
 ## 4. System & Database Architecture
 
+### High-Level Overview
+
+At the highest level, Trackscendence is a single-page React client talking to one
+Express backend that owns both the REST API and the real-time WebSocket layer,
+backed by a single PostgreSQL database and a couple of external services:
+
+```mermaid
+flowchart LR
+  player([Player])
+
+  subgraph frontend[Frontend · React + Vite]
+    ui[UI + Zustand stores]
+  end
+
+  subgraph backend[Backend · Express + Socket.IO]
+    rest[REST API]
+    ws[WebSocket layer]
+    engine[UNO game engine]
+  end
+
+  db[(PostgreSQL · Prisma)]
+  external[[42 OAuth · Mailpit / SMTP]]
+
+  player <--> ui
+  ui -->|HTTP /api/v1| rest
+  ui <-->|WebSocket| ws
+  ws --> engine
+  rest --> db
+  ws --> db
+  rest --> external
+```
+
+Requests hit the REST API for stateless work (auth, profiles, leaderboard) while
+live gameplay and chat flow over WebSockets. Active game engines live in memory
+and are flushed to PostgreSQL once a match ends. For the full topology, backend
+layering, and realtime flow diagrams, see
+**[System Architecture](docs/architecture.md)**.
+
 ### System Architecture
 
 The platform is orchestrated using Docker Compose, decoupling services into distinct containers managed under a shared virtual network:
@@ -94,9 +132,6 @@ The platform is orchestrated using Docker Compose, decoupling services into dist
 - **Frontend (Client)**: A React SPA served via Vite in development, and built/served through Nginx in production.
 - **Backend (Server)**: An Express API handling REST endpoints and real-time state synchronization via Socket.IO.
 - **Database**: PostgreSQL database managed through Prisma ORM migrations.
-
-For the system topology and dependency layer diagrams, see
-**[System Architecture](docs/architecture.md)**.
 
 ### Database Schema
 
@@ -114,20 +149,20 @@ To exceed the mandatory 14 points required for evaluation, our project implement
 <summary><strong>Click to expand target modules status</strong></summary>
 <br>
 
-| Category     | Module                         | Type         | Status         | Justification                                                                               |
-| ------------ | ------------------------------ | ------------ | -------------- | ------------------------------------------------------------------------------------------- |
-| **Web**      | Framework for Frontend/Backend | Major (2pts) | 🟢 Implemented | Used React for the frontend and Express for the backend.                                    |
-| **Web**      | WebSockets                     | Major (2pts) | 🟢 Implemented | Real-time updates, graceful disconnections, and efficient broadcasting via Socket.IO.       |
-| **Web**      | User Chat                      | Major (2pts) | 🟢 Implemented | Direct messages, chat channels, and social notifications fully functional.                  |
-| **Web**      | Public API                     | Major (2pts) | 🟢 Implemented | API-key-secured `/api/v1/public` endpoints with per-key rate limiting and Swagger docs.     |
-| **Web**      | Use an ORM                     | Minor (1pt)  | 🟢 Implemented | Used Prisma for type-safe relational mapping and migrations.                                |
-| **Web**      | Search Functionality           | Minor (1pt)  | 🟢 Implemented | Leaderboard search, multi-criteria filters, sorting, pagination, and user directory search. |
-| **Web**      | File Upload                    | Minor (1pt)  | 🟢 Implemented | Profile avatar uploads with byte-signature checks and storage limits via Multer.            |
-| **User Mgt** | Standard User Management       | Major (2pts) | 🟢 Implemented | Credentials signup, secure login, account freeze policies, password recovery, and TOTP 2FA. |
-| **User Mgt** | Remote Authentication (42)     | Major (2pts) | 🟢 Implemented | "Continue with 42" OAuth login with account provisioning and email-based account linking.   |
-| **Gaming**   | Web-based Game                 | Major (2pts) | 🟢 Implemented | Fully functional UNO game engine with card logic, drawing deck, and "UNO" catching rules.   |
-| **Gaming**   | Multiplayer 3+                 | Major (2pts) | 🟢 Implemented | Multiplayer lobby and game loop supporting up to 10 players at a table.                     |
-| **Gaming**   | AI Opponent / Bot Player       | Major (2pts) | 🟢 Implemented | Backend bot service implementing multiple strategy profiles for solo play (Bonus Module).   |
+| Category     | Module                                        | Type         | Status         | Justification                                                                               |
+| ------------ | --------------------------------------------- | ------------ | -------------- | ------------------------------------------------------------------------------------------- |
+| **Web**      | Framework for Frontend/Backend                | Major (2pts) | 🟢 Implemented | Used React for the frontend and Express for the backend.                                    |
+| **Web**      | WebSockets                                    | Major (2pts) | 🟢 Implemented | Real-time updates, graceful disconnections, and efficient broadcasting via Socket.IO.       |
+| **Web**      | User Chat                                     | Major (2pts) | 🟢 Implemented | Direct messages, chat channels, and social notifications fully functional.                  |
+| **Web**      | Public API                                    | Major (2pts) | 🟢 Implemented | API-key-secured `/api/v1/public` endpoints with per-key rate limiting and Swagger docs.     |
+| **Web**      | Use an ORM                                    | Minor (1pt)  | 🟢 Implemented | Used Prisma for type-safe relational mapping and migrations.                                |
+| **Web**      | Search Functionality                          | Minor (1pt)  | 🟢 Implemented | Leaderboard search, multi-criteria filters, sorting, pagination, and user directory search. |
+| **Web**      | File Upload                                   | Minor (1pt)  | 🟢 Implemented | Profile avatar uploads with byte-signature checks and storage limits via Multer.            |
+| **User Mgt** | Standard User Management                      | Major (2pts) | 🟢 Implemented | Credentials signup, secure login, account freeze policies, password recovery, and TOTP 2FA. |
+| **User Mgt** | Remote Authentication (42)                    | Major (2pts) | 🟢 Implemented | "Continue with 42" OAuth login with account provisioning and email-based account linking.   |
+| **Gaming**   | Web-based Game                                | Major (2pts) | 🟢 Implemented | Fully functional UNO game engine with card logic, drawing deck, and "UNO" catching rules.   |
+| **Gaming**   | Multiplayer 3+                                | Major (2pts) | 🟢 Implemented | Multiplayer lobby and game loop supporting up to 6 players at a table.                      |
+| **Gaming**   | Artificial Intelligence Opponent / Bot Player | Major (2pts) | 🟢 Implemented | Backend bot service implementing multiple strategy profiles for solo play (Bonus Module).   |
 
 </details>
 
@@ -147,11 +182,20 @@ To exceed the mandatory 14 points required for evaluation, our project implement
    git clone git@github.com:Trackscendence/trackscendence.git
    cd trackscendence
    ```
-2. **Setup Environment Variables**
+2. **Install dependencies**
+   ```bash
+   npm run install:all
+   ```
+   This installs the root, `server/`, and `client/` packages in one step (it runs `npm install` in each). The root install is also what wires up the Git pre-commit hooks. Running the app in Docker installs dependencies inside the containers as well, but you still need the root install locally for the hooks; the no-Docker path below needs all three.
+3. **Setup Environment Variables**
    ```bash
    cp .env.example .env
    ```
-   > **Note:** The `.env.example` file is heavily documented inline. Review it to understand port configurations, database credentials, and security keys. Make sure ports `3001` (Backend API), `5173` (Frontend), and `5432` (PostgreSQL) are free on your host machine.
+   > **Note:** The `.env.example` file is heavily documented inline. Review it to understand port configurations, database credentials, and security keys. Make sure ports `3001` (Backend API), `5173` (Frontend), and `5432` (PostgreSQL) are free on your host machine. At minimum, set a real `JWT_SECRET` (and `TWO_FACTOR_ENCRYPTION_SECRET`) before starting — the server refuses to boot without `JWT_SECRET` and `DATABASE_URL`. Generate one with:
+   >
+   > ```bash
+   > node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   > ```
 
 ### Execution
 
@@ -183,13 +227,50 @@ to the HTTPS origin. Set `CLIENT_HTTPS_PORT` in `.env` to change the port.
 
 **Local Mode (no Docker):**
 
-```bash
-npm run dev
-```
+Running without Docker means you supply the PostgreSQL database yourself and run
+the migrations by hand (only the Docker stack applies them automatically at
+startup). Assuming you already ran `npm run install:all` and `cp .env.example .env`:
 
-Requires a running PostgreSQL and a filled `.env`. The browser talks only to
-the Vite origin (`http://localhost:5173`); API and websocket traffic is
-proxied to the backend, which the `dev` script assumes is on
+1. **Have a PostgreSQL server running** and create a role and database that match
+   the `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` values in your `.env`.
+   With the defaults from `.env.example`:
+
+   ```bash
+   createuser trackscendence --pwprompt   # enter the POSTGRES_PASSWORD (default: changeme)
+   createdb trackscendence -O trackscendence
+   ```
+
+2. **Point `DATABASE_URL` at your local database.** The example value uses the
+   Docker network hostname `database`, which does not resolve outside Compose.
+   For a local Postgres, change the host to `localhost`:
+
+   ```bash
+   DATABASE_URL=postgresql://trackscendence:changeme@localhost:5432/trackscendence
+   ```
+
+3. **Create the schema and generate the Prisma client.** These run against your
+   local database (unlike the root `prisma:*` scripts, which exec into the Docker
+   container), so invoke them with the `server` prefix:
+
+   ```bash
+   npm run prisma:migrate --prefix server    # applies migrations, creates the tables
+   npm run prisma:generate --prefix server   # regenerates the Prisma client
+   ```
+
+4. **(Optional) Seed sample data** — demo users, games, and social data:
+
+   ```bash
+   npm run prisma:seed --prefix server
+   ```
+
+5. **Start both apps together:**
+
+   ```bash
+   npm run dev
+   ```
+
+The browser talks only to the Vite origin (`http://localhost:5173`); API and
+websocket traffic is proxied to the backend, which the `dev` script assumes is on
 `http://localhost:3001`. If your backend runs elsewhere, set
 `VITE_API_PROXY_TARGET` accordingly.
 
@@ -220,7 +301,7 @@ _(Note: As per 42 evaluation guidelines, only active team members participating 
 <br>
 
 > [!NOTE]
-> **Workflow Note:** Contributions were managed collaboratively through GitHub Pull Requests. The team peer-reviewed each other's code (with automated assistance from CodeRabbit and GitHub Copilot) and utilized squash-and-merge integration. Thus, individual branch histories are consolidated into main-branch PR merge commits.
+> **Workflow Note:** Contributions were managed collaboratively through GitHub Pull Requests. The team peer-reviewed each other's code and utilized squash-and-merge integration. Thus, individual branch histories are consolidated into main-branch PR merge commits.
 
 ### `smoore` (skyy)
 
@@ -234,7 +315,7 @@ _(Note: As per 42 evaluation guidelines, only active team members participating 
 
 ### `szhong` (adshz)
 
-- **Contributions**: Architected the frontend design and refactoring, introduced Zustand for robust client-side state management, authored the full 2-to-10 player UNO card turn-management engine, engineered socket-enforced turn/penalty timers, and resolved key database query bottlenecks.
+- **Contributions**: Architected the frontend design and refactoring, introduced Zustand for robust client-side state management, authored the full 2-to-6 player UNO card turn-management engine, engineered socket-enforced turn/penalty timers, and resolved key database query bottlenecks.
 - **Challenges Faced**: Implementing concurrent state locking to resolve race conditions on simultaneous button-clicks by multiple players at the end of turn boundaries, and managing complex UI state syncs.
 
 ### `ogrativ` (olehov)
@@ -251,9 +332,9 @@ _(Note: As per 42 evaluation guidelines, only active team members participating 
 
 ---
 
-## 9. Resources & AI Usage
+## 9. Resources & Artificial Intelligence Usage
 
 - **Core Documentation**: [React Docs](https://react.dev/), [Zustand](https://zustand-demo.pmnd.rs/), [Prisma](https://www.prisma.io/docs), [Socket.io](https://socket.io/docs/v4/).
-- **AI Usage**:
-  - **Pull Request Reviews**: Utilized AI assistants (primarily CodeRabbit, and GitHub Copilot reviews when not restricted by personal usage limits) to review Pull Requests and inspect code changes.
-  - **Research & Learning**: Used AI tools to research framework APIs, look up configurations, and learn new technical concepts, with exact usage varying by team member.
+- **Artificial Intelligence Usage**:
+  - **Pull Request Reviews**: Used automated review assistants to inspect Pull Requests and code changes, with exact usage varying by team member.
+  - **Research & Learning**: Used Artificial Intelligence tools to research framework APIs, look up configurations, and learn new technical concepts, with exact usage varying by team member.

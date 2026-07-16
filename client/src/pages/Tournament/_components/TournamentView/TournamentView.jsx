@@ -10,15 +10,17 @@ const TournamentView = ({ children, error }) => {
     <div className="bg-surface-warm flex min-h-[100dvh] flex-col">
       <AppHeader />
       <main className="flex flex-1 flex-col px-4 py-6 sm:px-8 sm:py-8">
-        <h1 className="text-[clamp(42px,10vw,80px)] leading-none font-black tracking-[-0.025em] text-[#E86D2F]">
-          TOURNAMENT
-        </h1>
-        {error ? (
-          <p className="mt-6 max-w-3xl rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
-            {error}
-          </p>
-        ) : null}
-        <div className="pt-8">{children}</div>
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
+          <h1 className="text-[clamp(42px,10vw,80px)] leading-none font-black tracking-[-0.025em] text-[#E86D2F]">
+            TOURNAMENT
+          </h1>
+          {error ? (
+            <p className="mt-6 rounded-md border border-[#e2a496] bg-[#fff1ed] px-3 py-2 text-sm text-[#8a321f]">
+              {error}
+            </p>
+          ) : null}
+          <div className="pt-8">{children}</div>
+        </div>
       </main>
     </div>
   )

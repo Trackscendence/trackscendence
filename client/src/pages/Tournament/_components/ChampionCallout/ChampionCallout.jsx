@@ -2,7 +2,7 @@
 // it paid out.
 const ChampionCallout = ({ name, prizePoints }) => {
   return (
-    <section className="mb-6 flex max-w-3xl items-center gap-3 rounded-2xl border-[0.5px] border-white/80 bg-[rgba(232,109,47,0.12)] px-5 py-4">
+    <section className="mb-6 flex w-full items-center gap-3 rounded-2xl border-[0.5px] border-white/80 bg-[rgba(232,109,47,0.12)] px-5 py-4">
       <span aria-hidden="true" className="text-2xl leading-none">
         🏆
       </span>

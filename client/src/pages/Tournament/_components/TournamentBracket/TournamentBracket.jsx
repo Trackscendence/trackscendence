@@ -10,15 +10,21 @@ import BracketMatch from './_components/BracketMatch'
 // makes each child match sit exactly between its two parents, which the
 // connector geometry relies on. Pure presenter; the container shapes the data
 // with buildBracketView.
-const TournamentBracket = ({ bracket }) => {
+const TournamentBracket = ({ bracket, showHeading = true }) => {
   const lastRoundIndex = bracket.rounds.length - 1
 
   return (
     <section className="rounded-2xl border-[0.5px] border-white/80 bg-white/50 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:p-8">
-      <h2 className="text-base font-bold text-[#2A1A08]">{bracket.name}</h2>
-      <p className="mt-0.5 text-xs text-[#9A7050]">{bracket.summary}</p>
+      {showHeading ? (
+        <>
+          <h2 className="text-base font-bold text-[#2A1A08]">{bracket.name}</h2>
+          <p className="mt-0.5 text-xs text-[#9A7050]">{bracket.summary}</p>
+        </>
+      ) : null}
 
-      <div className="mt-5 flex items-stretch overflow-x-auto pb-2">
+      <div
+        className={`${showHeading ? 'mt-5' : ''} flex items-stretch overflow-x-auto pb-2`}
+      >
         {bracket.rounds.map((round, roundIndex) => (
           <Fragment key={round.key}>
             {roundIndex > 0 ? (

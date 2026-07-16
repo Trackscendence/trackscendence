@@ -15,12 +15,14 @@ const TournamentLobby = ({ isBusy, tournaments, onJoin }) => {
   const closeCreate = () => setIsCreateOpen(false)
 
   return (
-    <section className="max-w-3xl">
+    <section className="w-full">
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-base font-bold text-[#2A1A08]">Open tournaments</h2>
-        <Button fullWidth={false} variant="orange" onClick={openCreate}>
-          Create tournament
-        </Button>
+        {tournaments.length > 0 ? (
+          <Button fullWidth={false} variant="orange" onClick={openCreate}>
+            Create tournament
+          </Button>
+        ) : null}
       </div>
 
       {tournaments.length > 0 ? (

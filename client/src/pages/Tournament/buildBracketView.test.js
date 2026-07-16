@@ -224,6 +224,55 @@ describe('buildBracketView', () => {
     assert.equal(buildBracketView(eightPlayerTournament()).champion, null)
   })
 
+  // An open tournament has no server rounds yet, so the preview seats the
+  // roster into the first round and sizes the tree by seat capacity.
+  const openTournament = () => ({
+    id: 't2',
+    name: '42 London',
+    status: 'OPEN',
+    size: 8,
+    playerCount: 2,
+    prizePoints: 100,
+    currentRound: 0,
+    players: [entrant('u1', 'Jordan', null), entrant('u2', 'Spencer', null)],
+  })
+
+  it('summarizes an open tournament by seats filled', () => {
+    const view = buildBracketView(openTournament())
+
+    assert.equal(view.summary, '2 of 8 seats filled')
+  })
+
+  it('sizes the open preview tree by seat capacity, not join count', () => {
+    const view = buildBracketView(openTournament())
+
+    assert.equal(view.rounds.length, 3)
+    assert.equal(view.rounds[0].matches.length, 4)
+    assert.equal(view.rounds[0].label, 'Quarterfinals')
+    assert.equal(view.rounds[2].label, 'Final')
+  })
+
+  it('seats joined players into the first round of the open preview', () => {
+    const view = buildBracketView(openTournament())
+    const [jordan, spencer] = view.rounds[0].matches[0].slots
+
+    assert.equal(jordan.name, 'Jordan')
+    assert.equal(jordan.state, 'pending')
+    assert.equal(spencer.name, 'Spencer')
+    assert.equal(spencer.state, 'pending')
+  })
+
+  it('leaves unclaimed seats in the open preview as TBD', () => {
+    const view = buildBracketView(openTournament())
+
+    for (const slot of view.rounds[0].matches[1].slots) {
+      assert.equal(slot.state, 'tbd')
+    }
+    for (const slot of view.rounds[2].matches[0].slots) {
+      assert.equal(slot.state, 'tbd')
+    }
+  })
+
   it('labels generated rounds by bracket size', () => {
     const view = buildBracketView({
       name: 'Fresh Cup',

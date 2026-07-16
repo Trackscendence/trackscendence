@@ -250,8 +250,9 @@ const getTournament = async (
 }
 
 /**
- * Opens a tournament for sign-ups. Creating does not enter the creator; they
- * join through the same join endpoint as everyone else.
+ * Opens a tournament for sign-ups and seats the creator as its first player,
+ * so the tournament is immediately their active one and they receive the live
+ * roster updates as others join.
  *
  * @param {{ id: number }} user
  * @param {{ name: string, size: number, prizePoints?: number }} payload
@@ -302,6 +303,7 @@ const joinTournament = async (
       const detail = toTournamentDetailDto(tournament)
       tournamentEvents.emit(TOURNAMENT_EVENTS.PLAYER_JOINED, {
         tournament: detail,
+        joinedUserId: user.id,
       })
       return { tournament: detail }
     }

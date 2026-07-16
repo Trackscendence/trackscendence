@@ -22,10 +22,13 @@ const PlayerHand = ({ cards, onCardClick, player }) => {
   const overlap = overlapFor(cards.length)
 
   return (
-    <div className="w-full overflow-hidden">
+    // Hands wider than the container pan sideways (w-max lets the list grow
+    // past the box); smaller hands keep min-w-full and stay centered. Desktop
+    // never scrolls because overlapFor packs the fan into FAN_MAX_WIDTH.
+    <div className="w-full overflow-x-auto overflow-y-hidden">
       <ul
         aria-label={`${player.username}'s hand`}
-        className="flex min-h-[196px] items-end justify-center px-1 pt-4 pb-2 sm:min-h-[236px] sm:px-4 sm:pt-6 sm:pb-3"
+        className="flex min-h-[196px] w-max min-w-full items-end justify-center px-1 pt-4 pb-2 sm:min-h-[236px] sm:px-4 sm:pt-6 sm:pb-3"
       >
         {cards.map((card, cardPosition) => (
           <li

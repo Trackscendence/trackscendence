@@ -47,12 +47,14 @@ test('mobile route shells keep their responsive contracts', () => {
       ['grid-cols-1', 'lg:grid-cols-[360px_minmax(0,1fr)]'],
     ],
     [
+      // Portrait swaps the scaled desktop slots for the chip band and keeps
+      // the hand reachable through its own horizontal scroll.
       './pages/Game/_components/GameTable/GameTable.jsx',
-      [
-        'grid-cols-1',
-        'overflow-x-hidden',
-        'grid-rows-[auto_auto_auto_auto_auto]',
-      ],
+      ['grid-cols-1', 'overflow-x-hidden', 'MobileOpponentChip', 'md:hidden'],
+    ],
+    [
+      './pages/Game/_components/PlayerHand/PlayerHand.jsx',
+      ['overflow-x-auto', 'w-max min-w-full'],
     ],
     [
       './pages/SettingsPage/SettingsPage.jsx',

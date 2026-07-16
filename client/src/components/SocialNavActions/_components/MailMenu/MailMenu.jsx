@@ -104,7 +104,7 @@ const MailMenu = () => {
       {isOpen ? (
         <div
           role="menu"
-          className="absolute right-0 z-40 mt-3 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[#e6c9a8] bg-white shadow-[0_20px_50px_rgba(61,18,0,0.18)]"
+          className="fixed inset-x-4 top-16 z-40 w-auto overflow-hidden rounded-lg border border-[#e6c9a8] bg-white shadow-[0_20px_50px_rgba(61,18,0,0.18)] sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-3 sm:w-[min(360px,calc(100vw-2rem))]"
         >
           <div className="border-b border-[#f0d9bd] px-5 py-4">
             <div className="flex items-center justify-between">

@@ -14,7 +14,7 @@ const AuthLayout = () => {
 
   return (
     <div className="bg-surface-warm flex min-h-[100dvh] flex-col text-[#081934]">
-      <header className="flex items-start justify-between gap-3 px-4 pt-4 sm:px-6">
+      <header className="flex items-start justify-between gap-3">
         <button
           onClick={() => navigate(-1)}
           aria-label="Go back"

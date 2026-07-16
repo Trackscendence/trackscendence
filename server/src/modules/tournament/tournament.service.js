@@ -17,6 +17,10 @@ const NotFoundException = require('#exceptions/not-found.exception')
 const tournamentEngine = require('#modules/tournament/tournament.engine')
 const tournamentRepository = require('#modules/tournament/tournament.repository')
 const {
+  tournamentEvents,
+  TOURNAMENT_EVENTS,
+} = require('#modules/tournament/tournament.events')
+const {
   ALLOWED_SIZES,
   NAME_MIN_LENGTH,
   NAME_MAX_LENGTH,
@@ -179,6 +183,29 @@ const toTournamentDetailDto = (tournament) => ({
 })
 
 /**
+ * Matches whose both seats are filled but whose live game has not been
+ * created yet. Computed from the raw repository row (the detail DTO drops
+ * liveGameId) and carried on the started/match_result domain events so the
+ * room-flow bridge knows which games to spin up next.
+ */
+const listReadyMatches = (tournament) =>
+  (tournament.matches ?? [])
+    .filter(
+      (match) =>
+        match.playerAId != null &&
+        match.playerBId != null &&
+        match.winnerId == null &&
+        match.liveGameId == null,
+    )
+    .map((match) => ({
+      id: match.id,
+      round: match.round,
+      slot: match.slot,
+      playerAId: match.playerAId,
+      playerBId: match.playerBId,
+    }))
+
+/**
  * Tournaments for the list page, newest first.
  * @param {{ status?: string }} [filters]
  * @returns {Promise<{ tournaments: Array<Object> }>}
@@ -271,7 +298,13 @@ const joinTournament = async (
       id,
       user.id,
     )
-    if (tournament) return { tournament: toTournamentDetailDto(tournament) }
+    if (tournament) {
+      const detail = toTournamentDetailDto(tournament)
+      tournamentEvents.emit(TOURNAMENT_EVENTS.PLAYER_JOINED, {
+        tournament: detail,
+      })
+      return { tournament: detail }
+    }
 
     switch (error) {
       case TOURNAMENT_ERRORS.NOT_FOUND:
@@ -310,8 +343,19 @@ const leaveTournament = async (
   const id = parsePositiveInteger(tournamentId, 'tournamentId')
 
   for (let attempt = 0; attempt < WRITE_ATTEMPTS; attempt += 1) {
-    const { error } = await repository.removePlayerFromTournament(id, user.id)
-    if (!error) return { tournament: null }
+    const { tournament, error } = await repository.removePlayerFromTournament(
+      id,
+      user.id,
+    )
+    if (!error) {
+      if (tournament) {
+        tournamentEvents.emit(TOURNAMENT_EVENTS.PLAYER_LEFT, {
+          tournament: toTournamentDetailDto(tournament),
+          leftUserId: user.id,
+        })
+      }
+      return { tournament: null }
+    }
 
     switch (error) {
       case TOURNAMENT_ERRORS.NOT_FOUND:
@@ -369,7 +413,14 @@ const startTournament = async (
       id,
       bracket,
     )
-    if (started) return { tournament: toTournamentDetailDto(started) }
+    if (started) {
+      const detail = toTournamentDetailDto(started)
+      tournamentEvents.emit(TOURNAMENT_EVENTS.STARTED, {
+        tournament: detail,
+        readyMatches: listReadyMatches(started),
+      })
+      return { tournament: detail }
+    }
     if (error === TOURNAMENT_ERRORS.NOT_OPEN) {
       throw new ConflictException('This tournament is no longer open')
     }
@@ -411,7 +462,9 @@ const cancelTournament = async (
     // The status flipped between the read and the guarded cancel.
     throw new ConflictException('Only an open tournament can be cancelled')
   }
-  return { tournament: toTournamentDetailDto(cancelled) }
+  const detail = toTournamentDetailDto(cancelled)
+  tournamentEvents.emit(TOURNAMENT_EVENTS.CANCELLED, { tournament: detail })
+  return { tournament: detail }
 }
 
 /**
@@ -465,7 +518,19 @@ const recordMatchResult = async (
         tournamentComplete: result.tournamentComplete,
       },
     )
-    if (updated) return { tournament: toTournamentDetailDto(updated) }
+    if (updated) {
+      const detail = toTournamentDetailDto(updated)
+      tournamentEvents.emit(TOURNAMENT_EVENTS.MATCH_RESULT, {
+        tournament: detail,
+        readyMatches: listReadyMatches(updated),
+      })
+      if (updated.status === 'COMPLETED') {
+        tournamentEvents.emit(TOURNAMENT_EVENTS.COMPLETED, {
+          tournament: detail,
+        })
+      }
+      return { tournament: detail }
+    }
     if (error === TOURNAMENT_ERRORS.ALREADY_RECORDED) {
       throw new ConflictException('This match result has already been recorded')
     }
@@ -474,6 +539,34 @@ const recordMatchResult = async (
   }
 
   throw new ConflictException('Could not record the match result, try again')
+}
+
+/**
+ * Folds a finished live game into whatever tournament match hosts it. The
+ * game-end hooks in the socket layer call this for every game that ends; a
+ * game with no tournament match behind it (the common, casual case) returns
+ * null and touches nothing, so non-tournament games are completely unaffected.
+ *
+ * @param {string} liveGameId runtime game UUID stamped on the match at start
+ * @param {number} winnerId the game's winner (the forfeiter's opponent when
+ *   the game was abandoned)
+ * @param {{ gameId?: number }} [options] persisted Game row id to stamp
+ * @returns {Promise<{ tournament: Object }|null>} the updated tournament
+ *   detail, or null when no match hosts this game
+ */
+const recordResultForLiveGame = async (
+  liveGameId,
+  winnerId,
+  { gameId, repository = tournamentRepository } = {},
+) => {
+  if (!liveGameId) return null
+  const match = await repository.findMatchByLiveGameId(liveGameId)
+  if (!match) return null
+  return recordMatchResult(match.id, winnerId, {
+    gameId,
+    liveGameId,
+    repository,
+  })
 }
 
 module.exports = {
@@ -487,4 +580,5 @@ module.exports = {
   startTournament,
   cancelTournament,
   recordMatchResult,
+  recordResultForLiveGame,
 }

@@ -84,6 +84,30 @@ const createRoomIfUnderLimit = ({ name, capacity, ownerId, maxOpenRooms }) => {
 }
 
 /**
+ * Creates a room and seats every given player in the same write. This is the
+ * server-initiated seating path (a tournament pairing): the room is born full
+ * and is claimed for a game right away, so it skips the open-room limit that
+ * bounds the lobby — it never sits in the lobby waiting for joiners. Callers
+ * must have freed any seat the players still hold, or the one-active-room
+ * invariant breaks.
+ *
+ * @param {{ name: string, capacity: number, ownerId: number,
+ *   playerIds: number[] }} data
+ * @returns {Promise<Object>} the created room with the standard include
+ */
+const createRoomWithPlayers = ({ name, capacity, ownerId, playerIds }) => {
+  return prisma.room.create({
+    data: {
+      name,
+      capacity,
+      ownerId,
+      players: { create: playerIds.map((userId) => ({ userId })) },
+    },
+    include: roomInclude,
+  })
+}
+
+/**
  * Rooms the lobby page should show: open ones plus those currently in a game.
  * CLOSED rooms are history and never surface here.
  */
@@ -371,6 +395,7 @@ const closeRoomsByGameId = async (gameId) => {
 module.exports = {
   ROOM_ERRORS,
   createRoomIfUnderLimit,
+  createRoomWithPlayers,
   findActiveRoomByUserId,
   findVisibleRooms,
   findOpenRoomByUserId,

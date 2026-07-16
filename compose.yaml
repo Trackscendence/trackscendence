@@ -19,6 +19,12 @@ services:
       - server_uploads:/app/uploads
     environment:
       NODE_ENV: production
+      # This local production-style stack runs with NODE_ENV=production, where
+      # the app requires a dedicated 2FA secret and will not fall back on its
+      # own. Default it to JWT_SECRET here so `compose:up` boots without extra
+      # .env setup; real deployments set TWO_FACTOR_ENCRYPTION_SECRET to a
+      # separate value.
+      TWO_FACTOR_ENCRYPTION_SECRET: '${TWO_FACTOR_ENCRYPTION_SECRET:-${JWT_SECRET}}'
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       SMTP_SECURE: 'false'

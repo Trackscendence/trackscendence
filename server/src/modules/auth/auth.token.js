@@ -94,6 +94,5 @@ module.exports = {
   verifyAccessToken,
   verifyOAuthStateToken,
   verifyTwoFactorChallengeToken,
-  OAUTH_STATE_PURPOSE,
   TWO_FACTOR_CHALLENGE_PURPOSE,
 }

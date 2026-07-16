@@ -76,35 +76,6 @@ const getTokenVersionFromPayload = (payload) => {
   return Number.isInteger(tokenVersion) ? tokenVersion : null
 }
 
-const getUsernameValidationMessages = (username) => {
-  const details = []
-
-  if (!username) {
-    details.push('Username is required')
-    return details
-  }
-
-  if (!USERNAME_REGEX.test(username)) {
-    details.push(
-      'Username must start with a letter and contain only lowercase letters and numbers',
-    )
-  }
-
-  if (username.length < USERNAME_MIN_LENGTH) {
-    details.push(
-      `Username must not be less than ${USERNAME_MIN_LENGTH} characters`,
-    )
-  }
-
-  if (username.length > USERNAME_MAX_LENGTH) {
-    details.push(
-      `Username must not be more than ${USERNAME_MAX_LENGTH} characters`,
-    )
-  }
-
-  return details
-}
-
 const getPasswordValidationMessages = (password) => {
   const details = []
 
@@ -1164,7 +1135,6 @@ module.exports = {
   INVALID_CREDENTIALS_MESSAGE,
   buildGuestIdentity,
   buildFortyTwoProfile,
-  getUsernameValidationMessages,
   changePassword,
   completeTwoFactorLogin,
   confirmTwoFactorSetup,
@@ -1183,7 +1153,6 @@ module.exports = {
   resolveAvailableUsername,
   sanitizeFortyTwoLogin,
   setupTwoFactor,
-  toSafeAuthUser,
   upgradeGuestAccount,
   validateFortyTwoCallbackInput,
   validateLoginInput,

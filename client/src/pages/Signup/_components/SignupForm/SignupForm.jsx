@@ -8,9 +8,15 @@ import { normalizeSignupInput } from '@/services/auth.normalizations'
 import Modal from '@/components/Modal'
 import TermsOfService from '@/pages/TermsOfService/TermsOfService'
 import Privacy from '@/pages/Privacy/Privacy'
+import { validatePasswordConfirmation } from './_utils/passwordConfirmation'
 
 const SignupForm = ({ onSuccess }) => {
-  const [form, setForm] = useState({ username: '', email: '', password: '' })
+  const [form, setForm] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  })
   const [error, setError] = useState('')
   const [validationDetails, setValidationDetails] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -44,6 +50,13 @@ const SignupForm = ({ onSuccess }) => {
 
     if (!isValid) {
       setValidationDetails(Object.values(errors))
+      return
+    }
+
+    const passwordConfirmationError = validatePasswordConfirmation(form)
+
+    if (passwordConfirmationError) {
+      setValidationDetails([passwordConfirmationError])
       return
     }
 
@@ -101,6 +114,17 @@ const SignupForm = ({ onSuccess }) => {
           autoComplete="new-password"
           minLength={8}
           value={form.password}
+          onChange={handleChange}
+          required
+        />
+      </FormField>
+
+      <FormField label="Confirm password">
+        <Input
+          name="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          value={form.confirmPassword}
           onChange={handleChange}
           required
         />

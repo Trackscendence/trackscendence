@@ -158,24 +158,10 @@ const findByIdentifier = (identifier) => {
   })
 }
 
-const findByPasswordResetTokenId = (tokenId) => {
-  return prisma.user.findUnique({
-    where: { passwordResetTokenId: tokenId },
-    select: authUserWithResetSelect,
-  })
-}
-
 const findAuthById = (id) => {
   return prisma.user.findUnique({
     where: { id },
     select: authUserSelect,
-  })
-}
-
-const findSafeById = (id) => {
-  return prisma.user.findUnique({
-    where: { id },
-    select: safeUserSelect,
   })
 }
 
@@ -330,18 +316,6 @@ const clearTwoFactorById = async (id) => {
   })
 }
 
-const consumeRecoveryCode = async (userId, codeHash) => {
-  const result = await prisma.userTwoFactorRecoveryCode.deleteMany({
-    where: {
-      userId,
-      codeHash,
-      isPending: false,
-    },
-  })
-
-  return result.count > 0
-}
-
 const issueTwoFactorChallenge = (userId) => {
   return prisma.user.update({
     where: { id: userId },
@@ -464,7 +438,6 @@ module.exports = {
   activatePendingTwoFactorSetup,
   clearPasswordResetToken,
   clearTwoFactorById,
-  consumeRecoveryCode,
   consumeRecoveryCodeAndChallenge,
   consumeTwoFactorChallenge,
   createFortyTwoUser,
@@ -474,9 +447,7 @@ module.exports = {
   findByEmail,
   findByFortyTwoId,
   findByIdentifier,
-  findByPasswordResetTokenId,
   findByUsername,
-  findSafeById,
   findTokenUserById,
   issueTwoFactorChallenge,
   linkFortyTwoId,

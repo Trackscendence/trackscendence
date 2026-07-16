@@ -27,9 +27,7 @@ const normalizeRegistrationInput = ({
 
 module.exports = {
   normalizeEmail,
-  normalizeBoolean,
   normalizeUsername,
   normalizeIdentifier,
-  normalizePassword,
   normalizeRegistrationInput,
 }

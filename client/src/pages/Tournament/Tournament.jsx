@@ -6,8 +6,8 @@ import buildBracketView from './buildBracketView'
 import ChampionCallout from './_components/ChampionCallout'
 import TournamentBracket from './_components/TournamentBracket'
 import TournamentLobby from './_components/TournamentLobby'
+import TournamentStatusPanel from './_components/TournamentStatusPanel'
 import TournamentView from './_components/TournamentView'
-import TournamentWaitingCard from './_components/TournamentWaitingCard'
 
 // Container for /tournament (#458). Everything renders from store state: no
 // active tournament shows the open list with create/join, a joined OPEN
@@ -63,17 +63,23 @@ const Tournament = () => {
       )
     }
     if (activeTournament.status === 'OPEN') {
+      // The preview bracket draws every seat and drops joined players into the
+      // first round, so the tournament is visible from the moment it is made.
+      const preview = buildBracketView(activeTournament)
       return (
-        <TournamentWaitingCard
-          isBusy={isLoading}
-          isCreator={activeTournament.createdById === userId}
-          name={activeTournament.name}
-          playerCount={activeTournament.playerCount}
-          prizePoints={activeTournament.prizePoints}
-          size={activeTournament.size}
-          onLeave={handleLeave}
-          onStart={handleStart}
-        />
+        <div className="space-y-6">
+          <TournamentStatusPanel
+            isBusy={isLoading}
+            isCreator={activeTournament.createdById === userId}
+            name={activeTournament.name}
+            playerCount={activeTournament.playerCount}
+            prizePoints={activeTournament.prizePoints}
+            size={activeTournament.size}
+            onLeave={handleLeave}
+            onStart={handleStart}
+          />
+          <TournamentBracket bracket={preview} showHeading={false} />
+        </div>
       )
     }
 

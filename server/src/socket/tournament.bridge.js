@@ -20,6 +20,8 @@
 
 const logger = require('#utils/logger')
 const roomService = require('#modules/room/room.service')
+const notificationsService = require('#modules/notifications/notifications.service')
+const notificationsSocket = require('#modules/notifications/notifications.socket')
 const tournamentRepository = require('#modules/tournament/tournament.repository')
 const {
   tournamentEvents,
@@ -53,6 +55,25 @@ const broadcastTournamentUpdate = (io, tournament) => {
   tournament.players.forEach((player) => {
     emitTournamentUpdate(io, player.id, tournament)
   })
+}
+
+/**
+ * Tells the creator, in the bell, that someone entered their tournament. The
+ * creator plays in their own bracket, so their own join carries no news and is
+ * skipped. Notification failures must not sink the roster broadcast, so they
+ * are logged and swallowed.
+ */
+const notifyCreatorOfJoin = async (tournament, joinedUserId) => {
+  if (!joinedUserId || tournament.createdById === joinedUserId) return
+  try {
+    await notificationsService.createTournamentJoinedNotification({
+      actorId: joinedUserId,
+      userId: tournament.createdById,
+    })
+    notificationsSocket.emitSocialNotificationsChanged(tournament.createdById)
+  } catch (error) {
+    logger.error(`Tournament ${tournament.id} join notification failed`, error)
+  }
 }
 
 /**
@@ -177,9 +198,10 @@ const initTournamentBridge = (io) => {
 
   // Sign-up phase changes carry no matches to start, only bracket mirrors.
   // Queued under the same key so an update can never overtake an advancement.
-  const onRosterChange = ({ tournament }) => {
+  const onRosterChange = ({ tournament, joinedUserId }) => {
     enqueueRoomAction(`tournament:${tournament.id}`, async () => {
       broadcastTournamentUpdate(io, tournament)
+      await notifyCreatorOfJoin(tournament, joinedUserId)
     }).catch((error) =>
       logger.error(
         `Tournament ${tournament.id} update broadcast failed`,

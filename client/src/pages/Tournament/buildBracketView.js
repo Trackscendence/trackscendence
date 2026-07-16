@@ -103,8 +103,8 @@ const toMatch = (match, roundIndex, matchIndex, roster) => {
   }
 }
 
-const toRound = (round, roundIndex, playerCount, roster) => {
-  const expectedMatches = matchCountForRound(playerCount, roundIndex)
+const toRound = (round, roundIndex, bracketSize, roster) => {
+  const expectedMatches = matchCountForRound(bracketSize, roundIndex)
   const matches = Array.from({ length: expectedMatches }, (unused, index) =>
     toMatch(round?.matches?.[index], roundIndex, index, roster),
   )
@@ -116,6 +116,31 @@ const toRound = (round, roundIndex, playerCount, roster) => {
       ROUND_LABELS_BY_MATCH_COUNT[expectedMatches] ||
       `Round ${roundIndex + 1}`,
     matches,
+  }
+}
+
+// Roster entrants carry `username`; match players carry `name`. Seating a
+// roster entrant into a match slot bridges that naming gap.
+const toMatchPlayer = (entrant) =>
+  entrant
+    ? { id: entrant.id, name: entrant.username, avatarUrl: entrant.avatarUrl }
+    : undefined
+
+// Before a tournament starts there are no server rounds yet, so the preview
+// bracket seats the current roster into the first round in join order and
+// leaves the rest of the seats empty. Every player reads as 'pending' (no
+// winner decided), which is exactly how the bracket paints a claimed-but-
+// unplayed seat, so the same tree carries from filling to the final.
+const previewFirstRound = (players, bracketSize) => {
+  const matchCount = matchCountForRound(bracketSize, 0)
+
+  return {
+    matches: Array.from({ length: matchCount }, (unused, index) => ({
+      players: [
+        toMatchPlayer(players[index * 2]),
+        toMatchPlayer(players[index * 2 + 1]),
+      ],
+    })),
   }
 }
 
@@ -135,24 +160,41 @@ const buildBracketView = (tournament) => {
   if (!tournament) return null
 
   const playerCount = tournament.playerCount ?? 0
-  const totalRounds = tournament.totalRounds ?? tournament.rounds?.length ?? 0
+  const players = tournament.players ?? []
+  const isOpen = tournament.status === 'OPEN'
+
+  // The tree is sized by seat capacity, not by how many have joined, so an
+  // open bracket draws all its empty seats instead of collapsing to a single
+  // match. Started tournaments fill every seat, so size and playerCount agree.
+  const bracketSize = tournament.size ?? playerCount
+  const totalRounds =
+    tournament.totalRounds ??
+    tournament.rounds?.length ??
+    Math.max(1, Math.ceil(Math.log2(Math.max(bracketSize, 2))))
 
   // Index the roster once so every slot can look up its seed and
   // eliminated-or-not without scanning the players array again.
   const roster = {
-    byId: new Map(
-      (tournament.players ?? []).map((entrant) => [entrant.id, entrant]),
-    ),
+    byId: new Map(players.map((entrant) => [entrant.id, entrant])),
     winnerId: tournament.winnerId ?? null,
   }
 
+  // Open tournaments have no server rounds yet; synthesize the first round
+  // from the roster so joined players show up in the preview.
+  const rounds =
+    isOpen && !tournament.rounds?.length
+      ? [previewFirstRound(players, bracketSize)]
+      : (tournament.rounds ?? [])
+
   return {
     name: tournament.name,
-    summary: `Round ${tournament.currentRound} of ${totalRounds} · ${playerCount} players`,
+    summary: isOpen
+      ? `${playerCount} of ${bracketSize} seats filled`
+      : `Round ${tournament.currentRound} of ${totalRounds} · ${playerCount} players`,
     prizePoints: tournament.prizePoints ?? null,
     champion: toChampion(tournament),
     rounds: Array.from({ length: totalRounds }, (unused, index) =>
-      toRound(tournament.rounds?.[index], index, playerCount, roster),
+      toRound(rounds[index], index, bracketSize, roster),
     ),
   }
 }

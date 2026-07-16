@@ -125,6 +125,7 @@ enum SocialNotificationType {
   FRIEND_REQUEST
   FRIEND_ACCEPTED
   DIRECT_MESSAGE
+  TOURNAMENT_JOINED
 }
 
 model Game {

@@ -173,8 +173,10 @@ const claimMatchForGame = async (matchId, { liveGameId, roomId }) => {
 }
 
 /**
- * Creates an OPEN tournament shell. Creating does not enter the creator; they
- * join through the same path as everyone else.
+ * Creates an OPEN tournament and seats the creator as its first player, in one
+ * write. The creator runs the bracket and plays in it, so they hold seat one
+ * from the start: this is what lets `getActiveTournament` find the tournament
+ * for them and what puts them on the live-update broadcast as the roster fills.
  *
  * @param {{ name: string, size: number, prizePoints: number,
  *   totalRounds: number, createdById: number }} data
@@ -187,7 +189,14 @@ const createTournament = ({
   createdById,
 }) => {
   return prisma.tournament.create({
-    data: { name, size, prizePoints, totalRounds, createdById },
+    data: {
+      name,
+      size,
+      prizePoints,
+      totalRounds,
+      createdById,
+      players: { create: { userId: createdById } },
+    },
     include: tournamentDetailInclude,
   })
 }

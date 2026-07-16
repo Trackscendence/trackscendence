@@ -9,6 +9,7 @@ const SOCIAL_NOTIFICATION_TYPE = {
   DIRECT_MESSAGE: 'DIRECT_MESSAGE',
   FRIEND_ACCEPTED: 'FRIEND_ACCEPTED',
   FRIEND_REQUEST: 'FRIEND_REQUEST',
+  TOURNAMENT_JOINED: 'TOURNAMENT_JOINED',
 }
 
 const parsePositiveInteger = (value, fieldName) => {
@@ -115,6 +116,20 @@ const createDirectMessageNotification = (
   )
 }
 
+const createTournamentJoinedNotification = (
+  { actorId, userId },
+  { repository = notificationsRepository, db } = {},
+) => {
+  return repository.createNotification(
+    {
+      actorId,
+      type: SOCIAL_NOTIFICATION_TYPE.TOURNAMENT_JOINED,
+      userId,
+    },
+    db,
+  )
+}
+
 const attachConversationToFriendRequestNotification = (
   { actorId, conversationId, userId },
   { repository = notificationsRepository, db } = {},
@@ -179,6 +194,7 @@ module.exports = {
   createDirectMessageNotification,
   createFriendAcceptedNotification,
   createFriendRequestNotification,
+  createTournamentJoinedNotification,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,

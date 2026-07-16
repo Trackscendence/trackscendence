@@ -23,6 +23,10 @@ const getNotificationText = (notification) => {
     return `${name} sent a message`
   }
 
+  if (notification.type === 'TOURNAMENT_JOINED') {
+    return `${name} joined your tournament`
+  }
+
   return 'New notification'
 }
 
@@ -106,6 +110,14 @@ const SocialNotificationMenu = () => {
     ) {
       setIsOpen(false)
       navigate(`/users/${encodeURIComponent(notification.actor.username)}`)
+      return
+    }
+
+    // A tournament join leads to the bracket, where the creator watches the
+    // seats fill and starts once it is full.
+    if (notification.type === 'TOURNAMENT_JOINED') {
+      setIsOpen(false)
+      navigate('/tournament')
     }
   }
 
@@ -151,7 +163,7 @@ const SocialNotificationMenu = () => {
       {isOpen ? (
         <div
           role="menu"
-          className="absolute right-0 z-40 mt-3 w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[#e6c9a8] bg-white shadow-[0_20px_50px_rgba(61,18,0,0.18)]"
+          className="fixed inset-x-4 top-16 z-40 w-auto overflow-hidden rounded-lg border border-[#e6c9a8] bg-white shadow-[0_20px_50px_rgba(61,18,0,0.18)] sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-3 sm:w-[min(380px,calc(100vw-2rem))]"
         >
           <div className="flex items-center justify-between border-b border-[#f0d9bd] px-5 py-4">
             <div>

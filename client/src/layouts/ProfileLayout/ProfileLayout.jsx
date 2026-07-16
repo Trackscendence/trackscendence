@@ -6,7 +6,7 @@ import PlayerSearch from '@/components/PlayerSearch'
 const ProfileLayout = () => {
   const { pathname } = useLocation()
   // The player search belongs to the signed-in user's own profile only, not
-  // the public /users/:username view or /leaderboard this layout also wraps.
+  // the public /users/:username view or /settings this layout also wraps.
   const showSearch = pathname === '/profile'
 
   return (

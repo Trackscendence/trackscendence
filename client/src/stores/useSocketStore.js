@@ -8,6 +8,7 @@ import useDirectMessageStore from './useDirectMessageStore'
 import useGameStore from './useGameStore'
 import useNotificationStore from './useNotificationStore'
 import useSocialNotificationStore from './useSocialNotificationStore'
+import useTournamentStore from './useTournamentStore'
 import { createSocketSessionHandlers } from './socketSessionHandlers'
 import {
   attachSocketSessionListeners,
@@ -77,6 +78,7 @@ const buildSessionHandlers = (connectionToken) =>
     authStore: useAuthStore,
     notificationStore: useNotificationStore,
     socialNotificationStore: useSocialNotificationStore,
+    tournamentStore: useTournamentStore,
     dispatchActiveGame: (gameId) =>
       window.dispatchEvent(
         new CustomEvent('trackscendence:active-game', {

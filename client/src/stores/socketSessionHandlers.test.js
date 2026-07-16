@@ -64,6 +64,11 @@ const makeDeps = ({
         loadNotifications: rec('loadSocialNotifications'),
       }),
     },
+    tournamentStore: {
+      getState: () => ({
+        setActiveTournament: rec('setActiveTournament'),
+      }),
+    },
     dispatchActiveGame: rec('dispatchActiveGame'),
     isDevGame,
   }
@@ -98,6 +103,8 @@ test('registers a handler for every event the server can send', () => {
     SOCKET_EVENTS.CHAT_ROOMS,
     SOCKET_EVENTS.CHAT_ERROR,
     SOCKET_EVENTS.SOCIAL_NOTIFICATIONS_CHANGED,
+    SOCKET_EVENTS.TOURNAMENT_UPDATED,
+    SOCKET_EVENTS.TOURNAMENT_MATCH_READY,
   ]
   assert.deepEqual(Object.keys(handlers).sort(), [...expected].sort())
   Object.values(handlers).forEach((handler) =>
@@ -251,6 +258,42 @@ test('social notifications changed reloads the notification cache', () => {
   assert.deepEqual(calls.loadSocialNotifications, [[]])
 })
 
+test('tournament:updated routes the bracket to setActiveTournament, null clearing it', () => {
+  const withBracket = makeDeps()
+  const tournament = { id: 9, status: 'RUNNING', rounds: [] }
+  createSocketSessionHandlers(withBracket.deps)[
+    SOCKET_EVENTS.TOURNAMENT_UPDATED
+  ]({ tournament })
+  assert.deepEqual(withBracket.calls.setActiveTournament, [[tournament]])
+
+  // The server sends { tournament: null } to a player who left, and a bare
+  // payload must not crash: both clear the active tournament.
+  const cleared = makeDeps()
+  const handlers = createSocketSessionHandlers(cleared.deps)
+  handlers[SOCKET_EVENTS.TOURNAMENT_UPDATED]({ tournament: null })
+  handlers[SOCKET_EVENTS.TOURNAMENT_UPDATED](undefined)
+  assert.deepEqual(cleared.calls.setActiveTournament, [[null], [null]])
+})
+
+test('tournament:match_ready deep-links to the game only when a gameId is present', () => {
+  const withId = makeDeps()
+  createSocketSessionHandlers(withId.deps)[
+    SOCKET_EVENTS.TOURNAMENT_MATCH_READY
+  ]({
+    tournamentId: 9,
+    matchId: 3,
+    gameId: 'g7',
+    roomId: 12,
+  })
+  assert.deepEqual(withId.calls.dispatchActiveGame, [['g7']])
+
+  const withoutId = makeDeps()
+  createSocketSessionHandlers(withoutId.deps)[
+    SOCKET_EVENTS.TOURNAMENT_MATCH_READY
+  ]({})
+  assert.equal(withoutId.calls.dispatchActiveGame, undefined)
+})
+
 test('room:closed coerces a numeric roomId and falls back to true', () => {
   const numeric = makeDeps()
   createSocketSessionHandlers(numeric.deps)[SOCKET_EVENTS.ROOM_CLOSED]({
@@ -281,6 +324,8 @@ test('session-data events are dropped once the session has ended (#391)', () => 
   })
   handlers[SOCKET_EVENTS.CHAT_TYPING]({ conversationId: 7 })
   handlers[SOCKET_EVENTS.CHAT_STOP_TYPING]({ conversationId: 7 })
+  handlers[SOCKET_EVENTS.TOURNAMENT_UPDATED]({ tournament: { id: 9 } })
+  handlers[SOCKET_EVENTS.TOURNAMENT_MATCH_READY]({ gameId: 'g7' })
 
   assert.equal(calls.setLobbyCount, undefined)
   assert.equal(calls.setGameState, undefined)
@@ -290,6 +335,8 @@ test('session-data events are dropped once the session has ended (#391)', () => 
   assert.equal(calls.markConversationReadByFriend, undefined)
   assert.equal(calls.receiveTyping, undefined)
   assert.equal(calls.receiveStopTyping, undefined)
+  assert.equal(calls.setActiveTournament, undefined)
+  assert.equal(calls.dispatchActiveGame, undefined)
 
   // Transport-state events stay live so isConnected remains accurate.
   handlers[SOCKET_EVENTS.DISCONNECT]()

@@ -745,4 +745,49 @@ describe('recordMatchResult', () => {
       (error) => error.statusCode === 404,
     )
   })
+
+  // The game-end hooks call this for every finished game; only games that
+  // host a bracket match may touch the tournament tables.
+  describe('recordResultForLiveGame', () => {
+    it('returns null and writes nothing when no match hosts the game', async () => {
+      const lookups = []
+      const repository = {
+        findMatchByLiveGameId: async (liveGameId) => {
+          lookups.push(liveGameId)
+          return null
+        },
+        findTournamentByMatchId: async () => {
+          throw new Error('must not read the tournament for a casual game')
+        },
+      }
+
+      const result = await tournamentService.recordResultForLiveGame(
+        'live-uuid',
+        20,
+        { repository },
+      )
+
+      assert.equal(result, null)
+      assert.deepEqual(lookups, ['live-uuid'])
+    })
+
+    it('records the result against the hosting match', async () => {
+      const fixture = makeRunningFour()
+      const { repository, applied } = makeRecordingRepository(fixture)
+      repository.findMatchByLiveGameId = async () => fixture.matches[0]
+
+      const result = await tournamentService.recordResultForLiveGame(
+        'live-uuid',
+        20,
+        { gameId: 77, repository },
+      )
+
+      assert.ok(result.tournament)
+      assert.equal(applied.length, 1)
+      assert.equal(applied[0].writes.matchId, 1)
+      assert.equal(applied[0].writes.winnerId, 20)
+      assert.equal(applied[0].writes.gameId, 77)
+      assert.equal(applied[0].writes.liveGameId, 'live-uuid')
+    })
+  })
 })

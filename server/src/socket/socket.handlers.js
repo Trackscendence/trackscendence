@@ -8,6 +8,7 @@ const botTurns = require('#modules/game/bot-turn.service')
 const botPlayers = require('#modules/game/bot-player.service')
 const turnTimers = require('#modules/game/turn-timer.service')
 const roomService = require('#modules/room/room.service')
+const tournamentService = require('#modules/tournament/tournament.service')
 const devRunner = require('#modules/game/dev-runner.service')
 const { buildGameStatePayload } = require('#modules/game/game.contract')
 const { registerChatHandlers } = require('./chat.handlers')
@@ -110,6 +111,11 @@ const scheduleDevGameRun = ({ io, gameId, delayMs, checkGameEnd }) => {
  * the lobby. The `game_over` carries `rematch: true` when a survivor kept the
  * room open, which tells their client to head for the waiting room; the leaver
  * (`abandonedBy`) heads for the lobby.
+ *
+ * A game hosting a tournament match diverges (#456): walking out forfeits the
+ * match, so the opponent advances in the bracket, and the room closes instead
+ * of reopening — there is no rematch, the winner's next pairing gets a fresh
+ * room from the tournament bridge.
  */
 const abandonActiveGame = async (io, userId) => {
   const abandonedGame = await matchmaking.handlePlayerDisconnect(userId)
@@ -119,18 +125,51 @@ const abandonActiveGame = async (io, userId) => {
   turnTimers.clearTurnTimer(abandonedGame.id)
   pausedGames.delete(abandonedGame.id)
 
-  let rematch = false
-  try {
-    const outcome = await roomService.reopenRoomForSurvivors(
-      abandonedGame.id,
-      userId,
-    )
-    if (outcome) {
-      rematch = outcome.reopened
-      await broadcastRooms(io)
+  // Tournament hook (#456): one indexed lookup decides the divergence — a
+  // casual game (no match carries this liveGameId) returns null and the
+  // rematch flow below is untouched. Tournament matches are two-player, so
+  // the one player who is not the leaver is the winner by forfeit.
+  let tournamentUpdate = null
+  const survivor = abandonedGame.players.find(
+    (player) => player.userId !== userId,
+  )
+  if (survivor) {
+    try {
+      tournamentUpdate = await tournamentService.recordResultForLiveGame(
+        abandonedGame.id,
+        survivor.userId,
+        { gameId: abandonedGame.persistedGameId },
+      )
+    } catch (error) {
+      logger.error(
+        `Failed to forfeit tournament match for game ${abandonedGame.id}`,
+        error,
+      )
     }
-  } catch (error) {
-    logger.error('Failed to reopen room for abandoned game', error)
+  }
+
+  let rematch = false
+  if (tournamentUpdate) {
+    try {
+      if (await roomService.closeRoomsForGame(abandonedGame.id)) {
+        await broadcastRooms(io)
+      }
+    } catch (error) {
+      logger.error('Failed to close room for forfeited match', error)
+    }
+  } else {
+    try {
+      const outcome = await roomService.reopenRoomForSurvivors(
+        abandonedGame.id,
+        userId,
+      )
+      if (outcome) {
+        rematch = outcome.reopened
+        await broadcastRooms(io)
+      }
+    } catch (error) {
+      logger.error('Failed to reopen room for abandoned game', error)
+    }
   }
 
   io.to(`game:${abandonedGame.id}`).emit('game_over', {
@@ -281,6 +320,90 @@ const startMatchIfRoomFull = async (io, room, { checkGameEnd } = {}) => {
   return match
 }
 
+/**
+ * Builds the end-of-game check every in-game action runs after it settles.
+ * Module-scoped factory (not a per-socket closure) because two kinds of caller
+ * need it against the same io: every connected socket's handlers, and the
+ * tournament bridge, whose server-started games have no originating socket.
+ */
+const createCheckGameEnd = (io) => {
+  const checkGameEnd = async (gameId, engine) => {
+    if (!engine.winner) return
+
+    stopDevGameRun(gameId)
+    botTurns.clearBotTurnTimer(gameId)
+    turnTimers.clearTurnTimer(gameId)
+
+    const state = await gameStore.getGame(gameId)
+    // Status check and flip with no await in between: this is the gate that
+    // makes game-end processing (and the save below) run exactly once when
+    // this races the abandon path. It relies on the store handing out a
+    // shared object, so the first flip is immediately visible to the loser;
+    // a copy-returning store (Redis) must replace it with an atomic
+    // compare-and-set inside the store.
+    if (!state || state.status !== 'IN_PROGRESS') return
+    state.status = 'COMPLETED'
+    state.winner = engine.winner
+    // Capture the final scores before the engine is freed below; the winner
+    // takes the sum of the opponents' hands, everyone else scores 0 (#197).
+    state.scores = engine.getScores()
+    state.endedAt = new Date()
+    await gameStore.saveGame(gameId, state)
+    gameStore.deleteEngine(gameId)
+
+    // Persist before the game_over emit so the results screen reads a
+    // leaderboard that already includes this game. A failed save loses the
+    // stats row (logged, worth alerting on) but must never block tearing the
+    // game down for the players.
+    let persistedGame = null
+    try {
+      persistedGame = await gameService.persistGameResult(state)
+    } catch (error) {
+      logger.error(`Failed to persist completed game ${gameId}`, error)
+    }
+
+    // Tournament hook (#456): a game hosting a bracket match folds its winner
+    // into the tournament. One indexed lookup per game end; a casual game (no
+    // match carries this liveGameId) is a strict no-op. A failure is logged
+    // and never blocks tearing the game down for the players.
+    try {
+      await tournamentService.recordResultForLiveGame(gameId, engine.winner, {
+        gameId: persistedGame?.id,
+      })
+    } catch (error) {
+      logger.error(
+        `Failed to record tournament result for game ${gameId}`,
+        error,
+      )
+    }
+
+    // The game is flushed to PostgreSQL and its engine freed above, so drop its
+    // in-memory record too. Without this the state lingers in activeGames for
+    // the life of the process (an unbounded leak) and grows the
+    // findActiveGameByUser scan that runs on every connect/disconnect.
+    await gameStore.deleteGame(gameId)
+
+    // Same payload shape as the abandon path: winnerUserId carries the
+    // outcome, reason says how the game ended.
+    io.to(`game:${gameId}`).emit('game_over', {
+      gameId,
+      winnerUserId: engine.winner,
+      reason: 'completed',
+    })
+
+    // The room served its purpose once the game ends; close it so the
+    // lobby offers a fresh room for the next round.
+    try {
+      if (await roomService.closeRoomsForGame(gameId)) {
+        await broadcastRooms(io)
+      }
+    } catch (error) {
+      logger.error('Failed to close room for finished game', error)
+    }
+  }
+  return checkGameEnd
+}
+
 const registerHandlers = (io, socket) => {
   socket.join('channel:#general')
   socket.join(`user:${socket.user.id}`)
@@ -311,64 +434,7 @@ const registerHandlers = (io, socket) => {
     })
     .catch((error) => logger.error('Failed to rejoin game room', error))
 
-  const checkGameEnd = async (gameId, engine) => {
-    if (!engine.winner) return
-
-    stopDevGameRun(gameId)
-    botTurns.clearBotTurnTimer(gameId)
-    turnTimers.clearTurnTimer(gameId)
-
-    const state = await gameStore.getGame(gameId)
-    // Status check and flip with no await in between: this is the gate that
-    // makes game-end processing (and the save below) run exactly once when
-    // this races the abandon path. It relies on the store handing out a
-    // shared object, so the first flip is immediately visible to the loser;
-    // a copy-returning store (Redis) must replace it with an atomic
-    // compare-and-set inside the store.
-    if (!state || state.status !== 'IN_PROGRESS') return
-    state.status = 'COMPLETED'
-    state.winner = engine.winner
-    // Capture the final scores before the engine is freed below; the winner
-    // takes the sum of the opponents' hands, everyone else scores 0 (#197).
-    state.scores = engine.getScores()
-    state.endedAt = new Date()
-    await gameStore.saveGame(gameId, state)
-    gameStore.deleteEngine(gameId)
-
-    // Persist before the game_over emit so the results screen reads a
-    // leaderboard that already includes this game. A failed save loses the
-    // stats row (logged, worth alerting on) but must never block tearing the
-    // game down for the players.
-    try {
-      await gameService.persistGameResult(state)
-    } catch (error) {
-      logger.error(`Failed to persist completed game ${gameId}`, error)
-    }
-
-    // The game is flushed to PostgreSQL and its engine freed above, so drop its
-    // in-memory record too. Without this the state lingers in activeGames for
-    // the life of the process (an unbounded leak) and grows the
-    // findActiveGameByUser scan that runs on every connect/disconnect.
-    await gameStore.deleteGame(gameId)
-
-    // Same payload shape as the abandon path below: winnerUserId carries the
-    // outcome, reason says how the game ended.
-    io.to(`game:${gameId}`).emit('game_over', {
-      gameId,
-      winnerUserId: engine.winner,
-      reason: 'completed',
-    })
-
-    // The room served its purpose once the game ends; close it so the
-    // lobby offers a fresh room for the next round.
-    try {
-      if (await roomService.closeRoomsForGame(gameId)) {
-        await broadcastRooms(io)
-      }
-    } catch (error) {
-      logger.error('Failed to close room for finished game', error)
-    }
-  }
+  const checkGameEnd = createCheckGameEnd(io)
 
   // Tells the table who it is waiting for and until when, so every remaining
   // player renders the same countdown. The deadline is the soonest of the
@@ -930,3 +996,9 @@ const registerHandlers = (io, socket) => {
 }
 
 module.exports = registerHandlers
+// Named seams for callers that drive the game flow without an originating
+// socket — today the tournament bridge, which starts and ends bracket games.
+module.exports.abandonActiveGame = abandonActiveGame
+module.exports.broadcastRooms = broadcastRooms
+module.exports.createCheckGameEnd = createCheckGameEnd
+module.exports.startMatchIfRoomFull = startMatchIfRoomFull

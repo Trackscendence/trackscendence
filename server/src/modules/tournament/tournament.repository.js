@@ -129,6 +129,50 @@ const findTournamentByMatchId = (matchId, db = prisma) => {
 }
 
 /**
+ * One match row by id, or null. The room-flow bridge re-reads a match right
+ * before creating its game, so a match already claimed by an earlier event is
+ * skipped instead of started twice.
+ * @param {number} matchId
+ */
+const findMatchById = (matchId, db = prisma) => {
+  return db.tournamentMatch.findUnique({
+    where: { id: matchId },
+    select: tournamentMatchSelect,
+  })
+}
+
+/**
+ * The match hosting a given live game, or null. Indexed on liveGameId; the
+ * game-end hooks run this once per finished game, and a casual game simply
+ * finds nothing.
+ * @param {string} liveGameId runtime game UUID
+ */
+const findMatchByLiveGameId = (liveGameId, db = prisma) => {
+  return db.tournamentMatch.findFirst({
+    where: { liveGameId },
+    select: tournamentMatchSelect,
+  })
+}
+
+/**
+ * Stamps the live game and hosting room on a match, claiming it for a game
+ * start. `updateMany` makes the emptiness check and the stamp one statement,
+ * so of two racing starts exactly one sees count 1; the loser must not
+ * announce a game for this match.
+ *
+ * @param {number} matchId
+ * @param {{ liveGameId: string, roomId: number }} refs
+ * @returns {Promise<boolean>} true when this caller won the claim
+ */
+const claimMatchForGame = async (matchId, { liveGameId, roomId }) => {
+  const { count } = await prisma.tournamentMatch.updateMany({
+    where: { id: matchId, liveGameId: null, winnerId: null },
+    data: { liveGameId, roomId },
+  })
+  return count === 1
+}
+
+/**
  * Creates an OPEN tournament shell. Creating does not enter the creator; they
  * join through the same path as everyone else.
  *
@@ -370,6 +414,9 @@ module.exports = {
   findTournamentById,
   findActiveTournamentByUserId,
   findTournamentByMatchId,
+  findMatchById,
+  findMatchByLiveGameId,
+  claimMatchForGame,
   createTournament,
   addPlayerToTournament,
   removePlayerFromTournament,

@@ -13,6 +13,10 @@ const DEFAULT_FILTERS = {
   order: 'desc',
 }
 
+// The full leaderboard surface: filter bar, ranking table, pagination. It owns
+// its filter state and loads through the game store, so a page embeds it as a
+// single self-contained block. Promoted from the /leaderboard page so other
+// surfaces can reuse it, the way /profile reuses the shared table (#447).
 const LeaderboardSection = () => {
   const leaderboard = useGameStore((state) => state.leaderboard)
   const pagination = useGameStore((state) => state.leaderboardPagination)

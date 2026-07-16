@@ -49,7 +49,10 @@ const makeDeps = ({
     },
     directMessageStore: {
       getState: () => ({
+        markConversationReadByFriend: rec('markConversationReadByFriend'),
         receiveMessage: rec('receiveDirectMessage'),
+        receiveStopTyping: rec('receiveStopTyping'),
+        receiveTyping: rec('receiveTyping'),
       }),
     },
     authStore: {
@@ -59,6 +62,11 @@ const makeDeps = ({
     socialNotificationStore: {
       getState: () => ({
         loadNotifications: rec('loadSocialNotifications'),
+      }),
+    },
+    tournamentStore: {
+      getState: () => ({
+        setActiveTournament: rec('setActiveTournament'),
       }),
     },
     dispatchActiveGame: rec('dispatchActiveGame'),
@@ -87,11 +95,16 @@ test('registers a handler for every event the server can send', () => {
     SOCKET_EVENTS.ROOMS_UPDATE,
     SOCKET_EVENTS.ROOM_ERROR,
     SOCKET_EVENTS.ROOM_CLOSED,
+    SOCKET_EVENTS.CHAT_CONVERSATION_READ,
     SOCKET_EVENTS.CHAT_MESSAGE,
     SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE,
+    SOCKET_EVENTS.CHAT_TYPING,
+    SOCKET_EVENTS.CHAT_STOP_TYPING,
     SOCKET_EVENTS.CHAT_ROOMS,
     SOCKET_EVENTS.CHAT_ERROR,
     SOCKET_EVENTS.SOCIAL_NOTIFICATIONS_CHANGED,
+    SOCKET_EVENTS.TOURNAMENT_UPDATED,
+    SOCKET_EVENTS.TOURNAMENT_MATCH_READY,
   ]
   assert.deepEqual(Object.keys(handlers).sort(), [...expected].sort())
   Object.values(handlers).forEach((handler) =>
@@ -216,11 +229,22 @@ test('chat events route to the chat store, passing the current user id on privat
 
   handlers[SOCKET_EVENTS.CHAT_MESSAGE]({ text: 'hi' })
   handlers[SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE]({ text: 'psst' })
+  handlers[SOCKET_EVENTS.CHAT_CONVERSATION_READ]({
+    conversationId: 7,
+    readAt: '2026-07-09T12:00:00.000Z',
+  })
+  handlers[SOCKET_EVENTS.CHAT_TYPING]({ conversationId: 7 })
+  handlers[SOCKET_EVENTS.CHAT_STOP_TYPING]({ conversationId: 7 })
   handlers[SOCKET_EVENTS.CHAT_ROOMS]({ rooms: [{ id: 'r1' }] })
 
   assert.deepEqual(calls.receiveRoomMessage, [[{ text: 'hi' }]])
   assert.deepEqual(calls.receivePrivateMessage, [[{ text: 'psst' }, 42]])
   assert.deepEqual(calls.receiveDirectMessage, [[{ text: 'psst' }, 42]])
+  assert.deepEqual(calls.markConversationReadByFriend, [
+    [{ conversationId: 7, readAt: '2026-07-09T12:00:00.000Z' }],
+  ])
+  assert.deepEqual(calls.receiveTyping, [[{ conversationId: 7 }]])
+  assert.deepEqual(calls.receiveStopTyping, [[{ conversationId: 7 }]])
   assert.deepEqual(calls.loadSocialNotifications, [[]])
   assert.deepEqual(calls.syncChatRooms, [[[{ id: 'r1' }]]])
 })
@@ -232,6 +256,42 @@ test('social notifications changed reloads the notification cache', () => {
   handlers[SOCKET_EVENTS.SOCIAL_NOTIFICATIONS_CHANGED]()
 
   assert.deepEqual(calls.loadSocialNotifications, [[]])
+})
+
+test('tournament:updated routes the bracket to setActiveTournament, null clearing it', () => {
+  const withBracket = makeDeps()
+  const tournament = { id: 9, status: 'RUNNING', rounds: [] }
+  createSocketSessionHandlers(withBracket.deps)[
+    SOCKET_EVENTS.TOURNAMENT_UPDATED
+  ]({ tournament })
+  assert.deepEqual(withBracket.calls.setActiveTournament, [[tournament]])
+
+  // The server sends { tournament: null } to a player who left, and a bare
+  // payload must not crash: both clear the active tournament.
+  const cleared = makeDeps()
+  const handlers = createSocketSessionHandlers(cleared.deps)
+  handlers[SOCKET_EVENTS.TOURNAMENT_UPDATED]({ tournament: null })
+  handlers[SOCKET_EVENTS.TOURNAMENT_UPDATED](undefined)
+  assert.deepEqual(cleared.calls.setActiveTournament, [[null], [null]])
+})
+
+test('tournament:match_ready deep-links to the game only when a gameId is present', () => {
+  const withId = makeDeps()
+  createSocketSessionHandlers(withId.deps)[
+    SOCKET_EVENTS.TOURNAMENT_MATCH_READY
+  ]({
+    tournamentId: 9,
+    matchId: 3,
+    gameId: 'g7',
+    roomId: 12,
+  })
+  assert.deepEqual(withId.calls.dispatchActiveGame, [['g7']])
+
+  const withoutId = makeDeps()
+  createSocketSessionHandlers(withoutId.deps)[
+    SOCKET_EVENTS.TOURNAMENT_MATCH_READY
+  ]({})
+  assert.equal(withoutId.calls.dispatchActiveGame, undefined)
 })
 
 test('room:closed coerces a numeric roomId and falls back to true', () => {
@@ -258,12 +318,25 @@ test('session-data events are dropped once the session has ended (#391)', () => 
   handlers[SOCKET_EVENTS.ROOMS_UPDATE]([{ id: 1 }])
   handlers[SOCKET_EVENTS.CHAT_MESSAGE]({ text: 'late' })
   handlers[SOCKET_EVENTS.CHAT_PRIVATE_MESSAGE]({ text: 'late psst' })
+  handlers[SOCKET_EVENTS.CHAT_CONVERSATION_READ]({
+    conversationId: 7,
+    readAt: '2026-07-09T12:00:00.000Z',
+  })
+  handlers[SOCKET_EVENTS.CHAT_TYPING]({ conversationId: 7 })
+  handlers[SOCKET_EVENTS.CHAT_STOP_TYPING]({ conversationId: 7 })
+  handlers[SOCKET_EVENTS.TOURNAMENT_UPDATED]({ tournament: { id: 9 } })
+  handlers[SOCKET_EVENTS.TOURNAMENT_MATCH_READY]({ gameId: 'g7' })
 
   assert.equal(calls.setLobbyCount, undefined)
   assert.equal(calls.setGameState, undefined)
   assert.equal(calls.setRooms, undefined)
   assert.equal(calls.receiveRoomMessage, undefined)
   assert.equal(calls.receivePrivateMessage, undefined)
+  assert.equal(calls.markConversationReadByFriend, undefined)
+  assert.equal(calls.receiveTyping, undefined)
+  assert.equal(calls.receiveStopTyping, undefined)
+  assert.equal(calls.setActiveTournament, undefined)
+  assert.equal(calls.dispatchActiveGame, undefined)
 
   // Transport-state events stay live so isConnected remains accurate.
   handlers[SOCKET_EVENTS.DISCONNECT]()

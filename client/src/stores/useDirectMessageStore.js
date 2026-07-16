@@ -1,9 +1,17 @@
+import { SOCKET_EVENTS } from '../services/socketEvents.js'
 import { getStoredToken } from '../services/tokenStorage.js'
 import { createSessionStore } from './createSessionStore.js'
 import { isActiveToken } from './sessionGuard.js'
 import useNotificationStore from './useNotificationStore.js'
 
 const MAX_MESSAGES_PER_CONVERSATION = 100
+const MAX_TYPING_CONVERSATIONS = 50
+const PRIVATE_ROOM_PREFIX = 'user:'
+const TYPING_THROTTLE_MS = 2000
+export const TYPING_STALE_TIMEOUT_MS = 5000
+
+const outboundTypingSentAtByRecipient = new Map()
+const inboundTypingTimeoutsByConversation = new Map()
 
 const getDefaultState = () => ({
   activeConversationId: null,
@@ -12,6 +20,7 @@ const getDefaultState = () => ({
   isLoadingConversations: false,
   isLoadingMessages: false,
   messagesByConversation: {},
+  typingByConversation: {},
   unreadCount: 0,
 })
 
@@ -23,7 +32,125 @@ const requireToken = () => {
   return token
 }
 
-const getMessagesService = () => import('@/services/messages')
+const defaultMessagesServiceLoader = () => import('@/services/messages')
+let messagesServiceLoader = defaultMessagesServiceLoader
+
+export const setMessagesServiceLoaderForTests = (loader) => {
+  messagesServiceLoader = loader
+}
+
+export const resetMessagesServiceLoaderForTests = () => {
+  messagesServiceLoader = defaultMessagesServiceLoader
+}
+
+const getMessagesService = () => messagesServiceLoader()
+const getFriendsService = () => import('@/services/friends')
+const getSocketService = () => import('../services/socket.js')
+
+const normalizeConversationId = (value) => {
+  const conversationId = Number(value)
+  return Number.isInteger(conversationId) && conversationId > 0
+    ? conversationId
+    : null
+}
+
+const normalizePrivateRecipient = (recipient) => {
+  const value = typeof recipient === 'string' ? recipient.trim() : ''
+  if (!value.startsWith(PRIVATE_ROOM_PREFIX)) return ''
+
+  const userId = Number(value.slice(PRIVATE_ROOM_PREFIX.length))
+  if (!Number.isInteger(userId) || userId < 1) return ''
+
+  return `${PRIVATE_ROOM_PREFIX}${userId}`
+}
+
+const clearInboundTypingTimeout = (conversationId) => {
+  const key = String(conversationId)
+  if (!inboundTypingTimeoutsByConversation.has(key)) return
+
+  const timeoutId = inboundTypingTimeoutsByConversation.get(key)
+  clearTimeout(timeoutId)
+  inboundTypingTimeoutsByConversation.delete(key)
+}
+
+const clearAllTypingState = () => {
+  inboundTypingTimeoutsByConversation.forEach((timeoutId) => {
+    clearTimeout(timeoutId)
+  })
+  inboundTypingTimeoutsByConversation.clear()
+  outboundTypingSentAtByRecipient.clear()
+}
+
+const deleteTypingEntry = (typingByConversation, conversationId) => {
+  const key = String(conversationId)
+  if (!typingByConversation[key]) return typingByConversation
+
+  const nextTypingByConversation = { ...typingByConversation }
+  delete nextTypingByConversation[key]
+  return nextTypingByConversation
+}
+
+const limitTypingEntries = (typingByConversation) => {
+  const entries = Object.entries(typingByConversation)
+  if (entries.length <= MAX_TYPING_CONVERSATIONS) {
+    return typingByConversation
+  }
+
+  const nextTypingByConversation = { ...typingByConversation }
+  entries
+    .sort(
+      ([, first], [, second]) =>
+        (first.receivedAt || 0) - (second.receivedAt || 0),
+    )
+    .slice(0, entries.length - MAX_TYPING_CONVERSATIONS)
+    .forEach(([conversationId]) => {
+      clearInboundTypingTimeout(conversationId)
+      delete nextTypingByConversation[conversationId]
+    })
+
+  return nextTypingByConversation
+}
+
+const canSendTyping = (recipient) => {
+  const now = Date.now()
+  const lastSentAt = outboundTypingSentAtByRecipient.get(recipient)
+
+  if (lastSentAt != null && now - lastSentAt < TYPING_THROTTLE_MS) {
+    return false
+  }
+
+  outboundTypingSentAtByRecipient.set(recipient, now)
+
+  if (outboundTypingSentAtByRecipient.size > MAX_TYPING_CONVERSATIONS) {
+    const [oldestRecipient] = outboundTypingSentAtByRecipient.keys()
+    outboundTypingSentAtByRecipient.delete(oldestRecipient)
+  }
+
+  return true
+}
+
+const emitTypingEvent = async (event, recipient) => {
+  const normalizedRecipient = normalizePrivateRecipient(recipient)
+  if (!normalizedRecipient || !getActiveToken()) return false
+
+  try {
+    const { socket } = await getSocketService()
+    if (!socket.connected) return false
+
+    socket.emit(event, { recipient: normalizedRecipient })
+    return true
+  } catch {
+    return false
+  }
+}
+
+const setConversationBlockState = (conversations, friendId, blockState) => {
+  return conversations.map((conversation) =>
+    conversation.friend?.id === friendId
+      ? { ...conversation, blockState }
+      : conversation,
+  )
+}
 
 const sortConversations = (conversations) => {
   return [...conversations].sort((first, second) => {
@@ -79,6 +206,35 @@ const getConversationUnreadTotal = (conversations) => {
     (total, conversation) => total + (conversation.unreadCount || 0),
     0,
   )
+}
+
+const getTimestamp = (value) => {
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : null
+}
+
+const shouldReplaceReadAt = (currentReadAt, nextReadAt) => {
+  const nextTimestamp = getTimestamp(nextReadAt)
+  if (nextTimestamp === null) return false
+
+  const currentTimestamp = getTimestamp(currentReadAt)
+  return currentTimestamp === null || nextTimestamp > currentTimestamp
+}
+
+const advanceOwnReadAt = (conversations, conversationId, readAt) => {
+  return conversations.map((conversation) => {
+    if (String(conversation.id) !== String(conversationId)) {
+      return conversation
+    }
+    if (!shouldReplaceReadAt(conversation.lastReadAt, readAt)) {
+      return conversation
+    }
+
+    return {
+      ...conversation,
+      lastReadAt: readAt,
+    }
+  })
 }
 
 // Session store (#391): holds the signed-in user's message content, so it is
@@ -248,15 +404,98 @@ const useDirectMessageStore = createSessionStore((set) => ({
     }
   },
 
+  sendTyping: async (recipient) => {
+    const normalizedRecipient = normalizePrivateRecipient(recipient)
+    if (!normalizedRecipient || !canSendTyping(normalizedRecipient)) {
+      return false
+    }
+
+    const emitted = await emitTypingEvent(
+      SOCKET_EVENTS.CHAT_TYPING,
+      normalizedRecipient,
+    )
+
+    if (!emitted) {
+      outboundTypingSentAtByRecipient.delete(normalizedRecipient)
+    }
+
+    return emitted
+  },
+
+  sendStopTyping: async (recipient) => {
+    const normalizedRecipient = normalizePrivateRecipient(recipient)
+    if (!normalizedRecipient) return false
+
+    outboundTypingSentAtByRecipient.delete(normalizedRecipient)
+    return emitTypingEvent(SOCKET_EVENTS.CHAT_STOP_TYPING, normalizedRecipient)
+  },
+
+  // Block/unblock reuse the friendship record on the server; here they only
+  // flip the affected conversation's blockState so the thread swaps between the
+  // composer and the blocked banner. The friend id is stable, so the update
+  // survives a conversation reorder.
+  blockUser: async (friendId) => {
+    const notifications = useNotificationStore.getState()
+
+    let token = null
+    try {
+      token = requireToken()
+      const { blockUser } = await getFriendsService()
+      const result = await blockUser(friendId, token)
+      if (!isActiveToken(token)) return null
+      set((state) => ({
+        conversations: setConversationBlockState(
+          state.conversations,
+          friendId,
+          result.blockState,
+        ),
+      }))
+      return result
+    } catch (error) {
+      if (token && !isActiveToken(token)) return null
+      notifications.push(error.message, 'error')
+      return null
+    }
+  },
+
+  unblockUser: async (friendId) => {
+    const notifications = useNotificationStore.getState()
+
+    let token = null
+    try {
+      token = requireToken()
+      const { unblockUser } = await getFriendsService()
+      const result = await unblockUser(friendId, token)
+      if (!isActiveToken(token)) return null
+      set((state) => ({
+        conversations: setConversationBlockState(
+          state.conversations,
+          friendId,
+          result.blockState,
+        ),
+      }))
+      return result
+    } catch (error) {
+      if (token && !isActiveToken(token)) return null
+      notifications.push(error.message, 'error')
+      return null
+    }
+  },
+
   receiveMessage: (message, currentUserId) => {
     if (!message?.conversationId || !message?.id) return
     // Socket handler: a late event after teardown must not write into a store
     // that was just cleared for the next user (#391).
     if (!getActiveToken()) return
 
+    clearInboundTypingTimeout(message.conversationId)
+
+    const isIncoming = String(message.senderId) !== String(currentUserId)
+    const isActive =
+      useDirectMessageStore.getState().activeConversationId ===
+      message.conversationId
+
     set((state) => {
-      const isIncoming = String(message.senderId) !== String(currentUserId)
-      const isActive = state.activeConversationId === message.conversationId
       const existingConversation = state.conversations.find(
         (conversation) => conversation.id === message.conversationId,
       )
@@ -277,12 +516,122 @@ const useDirectMessageStore = createSessionStore((set) => ({
           state.messagesByConversation,
           message,
         ),
+        typingByConversation: deleteTypingEntry(
+          state.typingByConversation,
+          message.conversationId,
+        ),
         unreadCount: getConversationUnreadTotal(conversations),
       }
     })
+
+    // A message that lands while its thread is on screen is read the moment
+    // it renders, so push the cursor to the server; that is what flips the
+    // sender's receipt live instead of waiting for the next thread open.
+    if (isIncoming && isActive) {
+      useDirectMessageStore
+        .getState()
+        .markConversationRead(message.conversationId, message.createdAt)
+    }
   },
 
-  reset: () => set(getDefaultState()),
+  markConversationRead: async (conversationId, readAt) => {
+    const token = getActiveToken()
+    if (!token || !conversationId) return
+
+    // Advance the local cursor first so the incoming bubble flips at once.
+    set((state) => ({
+      conversations: advanceOwnReadAt(
+        state.conversations,
+        conversationId,
+        readAt,
+      ),
+    }))
+
+    try {
+      const { markConversationRead } = await getMessagesService()
+      const result = await markConversationRead(conversationId, token)
+      if (!isActiveToken(token)) return
+      set((state) => ({
+        conversations: advanceOwnReadAt(
+          state.conversations,
+          conversationId,
+          result.readAt,
+        ),
+      }))
+    } catch {
+      // The cursor resyncs from the conversation DTO on the next thread load.
+    }
+  },
+
+  markConversationReadByFriend: ({ conversationId, readAt } = {}) => {
+    if (!conversationId || !readAt) return
+    if (!getActiveToken()) return
+
+    set((state) => ({
+      conversations: state.conversations.map((conversation) => {
+        if (String(conversation.id) !== String(conversationId)) {
+          return conversation
+        }
+        if (!shouldReplaceReadAt(conversation.friendLastReadAt, readAt)) {
+          return conversation
+        }
+
+        return {
+          ...conversation,
+          friendLastReadAt: readAt,
+        }
+      }),
+    }))
+  },
+
+  receiveTyping: (payload) => {
+    if (!getActiveToken()) return
+
+    const conversationId = normalizeConversationId(payload?.conversationId)
+    if (!conversationId) return
+
+    clearInboundTypingTimeout(conversationId)
+
+    const timeoutId = setTimeout(() => {
+      useDirectMessageStore.getState().clearTyping(conversationId)
+    }, TYPING_STALE_TIMEOUT_MS)
+    inboundTypingTimeoutsByConversation.set(String(conversationId), timeoutId)
+
+    set((state) => ({
+      typingByConversation: limitTypingEntries({
+        ...state.typingByConversation,
+        [conversationId]: { receivedAt: Date.now() },
+      }),
+    }))
+  },
+
+  receiveStopTyping: (payload) => {
+    if (!getActiveToken()) return
+
+    const conversationId = normalizeConversationId(payload?.conversationId)
+    if (!conversationId) return
+
+    useDirectMessageStore.getState().clearTyping(conversationId)
+  },
+
+  clearTyping: (conversationId) => {
+    const normalizedConversationId = normalizeConversationId(conversationId)
+    if (!normalizedConversationId) return
+
+    clearInboundTypingTimeout(normalizedConversationId)
+
+    set((state) => ({
+      typingByConversation: deleteTypingEntry(
+        state.typingByConversation,
+        normalizedConversationId,
+      ),
+    }))
+  },
+
+  reset: () => {
+    clearAllTypingState()
+    set(getDefaultState())
+  },
 }))
 
 export default useDirectMessageStore

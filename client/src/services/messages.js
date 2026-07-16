@@ -21,6 +21,16 @@ export const markAllConversationsRead = (token) => {
   })
 }
 
+export const markConversationRead = (conversationId, token) => {
+  return request(
+    `/messages/conversations/${encodeSegment(conversationId)}/read`,
+    {
+      method: 'POST',
+      token,
+    },
+  )
+}
+
 export const getConversationMessages = (conversationId, token) => {
   return request(
     `/messages/conversations/${encodeSegment(conversationId)}/messages`,

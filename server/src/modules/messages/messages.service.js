@@ -4,6 +4,10 @@ const NotFoundException = require('#exceptions/not-found.exception')
 const friendsRepository = require('#modules/friends/friends.repository')
 const messagesRepository = require('#modules/messages/messages.repository')
 const notificationsService = require('#modules/notifications/notifications.service')
+const {
+  BLOCK_STATE,
+  getBlockState,
+} = require('#modules/friends/friendBlockState')
 
 const DIRECT_MESSAGE_MAX_LENGTH = 500
 const MESSAGE_HISTORY_LIMIT = 100
@@ -89,16 +93,24 @@ const isConversationParticipant = (conversation, userId) => {
   return conversation.userOneId === userId || conversation.userTwoId === userId
 }
 
-const toConversationDto = (conversation, viewerId, unreadCount = 0) => {
+const toConversationDto = (
+  conversation,
+  viewerId,
+  unreadCount = 0,
+  blockState = BLOCK_STATE.NONE,
+) => {
   const lastMessage = conversation.messages?.[0] || null
   const friend = getFriendFromConversation(conversation, viewerId)
 
   return {
     id: conversation.id,
     friend: toMessageUser(friend),
+    friendLastReadAt: getLastReadAt(conversation, friend.id),
+    lastReadAt: getLastReadAt(conversation, viewerId),
     lastMessage: lastMessage ? toMessageDto(lastMessage) : null,
     unreadCount,
     isUnread: unreadCount > 0,
+    blockState,
     updatedAt: conversation.updatedAt,
     createdAt: conversation.createdAt,
   }
@@ -130,6 +142,14 @@ const assertAcceptedFriends = async (
     secondUserId,
   )
 
+  if (relationship?.status === 'BLOCKED') {
+    throw new ForbiddenException(
+      relationship.blockedById === firstUserId
+        ? 'Unblock this user to send messages'
+        : 'You cannot send messages to this user',
+    )
+  }
+
   if (relationship?.status !== 'ACCEPTED') {
     throw new ForbiddenException(
       'Direct messages are only available between friends',
@@ -145,19 +165,71 @@ const getConversationOrThrow = async (conversationId, repository) => {
   return conversation
 }
 
+const notifyConversationRead = async (
+  conversation,
+  readerId,
+  readAt,
+  onConversationRead,
+) => {
+  if (!onConversationRead) return
+
+  const recipientId = getOtherUserIdFromConversation(conversation, readerId)
+  if (!recipientId) return
+
+  await onConversationRead({
+    conversationId: conversation.id,
+    readAt,
+    recipientId,
+  })
+}
+
+// The other user's id in each of the viewer's relationships, so a conversation
+// can be matched to its friendship (and thus its block state) without a lookup
+// per conversation.
+const buildRelationshipByFriendId = (relationships, viewerId) => {
+  const relationshipByFriendId = new Map()
+
+  for (const relationship of relationships) {
+    const friendId =
+      relationship.requesterId === viewerId
+        ? relationship.addresseeId
+        : relationship.requesterId
+    relationshipByFriendId.set(friendId, relationship)
+  }
+
+  return relationshipByFriendId
+}
+
 const listConversations = async (
   user,
-  { repository = messagesRepository } = {},
+  {
+    friendshipRepository = friendsRepository,
+    repository = messagesRepository,
+  } = {},
 ) => {
   const conversations = await repository.listConversationsForUser(user.id)
+  const relationships = await friendshipRepository.listRelationshipsForUser(
+    user.id,
+  )
+  const relationshipByFriendId = buildRelationshipByFriendId(
+    relationships,
+    user.id,
+  )
   const summaries = await Promise.all(
-    conversations.map(async (conversation) =>
-      toConversationDto(
+    conversations.map(async (conversation) => {
+      const friendId = getOtherUserIdFromConversation(conversation, user.id)
+      const blockState = getBlockState(
+        relationshipByFriendId.get(friendId),
+        user.id,
+      )
+
+      return toConversationDto(
         conversation,
         user.id,
         await getConversationUnreadCount(conversation, user.id, repository),
-      ),
-    ),
+        blockState,
+      )
+    }),
   )
 
   return {
@@ -169,17 +241,54 @@ const listConversations = async (
   }
 }
 
+const markConversationRead = async (
+  user,
+  params,
+  { onConversationRead, repository = messagesRepository } = {},
+) => {
+  const conversationId = parsePositiveInteger(
+    params.conversationId,
+    'conversationId',
+  )
+  const conversation = await getConversationOrThrow(conversationId, repository)
+
+  if (!isConversationParticipant(conversation, user.id)) {
+    throw new NotFoundException('Conversation not found')
+  }
+
+  const readAt = new Date()
+  await repository.markConversationReadForUser(conversation, user.id, readAt)
+  await notifyConversationRead(
+    conversation,
+    user.id,
+    readAt,
+    onConversationRead,
+  )
+
+  return { readAt }
+}
+
 const markAllConversationsRead = async (
   user,
-  { repository = messagesRepository } = {},
+  { onConversationRead, repository = messagesRepository } = {},
 ) => {
   const conversations = await repository.listConversationsForUser(user.id)
   const readAt = new Date()
 
   await Promise.all(
-    conversations.map((conversation) =>
-      repository.markConversationReadForUser(conversation, user.id, readAt),
-    ),
+    conversations.map(async (conversation) => {
+      await repository.markConversationReadForUser(
+        conversation,
+        user.id,
+        readAt,
+      )
+      await notifyConversationRead(
+        conversation,
+        user.id,
+        readAt,
+        onConversationRead,
+      )
+    }),
   )
 
   return { unreadCount: 0 }
@@ -226,7 +335,11 @@ const getOrCreateConversation = async (
 const listMessages = async (
   user,
   params,
-  { repository = messagesRepository } = {},
+  {
+    friendshipRepository = friendsRepository,
+    onConversationRead,
+    repository = messagesRepository,
+  } = {},
 ) => {
   const conversationId = parsePositiveInteger(
     params.conversationId,
@@ -238,7 +351,14 @@ const listMessages = async (
     throw new NotFoundException('Conversation not found')
   }
 
-  await repository.markConversationReadForUser(conversation, user.id)
+  const readAt = new Date()
+  await repository.markConversationReadForUser(conversation, user.id, readAt)
+  await notifyConversationRead(
+    conversation,
+    user.id,
+    readAt,
+    onConversationRead,
+  )
   const messages = await repository.listMessagesForConversation(
     conversationId,
     MESSAGE_HISTORY_LIMIT,
@@ -246,8 +366,22 @@ const listMessages = async (
   const refreshedConversation =
     (await repository.findConversationById(conversationId)) || conversation
 
+  // Reading stays open after a block (like after an unfriend), but the thread
+  // needs the block state so it can swap the composer for the blocked banner.
+  const friendId = getOtherUserIdFromConversation(conversation, user.id)
+  const relationship = await friendshipRepository.findRelationshipBetweenUsers(
+    user.id,
+    friendId,
+  )
+  const blockState = getBlockState(relationship, user.id)
+
   return {
-    conversation: toConversationDto(refreshedConversation, user.id, 0),
+    conversation: toConversationDto(
+      refreshedConversation,
+      user.id,
+      0,
+      blockState,
+    ),
     messages: messages.reverse().map(toMessageDto),
   }
 }
@@ -352,6 +486,31 @@ const sendMessageToRecipient = async (
   }
 }
 
+const getExistingConversationForRecipient = async (
+  user,
+  { recipientId },
+  deps = {},
+) => {
+  const targetUserId = parsePositiveInteger(recipientId, 'recipientId')
+  const repository = deps.repository || messagesRepository
+
+  await assertAcceptedFriends(user.id, targetUserId, {
+    repository: deps.friendshipRepository || friendsRepository,
+  })
+
+  const conversation = await repository.findConversationByUsers(
+    user.id,
+    targetUserId,
+  )
+
+  if (!conversation) return null
+
+  return {
+    conversationId: conversation.id,
+    recipientId: targetUserId,
+  }
+}
+
 const createConversationFromAcceptedRequest = async (
   relationship,
   { repository = messagesRepository, db } = {},
@@ -406,10 +565,12 @@ module.exports = {
   DIRECT_MESSAGE_MAX_LENGTH,
   assertAcceptedFriends,
   createConversationFromAcceptedRequest,
+  getExistingConversationForRecipient,
   getOrCreateConversation,
   listConversations,
   listMessages,
   markAllConversationsRead,
+  markConversationRead,
   sendMessage,
   sendMessageToRecipient,
   toConversationDto,

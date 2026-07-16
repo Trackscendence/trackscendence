@@ -44,14 +44,21 @@ export const SOCKET_EVENTS = {
   ACTIVE_GAME: 'active_game',
 
   // Chat (CHAT_MESSAGE and CHAT_PRIVATE_MESSAGE flow both directions)
+  CHAT_CONVERSATION_READ: 'chat:conversation_read',
   CHAT_MESSAGE: 'chat:message',
   CHAT_PRIVATE_MESSAGE: 'chat:private_message',
+  CHAT_TYPING: 'chat:typing',
+  CHAT_STOP_TYPING: 'chat:stop_typing',
   CHAT_ROOM_JOIN: 'chat:room_join',
   CHAT_ROOMS: 'chat:rooms',
   CHAT_ERROR: 'chat:error',
 
   // Social notifications
   SOCIAL_NOTIFICATIONS_CHANGED: 'social:notifications_changed',
+
+  // Tournaments (live bracket pushed to each entered player)
+  TOURNAMENT_UPDATED: 'tournament:updated',
+  TOURNAMENT_MATCH_READY: 'tournament:match_ready',
 }
 
 export default SOCKET_EVENTS

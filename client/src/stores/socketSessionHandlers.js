@@ -16,6 +16,7 @@ export const createSocketSessionHandlers = ({
   authStore,
   notificationStore,
   socialNotificationStore,
+  tournamentStore,
   dispatchActiveGame,
   isDevGame,
   // Session guard (#391): a late socket event after teardown must not write
@@ -134,6 +135,15 @@ export const createSocketSessionHandlers = ({
       directMessageStore?.getState().receiveMessage(data, currentUserId())
       socialNotificationStore?.getState().loadNotifications()
     }),
+    [SOCKET_EVENTS.CHAT_CONVERSATION_READ]: forActiveSession((data) => {
+      directMessageStore?.getState().markConversationReadByFriend(data)
+    }),
+    [SOCKET_EVENTS.CHAT_TYPING]: forActiveSession((data) =>
+      directMessageStore?.getState().receiveTyping(data),
+    ),
+    [SOCKET_EVENTS.CHAT_STOP_TYPING]: forActiveSession((data) =>
+      directMessageStore?.getState().receiveStopTyping(data),
+    ),
     [SOCKET_EVENTS.SOCIAL_NOTIFICATIONS_CHANGED]: forActiveSession(() =>
       socialNotificationStore?.getState().loadNotifications(),
     ),
@@ -146,6 +156,17 @@ export const createSocketSessionHandlers = ({
       notificationStore
         .getState()
         .push(data?.message || 'Unable to send chat message', 'error')
+    }),
+    // The server pushes the fresh bracket to every entered player; a null
+    // tournament (sent on leave/cancel) clears this user's active tournament.
+    [SOCKET_EVENTS.TOURNAMENT_UPDATED]: forActiveSession((data) =>
+      tournamentStore?.getState().setActiveTournament(data?.tournament ?? null),
+    ),
+    // The player's bracket game just started somewhere on the server; reuse
+    // the active-game deep link so the app routes them straight to it.
+    [SOCKET_EVENTS.TOURNAMENT_MATCH_READY]: forActiveSession((data) => {
+      if (!data?.gameId) return
+      dispatchActiveGame(data.gameId)
     }),
   }
 }

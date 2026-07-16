@@ -114,8 +114,11 @@ const handlePlayerDisconnect = async (userId) => {
 
   // Losing the stats row is logged and recoverable; failing to return the
   // game would leave the remaining players without their game_over notice.
+  // The persisted row's id rides back on the returned game so the tournament
+  // hook can stamp the Game FK on a forfeited match.
   try {
-    await gameService.persistGameResult(game)
+    const persistedGame = await gameService.persistGameResult(game)
+    game.persistedGameId = persistedGame.id
   } catch (error) {
     logger.error(`Failed to persist abandoned game ${game.id}`, error)
   }

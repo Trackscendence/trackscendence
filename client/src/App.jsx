@@ -38,6 +38,7 @@ const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
 const Signup = lazy(() => import('@/pages/Signup'))
 const SignupSuccess = lazy(() => import('@/pages/SignupSuccess'))
 const TermsOfService = lazy(() => import('@/pages/TermsOfService'))
+const Tournament = lazy(() => import('@/pages/Tournament'))
 const User = lazy(() => import('@/pages/User'))
 const WaitingRoom = lazy(() => import('@/pages/WaitingRoom'))
 
@@ -252,6 +253,8 @@ const App = () => {
             <Route path="/" element={<WaitingRoom />} />
             <Route path="/lobby" element={<Lobby />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/tournament" element={<Tournament />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/game" element={<Game />} />
             <Route path="/results" element={<Outcome />} />
             <Route element={<ProfileLayout />}>
@@ -261,7 +264,6 @@ const App = () => {
                 element={<Navigate to="/profile" replace />}
               />
               <Route path="/users/:username" element={<User />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
 

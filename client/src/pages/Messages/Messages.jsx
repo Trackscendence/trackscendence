@@ -30,6 +30,9 @@ const Messages = () => {
   const messagesByConversation = useDirectMessageStore(
     (state) => state.messagesByConversation,
   )
+  const typingByConversation = useDirectMessageStore(
+    (state) => state.typingByConversation,
+  )
   const setActiveConversation = useDirectMessageStore(
     (state) => state.setActiveConversation,
   )
@@ -40,6 +43,10 @@ const Messages = () => {
     (state) => state.loadConversations,
   )
   const loadMessages = useDirectMessageStore((state) => state.loadMessages)
+  const blockUser = useDirectMessageStore((state) => state.blockUser)
+  const sendStopTyping = useDirectMessageStore((state) => state.sendStopTyping)
+  const sendTyping = useDirectMessageStore((state) => state.sendTyping)
+  const unblockUser = useDirectMessageStore((state) => state.unblockUser)
   const pushNotification = useNotificationStore((state) => state.push)
 
   const selectedConversation = useMemo(
@@ -113,6 +120,12 @@ const Messages = () => {
 
   const sendMessage = (message) => {
     if (!selectedConversation?.friend?.id) return false
+    if (
+      selectedConversation.blockState &&
+      selectedConversation.blockState !== 'none'
+    ) {
+      return false
+    }
 
     const sent = useSocketStore
       .getState()
@@ -123,6 +136,26 @@ const Messages = () => {
     }
 
     return sent
+  }
+
+  const sendSelectedConversationTyping = () => {
+    if (!selectedConversation?.friend?.id) return false
+    return sendTyping(`user:${selectedConversation.friend.id}`)
+  }
+
+  const sendSelectedConversationStopTyping = () => {
+    if (!selectedConversation?.friend?.id) return false
+    return sendStopTyping(`user:${selectedConversation.friend.id}`)
+  }
+
+  const blockSelectedFriend = () => {
+    if (!selectedConversation?.friend?.id) return undefined
+    return blockUser(selectedConversation.friend.id)
+  }
+
+  const unblockSelectedFriend = () => {
+    if (!selectedConversation?.friend?.id) return undefined
+    return unblockUser(selectedConversation.friend.id)
   }
 
   // A compose send creates (or finds) the conversation first, delivers over
@@ -171,13 +204,21 @@ const Messages = () => {
               conversation={selectedConversation}
               currentUserId={user?.id}
               isConnected={isConnected}
+              isFriendTyping={Boolean(
+                selectedConversation &&
+                typingByConversation[selectedConversation.id],
+              )}
               isLoading={isLoadingMessages}
               messages={
                 selectedConversation
                   ? messagesByConversation[selectedConversation.id] || []
                   : []
               }
+              onBlock={blockSelectedFriend}
               onSend={sendMessage}
+              onStopTyping={sendSelectedConversationStopTyping}
+              onTyping={sendSelectedConversationTyping}
+              onUnblock={unblockSelectedFriend}
             />
           )}
         </div>

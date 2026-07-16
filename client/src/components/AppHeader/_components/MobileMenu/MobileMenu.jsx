@@ -1,15 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-import { LogOut, Menu, Plus, Settings, X } from 'lucide-react'
+import {
+  Gamepad2,
+  LogOut,
+  Menu,
+  Plus,
+  Podium,
+  Settings,
+  Trophy,
+  X,
+} from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
 import useAuthStore from '@/stores/useAuthStore'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 
-// The phone-width counterpart of the AppHeader action cluster. Everything the
-// desktop row spreads out (+ Room, profile chip, gear menu) collapses behind
-// one hamburger so the bar stays a single line, and every entry keeps a text
-// label beside its icon. Bell and mail stay outside in the bar: they carry
-// unread badges and deserve one-tap access.
+// The phone-width counterpart of the AppHeader action cluster (#443/#445).
+// Everything the desktop row spreads out (shortcuts, + Room, profile chip,
+// gear menu) collapses behind one hamburger so the bar stays a single line,
+// and every entry keeps a text label beside its icon. Bell and mail stay
+// outside in the bar: they carry unread badges and deserve one-tap access.
 const MobileMenu = ({ onCreateRoom }) => {
   const navigate = useNavigate()
   const menuRef = useRef(null)
@@ -117,6 +126,33 @@ const MobileMenu = ({ onCreateRoom }) => {
               New room
             </button>
           ) : null}
+          <Link
+            role="menuitem"
+            to="/lobby"
+            className={`${itemClass} text-[#3d1200]`}
+            onClick={() => setIsOpen(false)}
+          >
+            <Gamepad2 aria-hidden="true" className="h-5 w-5" strokeWidth={2} />
+            Lobby
+          </Link>
+          <Link
+            role="menuitem"
+            to="/tournament"
+            className={`${itemClass} text-[#3d1200]`}
+            onClick={() => setIsOpen(false)}
+          >
+            <Trophy aria-hidden="true" className="h-5 w-5" strokeWidth={2} />
+            Tournaments
+          </Link>
+          <Link
+            role="menuitem"
+            to="/leaderboard"
+            className={`${itemClass} text-[#3d1200]`}
+            onClick={() => setIsOpen(false)}
+          >
+            <Podium aria-hidden="true" className="h-5 w-5" strokeWidth={2} />
+            Leaderboard
+          </Link>
           <Link
             role="menuitem"
             to="/settings"

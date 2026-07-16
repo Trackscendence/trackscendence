@@ -24,8 +24,8 @@ const TurnSplash = ({ isMyTurn, expiresAt }) => {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center">
-      <div className="rounded-2xl border border-[#FFB04F]/40 bg-black/80 px-14 py-8 text-center shadow-xl">
-        <p className="text-5xl font-extrabold tracking-wide text-white">
+      <div className="mx-4 rounded-2xl border border-[#FFB04F]/40 bg-black/80 px-8 py-6 text-center shadow-xl sm:px-14 sm:py-8">
+        <p className="text-3xl font-extrabold tracking-wide text-white sm:text-5xl">
           YOUR TURN!
         </p>
         <p className="mt-2 text-sm font-medium text-white/60">

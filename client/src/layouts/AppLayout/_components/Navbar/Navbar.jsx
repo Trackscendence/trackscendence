@@ -16,64 +16,70 @@ const Navbar = () => {
 
   return (
     <header className="border-b border-[#d8dfd4] bg-white">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4">
+      {/* One row on desktop (brand left, links right), a stacked column on
+          phones where each action stays a full-width tap target. */}
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-4 lg:px-8">
         <Link
           to="/"
           className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase"
         >
           Trackscendence
         </Link>
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          {user && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+          {user ? (
             <Link
               to="/profile"
-              className="text-sm font-semibold text-[#617267] hover:text-[#1f2d28]"
+              className="flex w-full min-w-0 items-center gap-2 text-sm font-semibold text-[#617267] hover:text-[#1f2d28] sm:w-auto sm:gap-3"
             >
-              {user.displayName || user.username}
-            </Link>
-          )}
-          {isAdmin(user) ? (
-            <Link
-              to="/admin"
-              className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
-            >
-              Admin
+              <span className="truncate">
+                {user.displayName || user.username}
+              </span>
             </Link>
           ) : null}
-          <Link
-            to="/game"
-            className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
-          >
-            Game
-          </Link>
-          <Link
-            to="/settings"
-            className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
-          >
-            Settings
-          </Link>
-          {user?.isGuest ? (
+          <div className="flex flex-col gap-2 sm:contents">
+            {isAdmin(user) ? (
+              <Link
+                to="/admin"
+                className="w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-center text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61] sm:w-auto sm:py-1.5"
+              >
+                Admin
+              </Link>
+            ) : null}
+            <Link
+              to="/game"
+              className="w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-center text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61] sm:w-auto sm:py-1.5"
+            >
+              Game
+            </Link>
             <Link
               to="/settings"
-              className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+              className="w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-center text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61] sm:w-auto sm:py-1.5"
             >
-              Save progress
+              Settings
             </Link>
-          ) : (
-            <Link
-              to="/change-password"
-              className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
+            {user?.isGuest ? (
+              <Link
+                to="/settings"
+                className="w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-center text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61] sm:w-auto sm:py-1.5"
+              >
+                Save progress
+              </Link>
+            ) : (
+              <Link
+                to="/change-password"
+                className="w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-center text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61] sm:w-auto sm:py-1.5"
+              >
+                Change password
+              </Link>
+            )}
+            <button
+              className="w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-center text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61] sm:w-auto sm:py-1.5"
+              type="button"
+              onClick={handleLogout}
             >
-              Change password
-            </Link>
-          )}
-          <button
-            className="rounded-md border border-[#cbd5c5] px-3 py-1.5 text-sm font-semibold text-[#27352f] transition hover:border-[#2f7d61] hover:text-[#2f7d61]"
-            type="button"
-            onClick={handleLogout}
-          >
-            Log out
-          </button>
+              Log out
+            </button>
+          </div>
         </div>
       </div>
     </header>

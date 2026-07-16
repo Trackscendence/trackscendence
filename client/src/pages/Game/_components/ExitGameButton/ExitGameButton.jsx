@@ -22,7 +22,7 @@ const ExitGameButton = () => {
     <>
       <button
         aria-label="Exit game"
-        className="focus-visible:ring-offset-surface-warm absolute top-4 right-4 z-20 size-12 transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none"
+        className="focus-visible:ring-offset-surface-warm absolute top-3 right-3 z-20 size-10 transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none sm:top-4 sm:right-4 sm:size-12"
         onClick={() => setIsConfirmOpen(true)}
         type="button"
       >

@@ -9,7 +9,7 @@ const PLACEMENTS = {
 const Overlay = ({ children, onClick, placement = 'center' }) => {
   return (
     <div
-      className={`fixed inset-0 z-40 flex justify-center bg-black/40 p-5 ${
+      className={`fixed inset-0 z-40 flex justify-center bg-black/40 p-3 sm:p-5 ${
         PLACEMENTS[placement] ?? PLACEMENTS.center
       }`}
       onClick={onClick}

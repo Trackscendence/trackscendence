@@ -48,14 +48,14 @@ const AdminAccess = () => {
   }, [navigate, token])
 
   return (
-    <section className="mx-auto w-full max-w-4xl space-y-6">
-      <div className="rounded-lg border border-[#d8dfd4] bg-white p-6 shadow-sm">
+    <section className="mx-auto w-full max-w-4xl space-y-6 px-4 sm:px-0">
+      <div className="rounded-lg border border-[#d8dfd4] bg-white p-4 shadow-sm sm:p-6">
         <p className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase">
           Admin
         </p>
-        <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
+        <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Admin access</h1>
+            <h1 className="text-xl font-semibold sm:text-2xl">Admin access</h1>
             <p className="mt-2 max-w-2xl text-sm text-[#50635a]">
               This screen verifies the current lightweight role-based access
               control baseline. The backend must confirm admin access before any
@@ -73,7 +73,7 @@ const AdminAccess = () => {
 
       <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <section className="space-y-6">
-          <div className="rounded-lg border border-[#d8dfd4] bg-white p-6 shadow-sm">
+          <div className="rounded-lg border border-[#d8dfd4] bg-white p-4 shadow-sm sm:p-6">
             <h2 className="text-lg font-semibold">Current role</h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <div className="rounded-md border border-[#e1e6de] bg-[#fbfcfa] p-4">
@@ -87,7 +87,7 @@ const AdminAccess = () => {
             </div>
           </div>
 
-          <div className="rounded-lg border border-[#d8dfd4] bg-white p-6 shadow-sm">
+          <div className="rounded-lg border border-[#d8dfd4] bg-white p-4 shadow-sm sm:p-6">
             <h2 className="text-lg font-semibold">Permission model</h2>
             <p className="mt-2 text-sm text-[#50635a]">
               Trackscendence currently uses a lightweight RBAC model:
@@ -97,7 +97,7 @@ const AdminAccess = () => {
           </div>
         </section>
 
-        <section className="rounded-lg border border-[#d8dfd4] bg-white p-6 shadow-sm">
+        <section className="rounded-lg border border-[#d8dfd4] bg-white p-4 shadow-sm sm:p-6">
           <h2 className="text-lg font-semibold">Backend authorization check</h2>
 
           {isLoading ? (

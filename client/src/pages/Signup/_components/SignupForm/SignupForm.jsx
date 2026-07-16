@@ -115,7 +115,7 @@ const SignupForm = ({ onSuccess }) => {
           Terms of Service
         </button>
 
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-start gap-2 text-sm">
           <input
             type="checkbox"
             checked={termsAccepted}
@@ -134,7 +134,7 @@ const SignupForm = ({ onSuccess }) => {
           Privacy Policy
         </button>
 
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-start gap-2 text-sm">
           <input
             type="checkbox"
             checked={privacyAccepted}

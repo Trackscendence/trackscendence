@@ -12,8 +12,8 @@ const ComposeThread = ({ onSend }) => {
 
   return (
     <section className="flex min-h-0 flex-col bg-white">
-      <header className="border-b border-[#f0d9bd] px-5 py-4">
-        <h2 className="text-lg font-black text-[#3d1200]">
+      <header className="border-b border-[#f0d9bd] px-4 py-4 sm:px-5">
+        <h2 className="text-base font-black text-[#3d1200] sm:text-lg">
           Compose New Message
         </h2>
         <p className="text-xs font-semibold text-[#9a7050]">
@@ -21,7 +21,7 @@ const ComposeThread = ({ onSend }) => {
         </p>
       </header>
 
-      <div className="flex min-h-0 flex-1 items-center justify-center bg-[#fff7ed] px-6 text-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-[#fff7ed] px-4 py-8 text-center sm:px-6">
         <div>
           <p className="text-sm font-black text-[#3d1200]">
             {recipient

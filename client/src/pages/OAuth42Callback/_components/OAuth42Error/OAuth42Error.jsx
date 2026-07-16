@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 // Full-screen failure state for the 42 callback. It carries its own warm
 // surface because the callback route sits outside AuthLayout (no shared header).
 const OAuth42Error = ({ message }) => (
-  <div className="bg-surface-warm flex min-h-screen items-center justify-center px-5 py-10 text-[#081934]">
+  <div className="bg-surface-warm flex min-h-[100dvh] items-center justify-center px-4 py-8 text-[#081934] sm:px-5 sm:py-10">
     <div className="w-full max-w-[414px] text-center">
       <h1 className="mb-4 text-3xl font-semibold text-[#081934]">
         42 sign-in failed

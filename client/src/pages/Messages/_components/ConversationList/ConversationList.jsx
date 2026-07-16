@@ -5,7 +5,7 @@ import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import { formatMessageDate } from '@/utils/formatMessageTime'
 
 const EmptyState = ({ filter }) => (
-  <div className="px-6 py-10 text-center">
+  <div className="px-4 py-8 text-center sm:px-6 sm:py-10">
     <p className="text-sm font-black text-[#3d1200]">
       {filter === 'unread' ? 'No unread messages' : 'No conversations'}
     </p>
@@ -24,10 +24,12 @@ const ConversationList = ({
   onSelect,
 }) => {
   return (
-    <aside className="flex min-h-0 flex-col border-r border-[#f0d9bd] bg-[#fffaf3]">
-      <div className="border-b border-[#f0d9bd] px-5 py-5">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-black text-[#3d1200]">Messages</h1>
+    <aside className="flex min-h-0 flex-col border-r-0 border-b border-[#f0d9bd] bg-[#fffaf3] lg:border-r lg:border-b-0">
+      <div className="border-b border-[#f0d9bd] px-4 py-4 sm:px-5 sm:py-5">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-black text-[#3d1200] sm:text-2xl">
+            Messages
+          </h1>
           <NewMessage />
         </div>
         <div className="mt-4 grid grid-cols-2 rounded-md bg-[#fff0df] p-1">
@@ -50,7 +52,7 @@ const ConversationList = ({
 
       <div className="min-h-0 flex-1 overflow-y-auto py-2">
         {isLoading ? (
-          <p className="px-5 py-8 text-center text-sm font-semibold text-[#9a7050]">
+          <p className="px-4 py-8 text-center text-sm font-semibold text-[#9a7050] sm:px-5">
             Loading conversations
           </p>
         ) : null}

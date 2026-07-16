@@ -6,10 +6,10 @@ import LeaderboardSection from '@/components/LeaderboardSection'
 // LeaderboardSection, so the page only provides the shell around it.
 const Leaderboard = () => {
   return (
-    <div className="bg-surface-warm flex min-h-screen flex-col">
+    <div className="bg-surface-warm flex min-h-[100dvh] flex-col">
       <AppHeader />
-      <main className="flex flex-1 flex-col px-8 py-8">
-        <h1 className="text-[clamp(48px,6vw,80px)] leading-none font-black tracking-[-0.025em] text-[#E86D2F]">
+      <main className="flex flex-1 flex-col px-4 py-6 sm:px-8 sm:py-8">
+        <h1 className="text-[clamp(42px,10vw,80px)] leading-none font-black tracking-[-0.025em] text-[#E86D2F]">
           LEADERBOARD
         </h1>
         <div className="pt-6">

@@ -25,7 +25,7 @@ const ChatRoomAdmin = ({
 
   return (
     <div className="border-t border-[#e1e6de] bg-white px-4 py-3">
-      <form className="flex gap-2" onSubmit={handleInvite}>
+      <form className="flex flex-col gap-2 sm:flex-row" onSubmit={handleInvite}>
         <label className="sr-only" htmlFor="chat-room-invite-user">
           User ID
         </label>
@@ -38,7 +38,7 @@ const ChatRoomAdmin = ({
           value={targetUserId}
         />
         <button
-          className="rounded-md bg-[#2f7d61] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#276a52] disabled:cursor-not-allowed disabled:bg-[#9caf9f]"
+          className="w-full rounded-md bg-[#2f7d61] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#276a52] disabled:cursor-not-allowed disabled:bg-[#9caf9f] sm:w-auto"
           disabled={isSubmitting || !canInvite}
           type="submit"
         >

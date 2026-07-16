@@ -3,7 +3,7 @@
 // ink, blue check) so the auth flow feels like one continuous space. Pure
 // presenter — the parent owns the redirect timer.
 const SignInSuccess = ({ username }) => (
-  <div className="bg-surface-warm flex min-h-screen items-center justify-center px-5 py-10 text-[#081934]">
+  <div className="bg-surface-warm flex min-h-[100dvh] items-center justify-center px-4 py-8 text-[#081934] sm:px-5 sm:py-10">
     <div className="w-full max-w-[414px] text-center">
       <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-[#0196FF]">
         <svg

@@ -79,7 +79,7 @@ const AccountForm = ({
 
       <div className="flex justify-end">
         <button
-          className="rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-xl bg-[#E8893A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#cf7526] focus-visible:ring-2 focus-visible:ring-[#E8893A] focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           disabled={isSubmitting}
           type="submit"
         >

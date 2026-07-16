@@ -16,16 +16,16 @@ const Navbar = () => {
 
   return (
     <header className="border-b border-[#d8dfd4] bg-white">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-5 lg:px-8">
-        <div className="flex items-center justify-between gap-3">
-          <Link
-            to="/"
-            className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase"
-          >
-            Trackscendence
-          </Link>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      {/* One row on desktop (brand left, links right), a stacked column on
+          phones where each action stays a full-width tap target. */}
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-4 lg:px-8">
+        <Link
+          to="/"
+          className="text-sm font-semibold tracking-[0.08em] text-[#bd4f35] uppercase"
+        >
+          Trackscendence
+        </Link>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
           {user ? (
             <Link
               to="/profile"
@@ -36,7 +36,7 @@ const Navbar = () => {
               </span>
             </Link>
           ) : null}
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+          <div className="flex flex-col gap-2 sm:contents">
             {isAdmin(user) ? (
               <Link
                 to="/admin"

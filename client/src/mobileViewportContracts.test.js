@@ -14,8 +14,13 @@ test('mobile route shells keep their responsive contracts', () => {
   const contracts = [
     ['./layouts/AppLayout/AppLayout.jsx', ['min-h-[100dvh]', 'flex-col']],
     [
+      // Desktop actions hide on phones; MobileMenu replaces them there.
       './components/AppHeader/AppHeader.jsx',
-      ['flex-col', 'sm:flex-row', 'w-full'],
+      ['hidden', 'sm:flex', 'MobileMenu'],
+    ],
+    [
+      './components/AppHeader/_components/MobileMenu/MobileMenu.jsx',
+      ['sm:hidden'],
     ],
     [
       './layouts/AppLayout/_components/Navbar/Navbar.jsx',
@@ -23,8 +28,9 @@ test('mobile route shells keep their responsive contracts', () => {
     ],
     ['./layouts/AuthLayout/AuthLayout.jsx', ['min-h-[100dvh]', 'flex-col']],
     [
+      // Back/Lobby share the top row; the search wraps to its own line.
       './layouts/ProfileLayout/ProfileLayout.jsx',
-      ['min-h-[100dvh]', 'flex-col', 'sm:flex-row'],
+      ['min-h-[100dvh]', 'flex-wrap', 'sm:flex-nowrap'],
     ],
     [
       './pages/Lobby/_components/LobbyView/LobbyView.jsx',

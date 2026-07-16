@@ -16,8 +16,10 @@ const WaitingRoomView = ({
 }) => {
   return (
     <div className="bg-surface-waiting flex min-h-[100dvh] flex-col overflow-hidden">
-      <main className="flex flex-1 flex-col items-center justify-between gap-8 px-4 py-6 sm:px-8 sm:py-10">
-        <div className="mt-2 flex flex-col items-center">
+      {/* Phones pin the headline up top and the actions in the bottom thumb
+          zone; from sm up the whole group is vertically centered as designed. */}
+      <main className="flex flex-1 flex-col items-center justify-between gap-8 px-4 py-6 sm:justify-center sm:gap-0 sm:px-8 sm:py-0">
+        <div className="mt-2 flex flex-col items-center sm:mt-0 sm:mb-12">
           <WaitingHeadline />
           <StatusLine isMatched={isMatched} neededMore={neededMore} />
         </div>

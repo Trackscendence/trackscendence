@@ -9,11 +9,18 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 process.env.FORTYTWO_CLIENT_ID = ''
 process.env.FORTYTWO_CLIENT_SECRET = ''
 process.env.FORTYTWO_REDIRECT_URI = ''
+process.env.ADMIN_EMAILS = [
+  'dmelnyk@student.42london.com',
+  'ogrativ@student.42london.com',
+  'smoore@student.42london.com',
+  'srodrigo@student.42london.com',
+].join(',')
 
 const authRepository = require('#modules/auth/auth.repository')
 const authMailer = require('#modules/auth/auth.mailer')
 const authToken = require('#modules/auth/auth.token')
 const authTokenCache = require('#modules/auth/auth.token-cache')
+const { isAdminEmail } = require('#modules/auth/auth.roles')
 const {
   buildFortyTwoProfile,
   buildGuestIdentity,
@@ -22,7 +29,9 @@ const {
   getUserFromToken,
   login,
   loginAsGuest,
+  provisionFortyTwoUser,
   requestPasswordReset,
+  reconcileAllowlistedAdmin,
   resolveAvailableUsername,
   sanitizeFortyTwoLogin,
   upgradeGuestAccount,
@@ -30,6 +39,100 @@ const {
   validateLoginInput,
   validateRegistrationInput,
 } = require('#modules/auth/auth.service')
+
+describe('isAdminEmail', () => {
+  it('matches the configured addresses exactly and case-insensitively', () => {
+    assert.equal(isAdminEmail(' SMOORE@student.42london.com '), true)
+    assert.equal(isAdminEmail('someone@student.42london.com'), false)
+    assert.equal(isAdminEmail('smoore@student.42london.com.example'), false)
+  })
+})
+
+describe('reconcileAllowlistedAdmin', () => {
+  it('promotes an allowlisted existing user and invalidates cached auth', async () => {
+    const user = buildAuthUser({
+      email: 'smoore@student.42london.com',
+      role: 'USER',
+    })
+    const promoted = { ...user, role: 'ADMIN', tokenVersion: 1 }
+    let invalidatedId = null
+    const originalInvalidate = authTokenCache.invalidate
+    authTokenCache.invalidate = (id) => {
+      invalidatedId = id
+    }
+
+    try {
+      const result = await withRepositoryStubs(
+        {
+          promoteAllowlistedAdmin: async (id) => {
+            assert.equal(id, user.id)
+            return promoted
+          },
+        },
+        () => reconcileAllowlistedAdmin(user, user.email),
+      )
+
+      assert.deepEqual(result, promoted)
+      assert.equal(invalidatedId, user.id)
+    } finally {
+      authTokenCache.invalidate = originalInvalidate
+    }
+  })
+
+  it('leaves non-allowlisted and already-admin users unchanged', async () => {
+    const user = buildAuthUser({ role: 'USER' })
+    assert.equal(await reconcileAllowlistedAdmin(user, user.email), user)
+
+    const admin = buildAuthUser({
+      email: 'smoore@student.42london.com',
+      role: 'ADMIN',
+    })
+    assert.equal(await reconcileAllowlistedAdmin(admin, admin.email), admin)
+  })
+})
+
+describe('provisionFortyTwoUser', () => {
+  const profile = {
+    fortyTwoId: 42,
+    email: 'smoore@student.42london.com',
+    login: 'smoore',
+    displayName: 'S Moore',
+    avatarUrl: null,
+  }
+
+  it('creates an allowlisted account as an administrator', async () => {
+    await withRepositoryStubs(
+      {
+        findByEmail: async () => null,
+        findByUsername: async () => null,
+        createFortyTwoUser: async (input) => {
+          assert.equal(input.role, 'ADMIN')
+          return { ...buildAuthUser(input), role: input.role }
+        },
+      },
+      () => provisionFortyTwoUser(profile),
+    )
+  })
+
+  it('creates other 42 London accounts as regular users', async () => {
+    await withRepositoryStubs(
+      {
+        findByEmail: async () => null,
+        findByUsername: async () => null,
+        createFortyTwoUser: async (input) => {
+          assert.equal(input.role, 'USER')
+          return { ...buildAuthUser(input), role: input.role }
+        },
+      },
+      () =>
+        provisionFortyTwoUser({
+          ...profile,
+          email: 'someone@student.42london.com',
+          login: 'someone',
+        }),
+    )
+  })
+})
 
 const withRepositoryStubs = async (stubs, callback) => {
   const originals = {}

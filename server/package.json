@@ -23,6 +23,7 @@
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:generate": "npx prisma generate --generator client",
     "prisma:seed": "npx prisma db seed",
+    "admin:backfill": "node scripts/promote-admin-allowlist.js",
     "prune:avatars": "node scripts/prune-missing-avatars.js",
     "docs:erd": "mkdir -p ../docs && npx prisma generate --generator erd"
   },

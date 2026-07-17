@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
+import { isAdmin } from '@/utils/authorization'
 
 // The gear menu next to the lobby avatar (#219): Settings links to the account
-// settings page, Log out clears the session. A small container: it owns its
-// open state and reaches the logout action directly rather than prop-drilling
-// it down through the lobby nav.
+// settings page, Log out clears the session, and admins get the console entry
+// (#520) since this menu is where account-scoped destinations live. A small
+// container: it owns its open state and reaches the logout action directly
+// rather than prop-drilling it down through the lobby nav.
 const AccountMenu = () => {
   const navigate = useNavigate()
   const menuRef = useRef(null)
   const [isOpen, setIsOpen] = useState(false)
+  const user = useAuthStore((state) => state.user)
 
   useEffect(() => {
     if (!isOpen) return undefined
@@ -68,6 +71,18 @@ const AccountMenu = () => {
           role="menu"
           className="absolute right-0 z-30 mt-2 w-44 overflow-hidden rounded-md border border-[#e6c9a8] bg-white py-1 shadow-lg"
         >
+          {/* Only admins see the console entry; the route stays gated by
+              RoleRoute regardless (#520). */}
+          {isAdmin(user) ? (
+            <Link
+              role="menuitem"
+              to="/admin"
+              className="block px-4 py-2 text-sm font-medium text-[#3d1200] transition hover:bg-[#fbf1e6] focus:bg-[#fbf1e6] focus:outline-none"
+              onClick={() => setIsOpen(false)}
+            >
+              Admin console
+            </Link>
+          ) : null}
           <Link
             role="menuitem"
             to="/settings"

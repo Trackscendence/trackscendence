@@ -28,6 +28,11 @@ const tokenUserSelect = {
   tokenVersion: true,
   twoFactorChallengeVersion: true,
   twoFactorPendingSecretCiphertext: true,
+  // Every login-entry finder builds on this select, and the deleted-account
+  // guard in assertUserCanAuthenticate reads user.deletedAt. Without this
+  // field the guard compares against undefined and soft-deleted accounts can
+  // log back in (#518).
+  deletedAt: true,
 }
 
 const registeredUserSelect = {
@@ -264,10 +269,9 @@ const clearPasswordResetToken = (id) => {
 const findTokenUserById = (id) => {
   return prisma.user.findUnique({
     where: { id },
-    select: {
-      ...tokenUserSelect,
-      deletedAt: true,
-    },
+    // tokenUserSelect now carries deletedAt for every finder, so the explicit
+    // field this function used to add is redundant.
+    select: tokenUserSelect,
   })
 }
 
@@ -511,6 +515,7 @@ module.exports = {
   linkFortyTwoId,
   promoteAllowlistedAdmin,
   replacePendingTwoFactorSetup,
+  tokenUserSelect,
   updatePasswordById,
   updatePasswordByIdInTransaction,
   updatePasswordResetToken,

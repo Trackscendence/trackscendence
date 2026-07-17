@@ -52,3 +52,13 @@ test('concurrent allowlist promotion increments and audits once', async () => {
   assert.equal(user.tokenVersion, 1)
   assert.equal(auditCount, 1)
 })
+
+test('login-entry select fetches deletedAt so the deleted-account guard can fire (#518)', () => {
+  // Every login-entry finder (findByIdentifier, findByFortyTwoId, findByEmail,
+  // findByUsername) selects with authUserSelect, which spreads this object.
+  // The guard in assertUserCanAuthenticate reads user.deletedAt; if the select
+  // loses the field, the guard silently compares against undefined and
+  // soft-deleted accounts can log back in. A service-level test cannot catch
+  // that (it stubs the repository), so the select itself is pinned here.
+  assert.equal(authRepository.tokenUserSelect.deletedAt, true)
+})

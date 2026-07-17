@@ -15,6 +15,78 @@ const adminUserSelect = {
   wins: true,
 }
 
+const ADMIN_MUTATION_ERRORS = Object.freeze({
+  LAST_ADMIN: 'LAST_ADMIN',
+})
+
+const SERIALIZATION_CONFLICT_CODE = 'P2034'
+const MAX_TRANSACTION_ATTEMPTS = 3
+
+const runSerializable = async (operation) => {
+  for (let attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt += 1) {
+    try {
+      return await prisma.$transaction(operation, {
+        isolationLevel: 'Serializable',
+      })
+    } catch (error) {
+      if (
+        error.code !== SERIALIZATION_CONFLICT_CODE ||
+        attempt === MAX_TRANSACTION_ATTEMPTS
+      ) {
+        throw error
+      }
+    }
+  }
+}
+
+const changeUserRole = (actorId, targetId, role) => {
+  return runSerializable(async (tx) => {
+    const target = await tx.user.findFirst({
+      where: { id: targetId, deletedAt: null, isBot: false },
+      select: adminUserSelect,
+    })
+
+    if (!target) {
+      return null
+    }
+    if (target.role === role) {
+      return { user: target }
+    }
+    if (target.role === 'ADMIN' && role === 'USER') {
+      const adminCount = await tx.user.count({
+        where: { role: 'ADMIN', deletedAt: null, isBot: false },
+      })
+
+      if (adminCount <= 1) {
+        return { error: ADMIN_MUTATION_ERRORS.LAST_ADMIN }
+      }
+    }
+
+    const user = await tx.user.update({
+      where: { id: targetId },
+      data: {
+        role,
+        tokenVersion: { increment: 1 },
+      },
+      select: adminUserSelect,
+    })
+
+    await tx.adminAuditLog.create({
+      data: {
+        actorId,
+        targetId,
+        action: 'ROLE_CHANGED',
+        metadata: {
+          previousRole: target.role,
+          newRole: role,
+        },
+      },
+    })
+
+    return { user }
+  })
+}
+
 const findUserDetail = (id) => {
   return prisma.user.findFirst({
     where: { id, deletedAt: null, isBot: false },
@@ -136,7 +208,9 @@ const getStats = async (now = new Date()) => {
 }
 
 module.exports = {
+  ADMIN_MUTATION_ERRORS,
   adminUserSelect,
+  changeUserRole,
   findUserDetail,
   getStats,
   listUsers,

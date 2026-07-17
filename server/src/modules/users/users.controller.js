@@ -2,7 +2,7 @@ const { uploadCurrentUserAvatarFile } = require('#modules/users/users.avatar')
 const dataRightsService = require('#modules/users/users.data-rights.service')
 const usersService = require('#modules/users/users.service')
 
-const getRequestCorrelationId = (req) => req.get('x-request-id')
+const getRequestCorrelationId = (req) => req.requestId
 
 const getCurrentProfile = async (req, res) => {
   const result = await usersService.getCurrentProfile(req.user, {

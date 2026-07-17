@@ -93,6 +93,10 @@ const isSuspensionActive = (user, now = new Date()) => {
 }
 
 const assertUserCanAuthenticate = (user) => {
+  if (user.deletedAt) {
+    throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
+  }
+
   if (user.status === 'BANNED') {
     throw new ForbiddenException(ACCOUNT_BANNED_MESSAGE)
   }

@@ -242,3 +242,37 @@ test('reinstateUser clears moderation state through the shared write path', asyn
     action: 'USER_REINSTATED',
   })
 })
+
+test('deleteUser returns the soft-deleted row and invalidates auth', async () => {
+  let invalidatedId = null
+  const deletedAt = new Date('2026-07-17T12:00:00.000Z')
+  const result = await adminService.deleteUser(1, '12', {
+    repository: {
+      ADMIN_MUTATION_ERRORS: { LAST_ADMIN: 'LAST_ADMIN' },
+      deleteUser: async (actorId, targetId) => {
+        assert.deepEqual({ actorId, targetId }, { actorId: 1, targetId: 12 })
+        return { user: { id: targetId, deletedAt } }
+      },
+    },
+    tokenCache: { invalidate: (id) => (invalidatedId = id) },
+  })
+
+  assert.deepEqual(result, { user: { id: 12, deletedAt } })
+  assert.equal(invalidatedId, 12)
+})
+
+test('deleteUser rejects self-deletion and deletion of the last administrator', async () => {
+  await assert.rejects(() => adminService.deleteUser(1, '1'), {
+    statusCode: 409,
+  })
+  await assert.rejects(
+    () =>
+      adminService.deleteUser(1, '12', {
+        repository: {
+          ADMIN_MUTATION_ERRORS: { LAST_ADMIN: 'LAST_ADMIN' },
+          deleteUser: async () => ({ error: 'LAST_ADMIN' }),
+        },
+      }),
+    { statusCode: 409 },
+  )
+})

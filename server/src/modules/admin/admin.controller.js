@@ -64,9 +64,18 @@ const reinstateUser = async (req, res, next) => {
   }
 }
 
+const deleteUser = async (req, res, next) => {
+  try {
+    res.json(await adminService.deleteUser(req.user.id, req.params.id))
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports = {
   banUser,
   changeUserRole,
+  deleteUser,
   getAccess,
   getStats,
   getUser,

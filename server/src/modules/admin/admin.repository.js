@@ -131,6 +131,47 @@ const moderateUser = (
   })
 }
 
+const deleteUser = (actorId, targetId) => {
+  return runSerializable(async (tx) => {
+    const target = await tx.user.findFirst({
+      where: { id: targetId, deletedAt: null, isBot: false },
+      select: adminUserSelect,
+    })
+
+    if (!target) {
+      return null
+    }
+    if (target.role === 'ADMIN') {
+      const adminCount = await tx.user.count({
+        where: { role: 'ADMIN', deletedAt: null, isBot: false },
+      })
+
+      if (adminCount <= 1) {
+        return { error: ADMIN_MUTATION_ERRORS.LAST_ADMIN }
+      }
+    }
+
+    const deletedAt = new Date()
+    await tx.user.update({
+      where: { id: targetId },
+      data: {
+        deletedAt,
+        tokenVersion: { increment: 1 },
+      },
+    })
+    await tx.adminAuditLog.create({
+      data: {
+        actorId,
+        targetId,
+        action: 'USER_DELETED',
+        metadata: { deletedAt: deletedAt.toISOString() },
+      },
+    })
+
+    return { user: { ...target, deletedAt } }
+  })
+}
+
 const findUserDetail = (id) => {
   return prisma.user.findFirst({
     where: { id, deletedAt: null, isBot: false },
@@ -255,6 +296,7 @@ module.exports = {
   ADMIN_MUTATION_ERRORS,
   adminUserSelect,
   changeUserRole,
+  deleteUser,
   findUserDetail,
   getStats,
   listUsers,

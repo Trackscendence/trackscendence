@@ -9,11 +9,18 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret'
 process.env.FORTYTWO_CLIENT_ID = ''
 process.env.FORTYTWO_CLIENT_SECRET = ''
 process.env.FORTYTWO_REDIRECT_URI = ''
+process.env.ADMIN_EMAILS = [
+  'dmelnyk@student.42london.com',
+  'ogrativ@student.42london.com',
+  'smoore@student.42london.com',
+  'srodrigo@student.42london.com',
+].join(',')
 
 const authRepository = require('#modules/auth/auth.repository')
 const authMailer = require('#modules/auth/auth.mailer')
 const authToken = require('#modules/auth/auth.token')
 const authTokenCache = require('#modules/auth/auth.token-cache')
+const { isAdminEmail } = require('#modules/auth/auth.roles')
 const {
   buildFortyTwoProfile,
   buildGuestIdentity,
@@ -22,7 +29,9 @@ const {
   getUserFromToken,
   login,
   loginAsGuest,
+  provisionFortyTwoUser,
   requestPasswordReset,
+  reconcileAllowlistedAdmin,
   resolveAvailableUsername,
   sanitizeFortyTwoLogin,
   upgradeGuestAccount,
@@ -30,6 +39,100 @@ const {
   validateLoginInput,
   validateRegistrationInput,
 } = require('#modules/auth/auth.service')
+
+describe('isAdminEmail', () => {
+  it('matches the configured addresses exactly and case-insensitively', () => {
+    assert.equal(isAdminEmail(' SMOORE@student.42london.com '), true)
+    assert.equal(isAdminEmail('someone@student.42london.com'), false)
+    assert.equal(isAdminEmail('smoore@student.42london.com.example'), false)
+  })
+})
+
+describe('reconcileAllowlistedAdmin', () => {
+  it('promotes an allowlisted existing user and invalidates cached auth', async () => {
+    const user = buildAuthUser({
+      email: 'smoore@student.42london.com',
+      role: 'USER',
+    })
+    const promoted = { ...user, role: 'ADMIN', tokenVersion: 1 }
+    let invalidatedId = null
+    const originalInvalidate = authTokenCache.invalidate
+    authTokenCache.invalidate = (id) => {
+      invalidatedId = id
+    }
+
+    try {
+      const result = await withRepositoryStubs(
+        {
+          promoteAllowlistedAdmin: async (id) => {
+            assert.equal(id, user.id)
+            return promoted
+          },
+        },
+        () => reconcileAllowlistedAdmin(user, user.email),
+      )
+
+      assert.deepEqual(result, promoted)
+      assert.equal(invalidatedId, user.id)
+    } finally {
+      authTokenCache.invalidate = originalInvalidate
+    }
+  })
+
+  it('leaves non-allowlisted and already-admin users unchanged', async () => {
+    const user = buildAuthUser({ role: 'USER' })
+    assert.equal(await reconcileAllowlistedAdmin(user, user.email), user)
+
+    const admin = buildAuthUser({
+      email: 'smoore@student.42london.com',
+      role: 'ADMIN',
+    })
+    assert.equal(await reconcileAllowlistedAdmin(admin, admin.email), admin)
+  })
+})
+
+describe('provisionFortyTwoUser', () => {
+  const profile = {
+    fortyTwoId: 42,
+    email: 'smoore@student.42london.com',
+    login: 'smoore',
+    displayName: 'S Moore',
+    avatarUrl: null,
+  }
+
+  it('creates an allowlisted account as an administrator', async () => {
+    await withRepositoryStubs(
+      {
+        findByEmail: async () => null,
+        findByUsername: async () => null,
+        createFortyTwoUser: async (input) => {
+          assert.equal(input.role, 'ADMIN')
+          return { ...buildAuthUser(input), role: input.role }
+        },
+      },
+      () => provisionFortyTwoUser(profile),
+    )
+  })
+
+  it('creates other 42 London accounts as regular users', async () => {
+    await withRepositoryStubs(
+      {
+        findByEmail: async () => null,
+        findByUsername: async () => null,
+        createFortyTwoUser: async (input) => {
+          assert.equal(input.role, 'USER')
+          return { ...buildAuthUser(input), role: input.role }
+        },
+      },
+      () =>
+        provisionFortyTwoUser({
+          ...profile,
+          email: 'someone@student.42london.com',
+          login: 'someone',
+        }),
+    )
+  })
+})
 
 const withRepositoryStubs = async (stubs, callback) => {
   const originals = {}
@@ -77,6 +180,10 @@ const buildAuthUser = (overrides = {}) => ({
   termsAcceptedAt: null,
   privacyAcceptedAt: null,
   tokenVersion: 0,
+  status: 'ACTIVE',
+  statusReason: null,
+  suspendedUntil: null,
+  statusUpdatedAt: null,
   twoFactorChallengeVersion: 0,
   twoFactorEnabled: false,
   twoFactorPendingSecretCiphertext: null,
@@ -143,6 +250,81 @@ describe('getUserFromToken auth cache (B4)', () => {
         // Invalidate as the bump sites do, then the stale token fails on the DB.
         authTokenCache.invalidate(101)
         await assert.rejects(() => getUserFromToken(staleToken))
+      },
+    )
+  })
+})
+
+describe('getUserFromToken auth status enforcement', () => {
+  it('rejects banned users', async () => {
+    authTokenCache.clear()
+    const token = authToken.signAccessToken({
+      id: 101,
+      tokenVersion: 0,
+      role: 'USER',
+    })
+
+    await withRepositoryStubs(
+      {
+        findTokenUserById: async () =>
+          buildAuthUser({
+            deletedAt: null,
+            status: 'BANNED',
+          }),
+      },
+      async () => {
+        await assert.rejects(() => getUserFromToken(token), {
+          statusCode: 403,
+        })
+      },
+    )
+  })
+
+  it('rejects suspended users while the suspension is still active', async () => {
+    authTokenCache.clear()
+    const token = authToken.signAccessToken({
+      id: 101,
+      tokenVersion: 0,
+      role: 'USER',
+    })
+
+    await withRepositoryStubs(
+      {
+        findTokenUserById: async () =>
+          buildAuthUser({
+            deletedAt: null,
+            status: 'SUSPENDED',
+            suspendedUntil: new Date(Date.now() + 60 * 1000),
+          }),
+      },
+      async () => {
+        await assert.rejects(() => getUserFromToken(token), {
+          statusCode: 403,
+        })
+      },
+    )
+  })
+
+  it('allows a suspension that has already expired', async () => {
+    authTokenCache.clear()
+    const token = authToken.signAccessToken({
+      id: 101,
+      tokenVersion: 0,
+      role: 'USER',
+    })
+
+    await withRepositoryStubs(
+      {
+        findTokenUserById: async () =>
+          buildAuthUser({
+            deletedAt: null,
+            status: 'SUSPENDED',
+            suspendedUntil: new Date(Date.now() - 60 * 1000),
+          }),
+      },
+      async () => {
+        const user = await getUserFromToken(token)
+        assert.strictEqual(user.id, 101)
       },
     )
   })
@@ -390,6 +572,45 @@ describe('validateLoginInput', () => {
 })
 
 describe('login', () => {
+  it('rejects soft-deleted accounts through the invalid-credentials path', async () => {
+    const passwordHash = await require('bcrypt').hash('StrongPass1!', 12)
+    let loginAttemptUpdates = 0
+
+    await withRepositoryStubs(
+      {
+        findByIdentifier: async () =>
+          buildAuthUser({
+            id: 500,
+            email: 'deleted@example.com',
+            username: 'deleted-user',
+            isBot: false,
+            isGuest: false,
+            deletedAt: new Date('2026-07-17T08:00:00.000Z'),
+            passwordHash,
+          }),
+        updateUserLoginAttempts: async () => {
+          loginAttemptUpdates += 1
+        },
+      },
+      async () => {
+        await assert.rejects(
+          () =>
+            login({
+              identifier: 'deleted-user',
+              password: 'StrongPass1!',
+            }),
+          (error) => {
+            assert.equal(error.statusCode, 401)
+            assert.equal(error.message, 'Invalid email/username or password')
+            return true
+          },
+        )
+
+        assert.equal(loginAttemptUpdates, 0)
+      },
+    )
+  })
+
   it('rejects bot accounts through the normal invalid-credentials path', async () => {
     let loginAttemptUpdates = 0
 
@@ -418,6 +639,103 @@ describe('login', () => {
         )
 
         assert.strictEqual(loginAttemptUpdates, 0)
+      },
+    )
+  })
+
+  it('rejects banned accounts with a forbidden error', async () => {
+    let loginAttemptUpdates = 0
+
+    await withRepositoryStubs(
+      {
+        findByIdentifier: async () =>
+          buildAuthUser({
+            id: 502,
+            email: 'banned@example.com',
+            username: 'banned-user',
+            isBot: false,
+            status: 'BANNED',
+            passwordHash: 'not-used',
+          }),
+        updateUserLoginAttempts: async () => {
+          loginAttemptUpdates += 1
+        },
+      },
+      async () => {
+        await assert.rejects(
+          () =>
+            login({
+              identifier: 'banned-user',
+              password: 'StrongPass1!',
+            }),
+          { statusCode: 403 },
+        )
+
+        assert.strictEqual(loginAttemptUpdates, 0)
+      },
+    )
+  })
+
+  it('rejects active suspensions with a forbidden error', async () => {
+    let loginAttemptUpdates = 0
+
+    await withRepositoryStubs(
+      {
+        findByIdentifier: async () =>
+          buildAuthUser({
+            id: 503,
+            email: 'suspended@example.com',
+            username: 'suspended-user',
+            isBot: false,
+            status: 'SUSPENDED',
+            suspendedUntil: new Date(Date.now() + 60 * 1000),
+            passwordHash: 'not-used',
+          }),
+        updateUserLoginAttempts: async () => {
+          loginAttemptUpdates += 1
+        },
+      },
+      async () => {
+        await assert.rejects(
+          () =>
+            login({
+              identifier: 'suspended-user',
+              password: 'StrongPass1!',
+            }),
+          { statusCode: 403 },
+        )
+
+        assert.strictEqual(loginAttemptUpdates, 0)
+      },
+    )
+  })
+
+  it('allows login after a suspension expires', async () => {
+    const passwordHash = await require('bcrypt').hash('StrongPass1!', 12)
+
+    await withRepositoryStubs(
+      {
+        findByIdentifier: async () =>
+          buildAuthUser({
+            id: 504,
+            email: 'restored@example.com',
+            username: 'restored-user',
+            isBot: false,
+            isGuest: false,
+            status: 'SUSPENDED',
+            suspendedUntil: new Date(Date.now() - 60 * 1000),
+            passwordHash,
+          }),
+        updateUserLoginAttempts: async () => {},
+      },
+      async () => {
+        const result = await login({
+          identifier: 'restored-user',
+          password: 'StrongPass1!',
+        })
+
+        assert.ok(result.token)
+        assert.strictEqual(result.user.username, 'restored-user')
       },
     )
   })

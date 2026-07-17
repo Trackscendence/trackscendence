@@ -3,6 +3,7 @@ const crypto = require('crypto')
 const { Prisma } = require('@prisma/client')
 const BadRequestException = require('#exceptions/bad-request.exception')
 const ConflictException = require('#exceptions/conflict.exception')
+const ForbiddenException = require('#exceptions/forbidden.exception')
 const NotFoundException = require('#exceptions/not-found.exception')
 const UnauthorizedException = require('#exceptions/unauthorized.exception')
 const logger = require('#utils/logger')
@@ -12,6 +13,7 @@ const authRepository = require('#modules/auth/auth.repository')
 const authToken = require('#modules/auth/auth.token')
 const authTokenCache = require('#modules/auth/auth.token-cache')
 const authTwoFactor = require('#modules/auth/auth.two-factor')
+const { isAdminEmail, ROLES } = require('#modules/auth/auth.roles')
 const {
   normalizeIdentifier,
   normalizeEmail,
@@ -46,6 +48,8 @@ const {
   MAX_LOGIN_ATTEMPTS,
   LOCKED_DURATION_MINUTES,
   GENERIC_ACCOUNT_LOCKED_MESSAGE,
+  ACCOUNT_SUSPENDED_MESSAGE,
+  ACCOUNT_BANNED_MESSAGE,
   FORTYTWO_LOGIN_FAILED_MESSAGE,
   FORTYTWO_NOT_AVAILABLE_MESSAGE,
 } = require('#modules/auth/auth.constants')
@@ -74,6 +78,32 @@ const getTokenVersionFromPayload = (payload) => {
   const tokenVersion = payload?.tokenVersion
 
   return Number.isInteger(tokenVersion) ? tokenVersion : null
+}
+
+const isSuspensionActive = (user, now = new Date()) => {
+  if (user.status !== 'SUSPENDED') {
+    return false
+  }
+
+  if (!user.suspendedUntil) {
+    return true
+  }
+
+  return new Date(user.suspendedUntil) > now
+}
+
+const assertUserCanAuthenticate = (user) => {
+  if (user.deletedAt) {
+    throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
+  }
+
+  if (user.status === 'BANNED') {
+    throw new ForbiddenException(ACCOUNT_BANNED_MESSAGE)
+  }
+
+  if (isSuspensionActive(user)) {
+    throw new ForbiddenException(ACCOUNT_SUSPENDED_MESSAGE)
+  }
 }
 
 const getPasswordValidationMessages = (password) => {
@@ -571,6 +601,8 @@ const provisionFortyTwoUser = async (profile) => {
   // 42 verifies member emails, and a linked account with 2FA enabled still
   // goes through the 2FA challenge, so auto-linking is safe here.
   if (existingByEmail) {
+    assertUserCanAuthenticate(existingByEmail)
+
     return await authRepository.linkFortyTwoId(
       existingByEmail.id,
       profile.fortyTwoId,
@@ -590,6 +622,7 @@ const provisionFortyTwoUser = async (profile) => {
       fortyTwoId: profile.fortyTwoId,
       displayName: profile.displayName,
       avatarUrl: profile.avatarUrl,
+      role: isAdminEmail(profile.email) ? ROLES.ADMIN : ROLES.USER,
     })
   } catch (error) {
     if (isUniqueConstraintError(error)) {
@@ -598,6 +631,16 @@ const provisionFortyTwoUser = async (profile) => {
 
     throw error
   }
+}
+
+const reconcileAllowlistedAdmin = async (user, email) => {
+  if (!isAdminEmail(email) || user.role === ROLES.ADMIN) {
+    return user
+  }
+
+  const promotedUser = await authRepository.promoteAllowlistedAdmin(user.id)
+  authTokenCache.invalidate(user.id)
+  return promotedUser
 }
 
 const loginWithFortyTwo = async (payload) => {
@@ -628,10 +671,12 @@ const loginWithFortyTwo = async (payload) => {
   }
 
   const profile = buildFortyTwoProfile(rawProfile)
-  const user =
+  const provisionedUser =
     (await authRepository.findByFortyTwoId(profile.fortyTwoId)) ||
     (await provisionFortyTwoUser(profile))
+  const user = await reconcileAllowlistedAdmin(provisionedUser, profile.email)
 
+  assertUserCanAuthenticate(user)
   return await buildLoginResult(user)
 }
 
@@ -683,6 +728,8 @@ const login = async (payload) => {
   if (user.isBot) {
     throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE)
   }
+
+  assertUserCanAuthenticate(user)
 
   if (user.lockedOutUntil && new Date(user.lockedOutUntil) > new Date()) {
     throw new UnauthorizedException(GENERIC_ACCOUNT_LOCKED_MESSAGE)
@@ -798,6 +845,8 @@ const completeTwoFactorLogin = async (payload) => {
     throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
   }
 
+  assertUserCanAuthenticate(user)
+
   if (recoveryCode) {
     const consumed = await authRepository.consumeRecoveryCodeAndChallenge(
       user.id,
@@ -879,6 +928,8 @@ const getUserFromToken = async (token) => {
   if (!user || user.deletedAt || user.tokenVersion !== tokenVersion) {
     throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
   }
+
+  assertUserCanAuthenticate(user)
 
   const safeUser = toSafeAuthUser(user)
   authTokenCache.set(userId, user.tokenVersion, safeUser)
@@ -1153,6 +1204,8 @@ module.exports = {
   // file, exported only so auth.service.test.js can unit-test them directly.
   buildFortyTwoProfile,
   buildGuestIdentity,
+  provisionFortyTwoUser,
+  reconcileAllowlistedAdmin,
   resolveAvailableUsername,
   sanitizeFortyTwoLogin,
   validateFortyTwoCallbackInput,

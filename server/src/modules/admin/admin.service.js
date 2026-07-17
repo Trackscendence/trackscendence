@@ -246,9 +246,34 @@ const reinstateUser = (actorId, rawTargetId, dependencies) => {
   )
 }
 
+const deleteUser = async (
+  actorId,
+  rawTargetId,
+  { repository = adminRepository, tokenCache = authTokenCache } = {},
+) => {
+  const targetId = parseUserId(rawTargetId)
+
+  if (actorId === targetId) {
+    throw new ConflictException('Administrators cannot delete themselves')
+  }
+
+  const result = await repository.deleteUser(actorId, targetId)
+
+  if (!result) {
+    throw new NotFoundException('User not found')
+  }
+  if (result.error === repository.ADMIN_MUTATION_ERRORS.LAST_ADMIN) {
+    throw new ConflictException('The last administrator cannot be deleted')
+  }
+
+  tokenCache.invalidate(targetId)
+  return { user: result.user }
+}
+
 module.exports = {
   banUser,
   changeUserRole,
+  deleteUser,
   getAccess,
   getStats,
   getUser,

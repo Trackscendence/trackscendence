@@ -14,5 +14,6 @@ router.patch('/users/:id/role', adminController.changeUserRole)
 router.post('/users/:id/suspend', adminController.suspendUser)
 router.post('/users/:id/ban', adminController.banUser)
 router.post('/users/:id/reinstate', adminController.reinstateUser)
+router.delete('/users/:id', adminController.deleteUser)
 
 module.exports = router

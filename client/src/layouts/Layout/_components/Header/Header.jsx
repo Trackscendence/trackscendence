@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Gamepad2, Podium, Trophy } from 'lucide-react'
+import { Gamepad2, Podium, ShieldCheck, Trophy } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
+import { isAdmin } from '@/utils/authorization'
 import Avatar from '@/components/Avatar'
 import Logo from '@/components/Logo'
 import NavIconLink from '@/components/NavIconLink'
@@ -46,6 +47,11 @@ const Header = () => {
           <NavIconLink to="/lobby" label="Lobby" icon={Gamepad2} />
           <NavIconLink to="/tournament" label="Tournaments" icon={Trophy} />
           <NavIconLink to="/leaderboard" label="Leaderboard" icon={Podium} />
+          {/* Operator entry (#497): only admins see the console link; the
+              route itself stays gated by RoleRoute either way. */}
+          {isAdmin(user) ? (
+            <NavIconLink to="/admin" label="Admin" icon={ShieldCheck} />
+          ) : null}
         </div>
         <button
           type="button"

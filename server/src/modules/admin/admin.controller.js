@@ -20,8 +20,17 @@ const listUsers = async (req, res, next) => {
   }
 }
 
+const getUser = async (req, res, next) => {
+  try {
+    res.json(await adminService.getUser(req.params.id))
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports = {
   getAccess,
   getStats,
+  getUser,
   listUsers,
 }

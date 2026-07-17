@@ -1,4 +1,5 @@
 const BadRequestException = require('#exceptions/bad-request.exception')
+const NotFoundException = require('#exceptions/not-found.exception')
 const adminRepository = require('#modules/admin/admin.repository')
 const gameStore = require('#modules/game/game.store')
 const {
@@ -99,9 +100,39 @@ const listUsers = async (query, { repository = adminRepository } = {}) => {
   }
 }
 
+const parseUserId = (rawId) => {
+  const id = Number(rawId)
+
+  if (!Number.isInteger(id) || id < 1) {
+    throw new BadRequestException('User id must be a positive integer')
+  }
+
+  return id
+}
+
+const getUser = async (rawId, { repository = adminRepository } = {}) => {
+  const user = await repository.findUserDetail(parseUserId(rawId))
+
+  if (!user) {
+    throw new NotFoundException('User not found')
+  }
+
+  const { adminAuditLogsTargeted, ...fields } = user
+
+  return {
+    user: {
+      ...fields,
+      reportsCount: 0,
+      auditLog: adminAuditLogsTargeted,
+    },
+  }
+}
+
 module.exports = {
   getAccess,
   getStats,
+  getUser,
   listUsers,
+  parseUserId,
   parseUsersQuery,
 }

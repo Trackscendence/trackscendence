@@ -37,7 +37,21 @@ test('mobile route shells keep their responsive contracts', () => {
       './pages/Lobby/_components/LobbyView/LobbyView.jsx',
       ['flex-1', 'flex-col'],
     ],
-    ['./pages/AdminAccess/AdminAccess.jsx', ['grid gap-6', 'lg:grid-cols']],
+    [
+      // The console shell: full-height canvas whose content clears the fixed
+      // bottom bar on phones.
+      './layouts/Administration/Administration.jsx',
+      ['min-h-[100dvh]', 'pb-24'],
+    ],
+    [
+      // Desktop rail hides on phones; the bottom tab bar replaces it there.
+      './layouts/Administration/_components/AdminRail/AdminRail.jsx',
+      ['hidden', 'sm:flex'],
+    ],
+    [
+      './layouts/Administration/_components/AdminBottomBar/AdminBottomBar.jsx',
+      ['fixed inset-x-0 bottom-0', 'sm:hidden'],
+    ],
     [
       './pages/WaitingRoom/_components/WaitingRoomView/WaitingRoomView.jsx',
       ['flex-1', 'flex-col', 'overflow-hidden'],

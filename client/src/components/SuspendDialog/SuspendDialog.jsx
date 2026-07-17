@@ -37,7 +37,10 @@ const SuspendDialog = ({ user, isConfirming, onConfirm, onCancel }) => {
       </p>
       <label className="mt-4 block text-sm font-semibold text-[#27352f]">
         Duration
+        {/* Focus lands on the first input when the dialog opens (#505), the
+            same pattern FriendRequestModal uses. */}
         <select
+          autoFocus
           className={FIELD_CLASS}
           value={days}
           onChange={(event) => setDays(Number(event.target.value))}

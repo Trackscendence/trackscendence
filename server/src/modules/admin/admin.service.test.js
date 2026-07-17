@@ -80,3 +80,46 @@ test('listUsers rejects invalid enum filters and pagination', async () => {
     },
   )
 })
+
+test('getUser maps the recent targeted audit trail onto the contract', async () => {
+  const auditLog = [
+    {
+      id: 3,
+      action: 'USER_SUSPENDED',
+      reason: 'abusive chat',
+      actor: { id: 1, username: 'operator' },
+    },
+  ]
+  const result = await adminService.getUser('12', {
+    repository: {
+      findUserDetail: async (id) => {
+        assert.equal(id, 12)
+        return {
+          id,
+          username: 'ada',
+          adminAuditLogsTargeted: auditLog,
+        }
+      },
+    },
+  })
+
+  assert.deepEqual(result, {
+    user: {
+      id: 12,
+      username: 'ada',
+      reportsCount: 0,
+      auditLog,
+    },
+  })
+})
+
+test('getUser rejects malformed and missing user ids', async () => {
+  await assert.rejects(() => adminService.getUser('abc'), { statusCode: 400 })
+  await assert.rejects(
+    () =>
+      adminService.getUser('99', {
+        repository: { findUserDetail: async () => null },
+      }),
+    { statusCode: 404 },
+  )
+})

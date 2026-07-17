@@ -15,6 +15,33 @@ const adminUserSelect = {
   wins: true,
 }
 
+const findUserDetail = (id) => {
+  return prisma.user.findFirst({
+    where: { id, deletedAt: null, isBot: false },
+    select: {
+      ...adminUserSelect,
+      statusReason: true,
+      statusUpdatedAt: true,
+      adminAuditLogsTargeted: {
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 20,
+        select: {
+          id: true,
+          action: true,
+          reason: true,
+          createdAt: true,
+          actor: {
+            select: {
+              id: true,
+              username: true,
+            },
+          },
+        },
+      },
+    },
+  })
+}
+
 const listUsers = async ({ query, status, role, limit, offset }) => {
   const escapedQuery = escapeLikePattern(query)
   const where = {
@@ -110,6 +137,7 @@ const getStats = async (now = new Date()) => {
 
 module.exports = {
   adminUserSelect,
+  findUserDetail,
   getStats,
   listUsers,
 }

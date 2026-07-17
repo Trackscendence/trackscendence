@@ -9,5 +9,6 @@ router.use(requireAuth, requireRole(ROLES.ADMIN))
 router.get('/access', adminController.getAccess)
 router.get('/stats', adminController.getStats)
 router.get('/users', adminController.listUsers)
+router.get('/users/:id', adminController.getUser)
 
 module.exports = router

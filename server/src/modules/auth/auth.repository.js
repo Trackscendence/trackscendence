@@ -21,6 +21,10 @@ const safeUserSelect = {
 
 const tokenUserSelect = {
   ...safeUserSelect,
+  status: true,
+  statusReason: true,
+  suspendedUntil: true,
+  statusUpdatedAt: true,
   tokenVersion: true,
   twoFactorChallengeVersion: true,
   twoFactorPendingSecretCiphertext: true,

@@ -80,7 +80,7 @@ const AccountMenu = () => {
               className="block px-4 py-2 text-sm font-medium text-[#3d1200] transition hover:bg-[#fbf1e6] focus:bg-[#fbf1e6] focus:outline-none"
               onClick={() => setIsOpen(false)}
             >
-              Admin console
+              Admin
             </Link>
           ) : null}
           <Link

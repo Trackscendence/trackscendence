@@ -4,6 +4,7 @@ import { Gamepad2, Podium, ShieldCheck, Trophy } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import { isAdmin } from '@/utils/authorization'
+import AdminBadge from '@/components/AdminBadge'
 import Avatar from '@/components/Avatar'
 import Logo from '@/components/Logo'
 import NavIconLink from '@/components/NavIconLink'
@@ -72,7 +73,10 @@ const Header = () => {
             src={identity.avatarUrl || undefined}
           />
           <span className="flex flex-col">
-            <span className="text-lg text-black">{identity.name}</span>
+            <span className="flex items-center gap-2">
+              <span className="text-lg text-black">{identity.name}</span>
+              <AdminBadge role={user.role} />
+            </span>
             <span className="text-xs text-[#2E2D2D]">{accountLabel}</span>
           </span>
         </Link>

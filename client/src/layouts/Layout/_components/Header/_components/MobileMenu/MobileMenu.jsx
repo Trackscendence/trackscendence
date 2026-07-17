@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import AdminBadge from '@/components/AdminBadge'
 import Avatar from '@/components/Avatar'
 import useAuthStore from '@/stores/useAuthStore'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
@@ -106,8 +107,13 @@ const MobileMenu = ({ onCreateRoom }) => {
               src={identity.avatarUrl || undefined}
             />
             <span className="flex min-w-0 flex-col">
-              <span className="truncate text-sm font-semibold text-[#3d1200]">
-                {identity.name}
+              {/* flex-wrap: the badge drops below a long name instead of
+                  truncating (#498). */}
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <span className="truncate text-sm font-semibold text-[#3d1200]">
+                  {identity.name}
+                </span>
+                <AdminBadge role={user.role} />
               </span>
               <span className="truncate text-xs text-[#9a7050]">
                 {accountLabel}

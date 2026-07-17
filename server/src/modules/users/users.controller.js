@@ -2,8 +2,12 @@ const { uploadCurrentUserAvatarFile } = require('#modules/users/users.avatar')
 const dataRightsService = require('#modules/users/users.data-rights.service')
 const usersService = require('#modules/users/users.service')
 
+const getRequestCorrelationId = (req) => req.get('x-request-id')
+
 const getCurrentProfile = async (req, res) => {
-  const result = await usersService.getCurrentProfile(req.user)
+  const result = await usersService.getCurrentProfile(req.user, {
+    correlationId: getRequestCorrelationId(req),
+  })
 
   res.json(result)
 }
@@ -18,6 +22,9 @@ const getProfile = async (req, res) => {
   const result = await usersService.getProfileByUsername(
     req.user,
     req.params.username,
+    {
+      correlationId: getRequestCorrelationId(req),
+    },
   )
 
   res.json(result)

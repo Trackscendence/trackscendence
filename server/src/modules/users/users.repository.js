@@ -16,6 +16,9 @@ const publicProfileSelect = {
   losses: true,
   rank: true,
   isGuest: true,
+  // Deliberately public: any player viewing an admin's profile sees the
+  // operator badge, so moderation actions are attributable to a visible role.
+  role: true,
 }
 const selfProfileSelect = {
   ...publicProfileSelect,

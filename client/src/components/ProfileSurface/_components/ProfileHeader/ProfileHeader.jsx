@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Settings } from 'lucide-react'
+import AdminBadge from '@/components/AdminBadge'
 import ProfileAvatar from '../ProfileAvatar'
 import ProfileStatStrip from '../ProfileStatStrip'
 import ProfileTabs from '../ProfileTabs'
@@ -32,9 +33,15 @@ const ProfileHeader = ({
               <ProfileAvatar profile={profile} />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-semibold break-words text-[#3d1200] sm:text-2xl lg:text-[28px]">
-                {profileFormatters.getDisplayName(profile)}
-              </h1>
+              {/* flex-wrap: the badge wraps below a long name instead of
+                  truncating it (#498). Public profiles only carry `role` for
+                  admins, so everyone sees who moderates. */}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h1 className="text-xl font-semibold break-words text-[#3d1200] sm:text-2xl lg:text-[28px]">
+                  {profileFormatters.getDisplayName(profile)}
+                </h1>
+                <AdminBadge role={profile.role} />
+              </div>
               <p className="mt-1 text-sm break-all text-[#7a3810]">
                 {metadata}
               </p>

@@ -61,6 +61,36 @@
    * drifts. Use `bg-uno-green`, never the raw hex.
    */
   --color-uno-green: #2fa84f;
+  /*
+   * Administration console palette (issue #495). The operator view keeps the
+   * app's warm identity but reads as its own surface. Defined once here — use
+   * the utilities (`bg-admin-bg`, `text-admin-ink`, `bg-admin-accent`, ...),
+   * never the raw values.
+   *
+   *   admin-bg       page canvas, one step from `surface-warm`. Matches the
+   *                  outcome cream today by coincidence, not by reference —
+   *                  the two surfaces may diverge independently.
+   *   admin-surface  card face: soft white glass over the canvas.
+   *   admin-ink      headings / primary text. Also the AdminBadge fill — the
+   *                  one place ink becomes a background (`bg-admin-ink` with
+   *                  `text-admin-cream`).
+   *   admin-muted    labels, secondary text.
+   *   admin-accent   primary action, active rail item (the app accent).
+   *   admin-cream    text on ink fills (badge, active bottom-bar item).
+   *
+   * Status colors carry user account state (ACTIVE / SUSPENDED / BANNED) in
+   * pills and detail views; pair them with a tinted fill via an opacity
+   * modifier (`bg-status-active/10 text-status-active`).
+   */
+  --color-admin-bg: #fde8cf;
+  --color-admin-surface: rgb(255 255 255 / 65%);
+  --color-admin-ink: #2a1a08;
+  --color-admin-muted: #9a7050;
+  --color-admin-accent: #e86d2f;
+  --color-admin-cream: #fde8cf;
+  --color-status-active: #007a55;
+  --color-status-suspended: #bb4d00;
+  --color-status-banned: #b91c1c;
 
   --animate-wr-dot-1: wr-dot-pulse 1.8s ease-in-out 0s infinite;
   --animate-wr-dot-2: wr-dot-pulse 1.8s ease-in-out 0.3s infinite;

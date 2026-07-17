@@ -18,7 +18,9 @@ const BanDialog = ({ user, isConfirming, onConfirm, onCancel }) => {
       </p>
       <label className="mt-4 block text-sm font-semibold text-[#27352f]">
         Reason
+        {/* Focus lands on the reason field when the dialog opens (#505). */}
         <textarea
+          autoFocus
           className="mt-1 w-full rounded-md border border-[#cbd5c5] px-3 py-2 text-sm text-[#27352f] focus:border-[#e86d2f] focus:outline-none"
           rows={2}
           value={reason}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import AppHeader from '@/components/AppHeader'
+import Layout from '@/layouts/Layout'
 import getConversationPath from '@/utils/conversationPath'
 import useAuthStore from '@/stores/useAuthStore'
 import useDirectMessageStore from '@/stores/useDirectMessageStore'
@@ -179,9 +179,7 @@ const Messages = () => {
   }
 
   return (
-    <div className="bg-surface-warm flex min-h-[100dvh] flex-col text-[#3d1200]">
-      <AppHeader />
-
+    <Layout className="bg-surface-warm text-[#3d1200]">
       <main className="flex flex-1 px-4 py-4 sm:px-6 sm:py-6">
         <div className="mx-auto grid w-full max-w-[1240px] grid-cols-1 overflow-visible rounded-lg border border-[#e6c9a8] bg-white shadow-[0_18px_45px_rgba(61,18,0,0.08)] lg:h-[calc(100dvh-8.25rem)] lg:grid-cols-[360px_minmax(0,1fr)] lg:overflow-hidden">
           <ConversationList
@@ -223,7 +221,7 @@ const Messages = () => {
           )}
         </div>
       </main>
-    </div>
+    </Layout>
   )
 }
 

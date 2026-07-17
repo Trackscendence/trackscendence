@@ -14,7 +14,7 @@ import Avatar from '@/components/Avatar'
 import useAuthStore from '@/stores/useAuthStore'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 
-// The phone-width counterpart of the AppHeader action cluster (#443/#445).
+// The phone-width counterpart of the Header action cluster (#443/#445).
 // Everything the desktop row spreads out (shortcuts, + Room, profile chip,
 // gear menu) collapses behind one hamburger so the bar stays a single line,
 // and every entry keeps a text label beside its icon. Bell and mail stay

@@ -3,7 +3,7 @@ import BackButton from '@/components/BackButton'
 import LobbyChip from '@/components/LobbyChip'
 import PlayerSearch from '@/components/PlayerSearch'
 
-const ProfileLayout = () => {
+const Account = () => {
   const { pathname } = useLocation()
   // The player search belongs to the signed-in user's own profile only, not
   // the public /users/:username view or /settings this layout also wraps.
@@ -48,4 +48,4 @@ const ProfileLayout = () => {
   )
 }
 
-export default ProfileLayout
+export default Account

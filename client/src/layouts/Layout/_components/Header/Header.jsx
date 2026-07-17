@@ -12,17 +12,17 @@ import AccountMenu from './_components/AccountMenu'
 import MobileMenu from './_components/MobileMenu'
 
 // The shared top navigation for the signed-in surface (lobby, messages, and any
-// other warm-themed page). It owns identity, so a page renders <AppHeader /> and
-// gets the same clickable logo, profile, notification bell, mail, and account
-// menu everywhere. Creating a room is a global action, so the header owns
-// "+ Room" too: picking a size hands the seat to the waiting room as
-// navigation intent (the same flow the lobby always used), which means
-// creating from any page lands the player in their new room.
+// other warm-themed page). It is private to Layout, which renders it above the
+// page content so every signed-in page gets the same clickable logo, profile,
+// notification bell, mail, and account menu. Creating a room is a global
+// action, so the header owns "+ Room" too: picking a size hands the seat to the
+// waiting room as navigation intent (the same flow the lobby always used),
+// which means creating from any page lands the player in their new room.
 //
 // Desktop keeps everything in one row. Below sm the shortcuts, "+ Room",
 // profile chip, and gear collapse behind MobileMenu (#443/#445); only the
 // badge-carrying bell and mail icons stay in the bar.
-const AppHeader = () => {
+const Header = () => {
   const navigate = useNavigate()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const user = useAuthStore((state) => state.user)
@@ -87,4 +87,4 @@ const AppHeader = () => {
   )
 }
 
-export default AppHeader
+export default Header

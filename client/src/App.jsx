@@ -13,9 +13,8 @@ import {
 import ErrorBoundary from '@/components/ErrorBoundary'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ProtectedRoute from '@/router/ProtectedRoute'
-import AppLayout from '@/layouts/AppLayout'
-import AuthLayout from '@/layouts/AuthLayout'
-import ProfileLayout from '@/layouts/ProfileLayout'
+import Authentication from '@/layouts/Authentication'
+import Account from '@/layouts/Account'
 import ToastViewport from '@/components/ToastViewport'
 import RoleRoute from '@/router/RoleRoute'
 import { USER_ROLES } from '@/utils/authorization'
@@ -33,7 +32,6 @@ const Outcome = lazy(() => import('@/pages/Outcome'))
 const PrivacyPolicy = lazy(() => import('@/pages/Privacy'))
 const Profile = lazy(() => import('@/pages/Profile'))
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'))
-const Session = lazy(() => import('@/pages/Session'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
 const Signup = lazy(() => import('@/pages/Signup'))
 const SignupSuccess = lazy(() => import('@/pages/SignupSuccess'))
@@ -234,7 +232,7 @@ const App = () => {
         }
       >
         <Routes>
-          <Route element={<AuthLayout />}>
+          <Route element={<Authentication />}>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -242,7 +240,7 @@ const App = () => {
             <Route path="/signup/success" element={<SignupSuccess />} />
           </Route>
 
-          {/* Standalone (no AuthLayout header): the callback is a full-screen
+          {/* Standalone (no Authentication header): the callback is a full-screen
               transition into the app, not an auth form. */}
           <Route path="/oauth/42/callback" element={<OAuth42Callback />} />
 
@@ -257,7 +255,7 @@ const App = () => {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/game" element={<Game />} />
             <Route path="/results" element={<Outcome />} />
-            <Route element={<ProfileLayout />}>
+            <Route element={<Account />}>
               <Route path="/profile" element={<Profile />} />
               <Route
                 path="/users/me"
@@ -269,17 +267,15 @@ const App = () => {
 
             <Route path="/change-password" element={<ChangePassword />} />
 
-            <Route element={<AppLayout />}>
-              <Route path="/session" element={<Session />} />
-              <Route path="/game" element={<Game />} />
-              <Route element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]} />}>
-                <Route path="/admin" element={<AdminAccess />} />
-              </Route>
-              <Route
-                path="/two-factor"
-                element={<Navigate to="/settings" replace />}
-              />
+            {/* /admin carries its own Layout chrome (parked: reachable by URL,
+                no nav link yet). /two-factor is a legacy redirect. */}
+            <Route element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]} />}>
+              <Route path="/admin" element={<AdminAccess />} />
             </Route>
+            <Route
+              path="/two-factor"
+              element={<Navigate to="/settings" replace />}
+            />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

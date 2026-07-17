@@ -3,9 +3,10 @@ import Pagination from '@/components/Pagination'
 import StatusBadge from '@/components/StatusBadge'
 import PlayerIdentity from '../PlayerIdentity'
 import PlayersRowCard from '../PlayersRowCard'
+import PlayersRowMenu from '../PlayersRowMenu'
 import { formatJoinedDate } from '../../_utils/playersFormatters'
 
-const COLUMNS = [
+const buildColumns = ({ currentUserId, pendingActions, onAction }) => [
   {
     key: 'player',
     header: 'Player',
@@ -33,25 +34,47 @@ const COLUMNS = [
     header: 'Joined',
     render: (user) => formatJoinedDate(user.createdAt),
   },
+  {
+    key: 'actions',
+    header: <span className="sr-only">Actions</span>,
+    className: 'w-12 text-right',
+    render: (user) => (
+      <PlayersRowMenu
+        user={user}
+        isSelf={user.id === currentUserId}
+        isPending={Boolean(pendingActions[user.id])}
+        onAction={onAction}
+      />
+    ),
+  },
 ]
 
-// The Players table (#502): the shared DataTable shell with our columns,
-// stacked cards below `sm`, and server-driven paging via the shared
-// Pagination. Pure presenter — list state and paging round-trips live in the
-// page container.
+// The Players table (#502/#503): the shared DataTable shell with our columns,
+// stacked cards below `sm`, server-driven paging, and the per-row action
+// menu. Presenter: list state, paging, and the confirm flows live upstream.
 const PlayersTable = ({
   users,
   pagination,
   isLoading,
   error,
+  currentUserId,
+  pendingActions,
   onPageChange,
+  onAction,
 }) => (
   <div className="space-y-4">
     <DataTable
-      columns={COLUMNS}
+      columns={buildColumns({ currentUserId, pendingActions, onAction })}
       rows={users}
       rowKey={(user) => user.id}
-      renderCard={(user) => <PlayersRowCard user={user} />}
+      renderCard={(user) => (
+        <PlayersRowCard
+          user={user}
+          isSelf={user.id === currentUserId}
+          isPending={Boolean(pendingActions[user.id])}
+          onAction={onAction}
+        />
+      )}
       isLoading={isLoading}
       error={error}
       emptyMessage="No players match these filters."

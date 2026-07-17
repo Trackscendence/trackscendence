@@ -6,6 +6,7 @@ import {
   Plus,
   Podium,
   Settings,
+  ShieldCheck,
   Trophy,
   X,
 } from 'lucide-react'
@@ -13,6 +14,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import Avatar from '@/components/Avatar'
 import useAuthStore from '@/stores/useAuthStore'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
+import { isAdmin } from '@/utils/authorization'
 
 // The phone-width counterpart of the Header action cluster (#443/#445).
 // Everything the desktop row spreads out (shortcuts, + Room, profile chip,
@@ -153,6 +155,23 @@ const MobileMenu = ({ onCreateRoom }) => {
             <Podium aria-hidden="true" className="h-5 w-5" strokeWidth={2} />
             Leaderboard
           </Link>
+          {/* Operator entry (#497): only admins see the console link; the
+              route itself stays gated by RoleRoute either way. */}
+          {isAdmin(user) ? (
+            <Link
+              role="menuitem"
+              to="/admin"
+              className={`${itemClass} text-[#3d1200]`}
+              onClick={() => setIsOpen(false)}
+            >
+              <ShieldCheck
+                aria-hidden="true"
+                className="h-5 w-5"
+                strokeWidth={2}
+              />
+              Admin
+            </Link>
+          ) : null}
           <Link
             role="menuitem"
             to="/settings"

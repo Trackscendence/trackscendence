@@ -51,12 +51,12 @@ describe('updateLifetimeStatsForUsers', () => {
 
     assert.deepStrictEqual(userIds, [7, 11])
     assert.match(sql, /FROM "User" target/)
-    assert.match(sql, /LEFT JOIN "GamePlayer" gp ON gp\."userId" = target\."id"/)
-    assert.match(sql, /LEFT JOIN "Game" g ON g\."id" = gp\."gameId"/)
     assert.match(
       sql,
-      /CAST\(COUNT\(gp\."id"\) AS INTEGER\) AS "gamesPlayed"/,
+      /LEFT JOIN "GamePlayer" gp ON gp\."userId" = target\."id"/,
     )
+    assert.match(sql, /LEFT JOIN "Game" g ON g\."id" = gp\."gameId"/)
+    assert.match(sql, /CAST\(COUNT\(gp\."id"\) AS INTEGER\) AS "gamesPlayed"/)
   })
 })
 

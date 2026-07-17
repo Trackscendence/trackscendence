@@ -21,6 +21,10 @@ const safeUserSelect = {
 
 const tokenUserSelect = {
   ...safeUserSelect,
+  status: true,
+  statusReason: true,
+  suspendedUntil: true,
+  statusUpdatedAt: true,
   tokenVersion: true,
   twoFactorChallengeVersion: true,
   twoFactorPendingSecretCiphertext: true,
@@ -108,16 +112,70 @@ const createFortyTwoUser = ({
   fortyTwoId,
   displayName,
   avatarUrl,
+  role,
 }) => {
-  return prisma.user.create({
-    data: {
-      email,
-      username,
-      fortyTwoId,
-      displayName,
-      avatarUrl,
-    },
-    select: authUserSelect,
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        email,
+        username,
+        fortyTwoId,
+        displayName,
+        avatarUrl,
+        role,
+      },
+      select: authUserSelect,
+    })
+
+    if (role === 'ADMIN') {
+      await tx.adminAuditLog.create({
+        data: {
+          targetId: user.id,
+          action: 'ROLE_CHANGED',
+          metadata: {
+            previousRole: null,
+            newRole: 'ADMIN',
+            source: 'FORTYTWO_ALLOWLIST',
+          },
+        },
+      })
+    }
+
+    return user
+  })
+}
+
+const promoteAllowlistedAdmin = (id, database = prisma) => {
+  return database.$transaction(async (tx) => {
+    const promotion = await tx.user.updateMany({
+      where: { id, role: 'USER', deletedAt: null },
+      data: {
+        role: 'ADMIN',
+        tokenVersion: { increment: 1 },
+      },
+    })
+    const user = await tx.user.findUnique({
+      where: { id },
+      select: authUserSelect,
+    })
+
+    if (promotion.count === 0) {
+      return user
+    }
+
+    await tx.adminAuditLog.create({
+      data: {
+        targetId: id,
+        action: 'ROLE_CHANGED',
+        metadata: {
+          previousRole: 'USER',
+          newRole: 'ADMIN',
+          source: 'FORTYTWO_ALLOWLIST',
+        },
+      },
+    })
+
+    return user
   })
 }
 
@@ -451,6 +509,7 @@ module.exports = {
   findTokenUserById,
   issueTwoFactorChallenge,
   linkFortyTwoId,
+  promoteAllowlistedAdmin,
   replacePendingTwoFactorSetup,
   updatePasswordById,
   updatePasswordByIdInTransaction,

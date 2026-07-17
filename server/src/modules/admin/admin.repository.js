@@ -22,10 +22,10 @@ const ADMIN_MUTATION_ERRORS = Object.freeze({
 const SERIALIZATION_CONFLICT_CODE = 'P2034'
 const MAX_TRANSACTION_ATTEMPTS = 3
 
-const runSerializable = async (operation) => {
+const runSerializable = async (operation, database = prisma) => {
   for (let attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt += 1) {
     try {
-      return await prisma.$transaction(operation, {
+      return await database.$transaction(operation, {
         isolationLevel: 'Serializable',
       })
     } catch (error) {
@@ -39,7 +39,7 @@ const runSerializable = async (operation) => {
   }
 }
 
-const changeUserRole = (actorId, targetId, role) => {
+const changeUserRole = (actorId, targetId, role, database = prisma) => {
   return runSerializable(async (tx) => {
     const target = await tx.user.findFirst({
       where: { id: targetId, deletedAt: null, isBot: false },
@@ -84,13 +84,14 @@ const changeUserRole = (actorId, targetId, role) => {
     })
 
     return { user }
-  })
+  }, database)
 }
 
 const moderateUser = (
   actorId,
   targetId,
   { status, reason, suspendedUntil, action },
+  database = prisma,
 ) => {
   return runSerializable(async (tx) => {
     const target = await tx.user.findFirst({
@@ -128,10 +129,10 @@ const moderateUser = (
     })
 
     return { user }
-  })
+  }, database)
 }
 
-const deleteUser = (actorId, targetId) => {
+const deleteUser = (actorId, targetId, database = prisma) => {
   return runSerializable(async (tx) => {
     const target = await tx.user.findFirst({
       where: { id: targetId, deletedAt: null, isBot: false },
@@ -169,7 +170,7 @@ const deleteUser = (actorId, targetId) => {
     })
 
     return { user: { ...target, deletedAt } }
-  })
+  }, database)
 }
 
 const findUserDetail = (id) => {

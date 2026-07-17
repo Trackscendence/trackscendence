@@ -572,6 +572,45 @@ describe('validateLoginInput', () => {
 })
 
 describe('login', () => {
+  it('rejects soft-deleted accounts through the invalid-credentials path', async () => {
+    const passwordHash = await require('bcrypt').hash('StrongPass1!', 12)
+    let loginAttemptUpdates = 0
+
+    await withRepositoryStubs(
+      {
+        findByIdentifier: async () =>
+          buildAuthUser({
+            id: 500,
+            email: 'deleted@example.com',
+            username: 'deleted-user',
+            isBot: false,
+            isGuest: false,
+            deletedAt: new Date('2026-07-17T08:00:00.000Z'),
+            passwordHash,
+          }),
+        updateUserLoginAttempts: async () => {
+          loginAttemptUpdates += 1
+        },
+      },
+      async () => {
+        await assert.rejects(
+          () =>
+            login({
+              identifier: 'deleted-user',
+              password: 'StrongPass1!',
+            }),
+          (error) => {
+            assert.equal(error.statusCode, 401)
+            assert.equal(error.message, 'Invalid email/username or password')
+            return true
+          },
+        )
+
+        assert.equal(loginAttemptUpdates, 0)
+      },
+    )
+  })
+
   it('rejects bot accounts through the normal invalid-credentials path', async () => {
     let loginAttemptUpdates = 0
 

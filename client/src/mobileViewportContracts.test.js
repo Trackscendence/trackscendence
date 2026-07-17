@@ -12,35 +12,35 @@ const assertSourceContains = (relativePath, snippets) => {
 
 test('mobile route shells keep their responsive contracts', () => {
   const contracts = [
-    ['./layouts/AppLayout/AppLayout.jsx', ['min-h-[100dvh]', 'flex-col']],
+    // The shell owns the full-height flex column that every signed-in page
+    // sits inside now.
+    ['./layouts/Layout/Layout.jsx', ['min-h-[100dvh]', 'flex-col']],
     [
       // Desktop actions hide on phones; MobileMenu replaces them there.
-      './components/AppHeader/AppHeader.jsx',
+      './layouts/Layout/_components/Header/Header.jsx',
       ['hidden', 'sm:flex', 'MobileMenu'],
     ],
     [
-      './components/AppHeader/_components/MobileMenu/MobileMenu.jsx',
+      './layouts/Layout/_components/Header/_components/MobileMenu/MobileMenu.jsx',
       ['sm:hidden'],
     ],
     [
-      './layouts/AppLayout/_components/Navbar/Navbar.jsx',
-      ['flex-col', 'sm:flex-row', 'w-full'],
+      './layouts/Authentication/Authentication.jsx',
+      ['min-h-[100dvh]', 'flex-col'],
     ],
-    ['./layouts/AuthLayout/AuthLayout.jsx', ['min-h-[100dvh]', 'flex-col']],
     [
       // Back/Lobby share the top row; the search wraps to its own line.
-      './layouts/ProfileLayout/ProfileLayout.jsx',
+      './layouts/Account/Account.jsx',
       ['min-h-[100dvh]', 'flex-wrap', 'sm:flex-nowrap'],
     ],
     [
       './pages/Lobby/_components/LobbyView/LobbyView.jsx',
-      ['min-h-[100dvh]', 'flex-col'],
+      ['flex-1', 'flex-col'],
     ],
     ['./pages/AdminAccess/AdminAccess.jsx', ['grid gap-6', 'lg:grid-cols']],
-    ['./pages/Session/Session.jsx', ['grid gap-4', 'sm:grid-cols-2']],
     [
       './pages/WaitingRoom/_components/WaitingRoomView/WaitingRoomView.jsx',
-      ['min-h-[100dvh]', 'flex-col', 'overflow-hidden'],
+      ['flex-1', 'flex-col', 'overflow-hidden'],
     ],
     [
       './pages/Messages/Messages.jsx',

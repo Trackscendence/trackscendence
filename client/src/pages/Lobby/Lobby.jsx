@@ -26,7 +26,7 @@ const Lobby = () => {
   // Join hands the seat off to the waiting room as navigation intent rather
   // than emitting it here: the waiting room owns seating so its mount/cleanup
   // cycle can't leave the room right after the lobby opened it. Creating a
-  // room lives in AppHeader now (a global action) and uses the same intent.
+  // room lives in the header now (a global action) and uses the same intent.
   const handleJoinRoom = (roomId) =>
     navigate('/', { state: { seatIntent: { type: 'join', roomId } } })
 

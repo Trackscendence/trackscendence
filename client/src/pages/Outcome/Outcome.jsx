@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
 import useGameStore from '@/stores/useGameStore'
+import Layout from '@/layouts/Layout'
 import OutcomeView from './_components/OutcomeView'
 import getOutcomeCopy from './_utils/getOutcomeCopy'
 import leaderboardWindow from './_utils/leaderboardWindow'
@@ -75,15 +76,17 @@ const Outcome = () => {
   }
 
   return (
-    <OutcomeView
-      title={copy.title}
-      subtitle={copy.subtitle}
-      celebrate={copy.celebrate}
-      rows={rows}
-      currentUserId={user.id}
-      onPlayAgain={handlePlayAgain}
-      onHome={handleHome}
-    />
+    <Layout showHeader={false} className="bg-surface-outcome">
+      <OutcomeView
+        title={copy.title}
+        subtitle={copy.subtitle}
+        celebrate={copy.celebrate}
+        rows={rows}
+        currentUserId={user.id}
+        onPlayAgain={handlePlayAgain}
+        onHome={handleHome}
+      />
+    </Layout>
   )
 }
 

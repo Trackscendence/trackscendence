@@ -1,15 +1,17 @@
 import ConfirmDialog from '@/components/ConfirmDialog'
 import useAdminStore from '@/stores/useAdminStore'
 import useNotificationStore from '@/stores/useNotificationStore'
-import SuspendDialog from '../SuspendDialog'
-import BanDialog from '../BanDialog'
+import SuspendDialog from '@/components/SuspendDialog'
+import BanDialog from '@/components/BanDialog'
 
-// One dialog host for every row action (#503). The page hands it the pending
+// One dialog host for every moderation action (#503/#504), shared by the
+// Players table and the user detail view. The page hands it the pending
 // intent ({ type, user }); this container dispatches the store action, then
 // surfaces the outcome as a toast. The store already reconciles the row from
 // the server response (or reloads the page on failure), so nothing here
-// touches the list.
-const ModerationDialogs = ({ action, onClose }) => {
+// touches the list. onActionComplete lets a page react to the outcome — the
+// detail view leaves after a successful delete.
+const ModerationDialogs = ({ action, onClose, onActionComplete }) => {
   const pendingActions = useAdminStore((state) => state.pendingActions)
 
   if (!action) return null
@@ -30,6 +32,7 @@ const ModerationDialogs = ({ action, onClose }) => {
       )
     }
     onClose()
+    onActionComplete?.(type, succeeded)
   }
 
   const store = useAdminStore.getState()

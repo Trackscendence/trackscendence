@@ -187,6 +187,7 @@ const listPublicFriendsForUser = (userId, limit = 6) => {
 
 module.exports = {
   countAcceptedFriendsForUser,
+  escapeLikePattern,
   findPublicProfileByUsername,
   findRelationshipBetweenUsers,
   findSelfProfileById,

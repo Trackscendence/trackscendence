@@ -79,11 +79,11 @@ const PlayersRowMenu = ({ user, isSelf, isPending, onAction }) => {
         >
           <Link
             role="menuitem"
-            to={`/users/${encodeURIComponent(user.username)}`}
+            to={`/admin/users/${user.id}`}
             className="text-admin-ink hover:bg-admin-bg/60 block px-4 py-2.5 text-sm font-semibold"
             onClick={() => setIsOpen(false)}
           >
-            View profile
+            View account
           </Link>
           {!isSelf &&
             actionsForUser(user).map((action) => (

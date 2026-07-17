@@ -15,11 +15,13 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import ProtectedRoute from '@/router/ProtectedRoute'
 import Authentication from '@/layouts/Authentication'
 import Account from '@/layouts/Account'
+import Administration from '@/layouts/Administration'
 import ToastViewport from '@/components/ToastViewport'
 import RoleRoute from '@/router/RoleRoute'
 import { USER_ROLES } from '@/utils/authorization'
 
-const AdminAccess = lazy(() => import('@/pages/AdminAccess'))
+const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'))
+const AdminPlayers = lazy(() => import('@/pages/AdminPlayers'))
 const ChangePassword = lazy(() => import('@/pages/ChangePassword'))
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'))
 const Game = lazy(() => import('@/pages/Game'))
@@ -267,10 +269,14 @@ const App = () => {
 
             <Route path="/change-password" element={<ChangePassword />} />
 
-            {/* /admin carries its own Layout chrome (parked: reachable by URL,
-                no nav link yet). /two-factor is a legacy redirect. */}
+            {/* The Administration console carries its own shell (left rail /
+                bottom bar), not the player Layout. Reachable by URL only until
+                the nav entry lands (#497). /two-factor is a legacy redirect. */}
             <Route element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]} />}>
-              <Route path="/admin" element={<AdminAccess />} />
+              <Route element={<Administration />}>
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/players" element={<AdminPlayers />} />
+              </Route>
             </Route>
             <Route
               path="/two-factor"

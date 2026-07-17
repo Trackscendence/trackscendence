@@ -35,3 +35,48 @@ test('getStats combines database aggregates with in-memory active games', async 
     },
   })
 })
+
+test('listUsers validates filters and returns bounded pagination', async () => {
+  let receivedFilters = null
+  const users = [{ id: 12, username: 'ada' }]
+  const result = await adminService.listUsers(
+    { q: ' ada ', status: 'ACTIVE', role: 'USER', page: '2', limit: '200' },
+    {
+      repository: {
+        listUsers: async (filters) => {
+          receivedFilters = filters
+          return { users, totalCount: 61 }
+        },
+      },
+    },
+  )
+
+  assert.deepEqual(receivedFilters, {
+    query: 'ada',
+    status: 'ACTIVE',
+    role: 'USER',
+    page: 2,
+    limit: 50,
+    offset: 50,
+  })
+  assert.deepEqual(result, {
+    users,
+    pagination: { page: 2, limit: 50, totalCount: 61 },
+  })
+})
+
+test('listUsers rejects invalid enum filters and pagination', async () => {
+  await assert.rejects(
+    () =>
+      adminService.listUsers({
+        status: 'LOCKED',
+        role: 'OWNER',
+        page: 'zero',
+      }),
+    (error) => {
+      assert.equal(error.statusCode, 400)
+      assert.equal(error.payload.details.length, 3)
+      return true
+    },
+  )
+})

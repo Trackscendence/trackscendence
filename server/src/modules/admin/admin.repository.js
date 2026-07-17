@@ -1,4 +1,51 @@
 const prisma = require('#db/prisma')
+const { escapeLikePattern } = require('#modules/users/users.repository')
+
+const adminUserSelect = {
+  id: true,
+  username: true,
+  displayName: true,
+  email: true,
+  avatarUrl: true,
+  role: true,
+  status: true,
+  suspendedUntil: true,
+  createdAt: true,
+  gamesPlayed: true,
+  wins: true,
+}
+
+const listUsers = async ({ query, status, role, limit, offset }) => {
+  const escapedQuery = escapeLikePattern(query)
+  const where = {
+    deletedAt: null,
+    isBot: false,
+    ...(status ? { status } : {}),
+    ...(role ? { role } : {}),
+    ...(escapedQuery
+      ? {
+          OR: [
+            { username: { contains: escapedQuery, mode: 'insensitive' } },
+            { displayName: { contains: escapedQuery, mode: 'insensitive' } },
+            { email: { contains: escapedQuery, mode: 'insensitive' } },
+          ],
+        }
+      : {}),
+  }
+
+  const [users, totalCount] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: offset,
+      take: limit,
+      select: adminUserSelect,
+    }),
+    prisma.user.count({ where }),
+  ])
+
+  return { users, totalCount }
+}
 
 const getStats = async (now = new Date()) => {
   const rows = await prisma.$queryRaw`
@@ -62,5 +109,7 @@ const getStats = async (now = new Date()) => {
 }
 
 module.exports = {
+  adminUserSelect,
   getStats,
+  listUsers,
 }

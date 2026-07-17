@@ -145,16 +145,23 @@ const createFortyTwoUser = ({
   })
 }
 
-const promoteAllowlistedAdmin = (id) => {
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.update({
-      where: { id },
+const promoteAllowlistedAdmin = (id, database = prisma) => {
+  return database.$transaction(async (tx) => {
+    const promotion = await tx.user.updateMany({
+      where: { id, role: 'USER', deletedAt: null },
       data: {
         role: 'ADMIN',
         tokenVersion: { increment: 1 },
       },
+    })
+    const user = await tx.user.findUnique({
+      where: { id },
       select: authUserSelect,
     })
+
+    if (promotion.count === 0) {
+      return user
+    }
 
     await tx.adminAuditLog.create({
       data: {

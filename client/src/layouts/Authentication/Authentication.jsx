@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import Url from '@/components/Url'
 
 const CONTEXTUAL_NAV = {
   '/login': { label: 'SIGN UP', to: '/signup' },
@@ -7,7 +8,7 @@ const CONTEXTUAL_NAV = {
   '/reset-password': { label: 'LOGIN', to: '/login' },
 }
 
-const AuthLayout = () => {
+const Authentication = () => {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const nav = CONTEXTUAL_NAV[pathname] ?? { label: 'LOGIN', to: '/login' }
@@ -43,8 +44,13 @@ const AuthLayout = () => {
         </Link>
       </header>
       <Outlet />
+      {/* The auth surface's footer: a single quiet line under the form, the
+          public-page counterpart of the app-wide footer. */}
+      <p className="px-4 pb-6 text-center text-sm text-[#081934]/70">
+        <Url to="/terms-of-service">Read our terms and conditions</Url>
+      </p>
     </div>
   )
 }
 
-export default AuthLayout
+export default Authentication

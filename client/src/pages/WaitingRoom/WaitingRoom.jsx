@@ -5,6 +5,7 @@ import useGameStore from '@/stores/useGameStore'
 import getPlayerIdentity from '@/utils/getPlayerIdentity'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import QuickStartModal from '@/components/QuickStartModal'
+import Layout from '@/layouts/Layout'
 import WaitingRoomView from './_components/WaitingRoomView'
 import OwnerLeaveModal from './_components/OwnerLeaveModal'
 import {
@@ -238,7 +239,7 @@ const WaitingRoom = () => {
   const isMatched = Boolean(match) || myRoom.players.length >= myRoom.capacity
 
   return (
-    <>
+    <Layout showHeader={false} className="bg-surface-waiting">
       <WaitingRoomView
         slots={slots}
         isMatched={isMatched}
@@ -254,7 +255,7 @@ const WaitingRoom = () => {
         onLeave={leaveToLobby}
         onEnd={endRoom}
       />
-    </>
+    </Layout>
   )
 }
 

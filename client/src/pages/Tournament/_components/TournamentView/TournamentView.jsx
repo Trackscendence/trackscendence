@@ -1,4 +1,4 @@
-import AppHeader from '@/components/AppHeader'
+import Layout from '@/layouts/Layout'
 
 // The warm-surface shell for the tournament page, mirroring LobbyView so the
 // signed-in pages share one visual family. The page container picks which
@@ -7,8 +7,7 @@ import AppHeader from '@/components/AppHeader'
 // failures the same way.
 const TournamentView = ({ children, error }) => {
   return (
-    <div className="bg-surface-warm flex min-h-[100dvh] flex-col">
-      <AppHeader />
+    <Layout>
       <main className="flex flex-1 flex-col px-4 py-6 sm:px-8 sm:py-8">
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
           <h1 className="text-[clamp(42px,10vw,80px)] leading-none font-black tracking-[-0.025em] text-[#E86D2F]">
@@ -22,7 +21,7 @@ const TournamentView = ({ children, error }) => {
           <div className="pt-8">{children}</div>
         </div>
       </main>
-    </div>
+    </Layout>
   )
 }
 

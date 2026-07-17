@@ -77,6 +77,10 @@ const buildAuthUser = (overrides = {}) => ({
   termsAcceptedAt: null,
   privacyAcceptedAt: null,
   tokenVersion: 0,
+  status: 'ACTIVE',
+  statusReason: null,
+  suspendedUntil: null,
+  statusUpdatedAt: null,
   twoFactorChallengeVersion: 0,
   twoFactorEnabled: false,
   twoFactorPendingSecretCiphertext: null,
@@ -143,6 +147,81 @@ describe('getUserFromToken auth cache (B4)', () => {
         // Invalidate as the bump sites do, then the stale token fails on the DB.
         authTokenCache.invalidate(101)
         await assert.rejects(() => getUserFromToken(staleToken))
+      },
+    )
+  })
+})
+
+describe('getUserFromToken auth status enforcement', () => {
+  it('rejects banned users', async () => {
+    authTokenCache.clear()
+    const token = authToken.signAccessToken({
+      id: 101,
+      tokenVersion: 0,
+      role: 'USER',
+    })
+
+    await withRepositoryStubs(
+      {
+        findTokenUserById: async () =>
+          buildAuthUser({
+            deletedAt: null,
+            status: 'BANNED',
+          }),
+      },
+      async () => {
+        await assert.rejects(() => getUserFromToken(token), {
+          statusCode: 403,
+        })
+      },
+    )
+  })
+
+  it('rejects suspended users while the suspension is still active', async () => {
+    authTokenCache.clear()
+    const token = authToken.signAccessToken({
+      id: 101,
+      tokenVersion: 0,
+      role: 'USER',
+    })
+
+    await withRepositoryStubs(
+      {
+        findTokenUserById: async () =>
+          buildAuthUser({
+            deletedAt: null,
+            status: 'SUSPENDED',
+            suspendedUntil: new Date(Date.now() + 60 * 1000),
+          }),
+      },
+      async () => {
+        await assert.rejects(() => getUserFromToken(token), {
+          statusCode: 403,
+        })
+      },
+    )
+  })
+
+  it('allows a suspension that has already expired', async () => {
+    authTokenCache.clear()
+    const token = authToken.signAccessToken({
+      id: 101,
+      tokenVersion: 0,
+      role: 'USER',
+    })
+
+    await withRepositoryStubs(
+      {
+        findTokenUserById: async () =>
+          buildAuthUser({
+            deletedAt: null,
+            status: 'SUSPENDED',
+            suspendedUntil: new Date(Date.now() - 60 * 1000),
+          }),
+      },
+      async () => {
+        const user = await getUserFromToken(token)
+        assert.strictEqual(user.id, 101)
       },
     )
   })
@@ -418,6 +497,103 @@ describe('login', () => {
         )
 
         assert.strictEqual(loginAttemptUpdates, 0)
+      },
+    )
+  })
+
+  it('rejects banned accounts with a forbidden error', async () => {
+    let loginAttemptUpdates = 0
+
+    await withRepositoryStubs(
+      {
+        findByIdentifier: async () =>
+          buildAuthUser({
+            id: 502,
+            email: 'banned@example.com',
+            username: 'banned-user',
+            isBot: false,
+            status: 'BANNED',
+            passwordHash: 'not-used',
+          }),
+        updateUserLoginAttempts: async () => {
+          loginAttemptUpdates += 1
+        },
+      },
+      async () => {
+        await assert.rejects(
+          () =>
+            login({
+              identifier: 'banned-user',
+              password: 'StrongPass1!',
+            }),
+          { statusCode: 403 },
+        )
+
+        assert.strictEqual(loginAttemptUpdates, 0)
+      },
+    )
+  })
+
+  it('rejects active suspensions with a forbidden error', async () => {
+    let loginAttemptUpdates = 0
+
+    await withRepositoryStubs(
+      {
+        findByIdentifier: async () =>
+          buildAuthUser({
+            id: 503,
+            email: 'suspended@example.com',
+            username: 'suspended-user',
+            isBot: false,
+            status: 'SUSPENDED',
+            suspendedUntil: new Date(Date.now() + 60 * 1000),
+            passwordHash: 'not-used',
+          }),
+        updateUserLoginAttempts: async () => {
+          loginAttemptUpdates += 1
+        },
+      },
+      async () => {
+        await assert.rejects(
+          () =>
+            login({
+              identifier: 'suspended-user',
+              password: 'StrongPass1!',
+            }),
+          { statusCode: 403 },
+        )
+
+        assert.strictEqual(loginAttemptUpdates, 0)
+      },
+    )
+  })
+
+  it('allows login after a suspension expires', async () => {
+    const passwordHash = await require('bcrypt').hash('StrongPass1!', 12)
+
+    await withRepositoryStubs(
+      {
+        findByIdentifier: async () =>
+          buildAuthUser({
+            id: 504,
+            email: 'restored@example.com',
+            username: 'restored-user',
+            isBot: false,
+            isGuest: false,
+            status: 'SUSPENDED',
+            suspendedUntil: new Date(Date.now() - 60 * 1000),
+            passwordHash,
+          }),
+        updateUserLoginAttempts: async () => {},
+      },
+      async () => {
+        const result = await login({
+          identifier: 'restored-user',
+          password: 'StrongPass1!',
+        })
+
+        assert.ok(result.token)
+        assert.strictEqual(result.user.username, 'restored-user')
       },
     )
   })

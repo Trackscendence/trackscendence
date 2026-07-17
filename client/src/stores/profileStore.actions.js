@@ -13,8 +13,11 @@ import {
   saveCurrentProfile,
 } from './profileStore.helpers'
 import { createCurrentProfileLoader } from './profileStore.currentProfileLoader'
-import { withFriendsCountDelta } from './profileStore.friendsCount'
 import { createPublicProfileLoader } from './profileStore.publicProfileLoader'
+import {
+  applyFriendRequestResponsePatch,
+  applyRelationshipRemovalPatch,
+} from './profileStore.relationshipPatch'
 import { isActiveToken } from './sessionGuard'
 import useAuthStore from './useAuthStore'
 import useNotificationStore from './useNotificationStore'
@@ -149,14 +152,12 @@ export const createProfileActions = (set, get) => ({
       // patch the cached counts the stat strip reads (#396); the next full
       // profile load restores server truth.
       set((state) => ({
-        relationship: result.relationship,
         isSubmitting: false,
-        ...(action === 'accept'
-          ? {
-              publicProfile: withFriendsCountDelta(state.publicProfile, 1),
-              currentProfile: withFriendsCountDelta(state.currentProfile, 1),
-            }
-          : {}),
+        ...applyFriendRequestResponsePatch({
+          action,
+          relationship: result.relationship,
+          state,
+        }),
       }))
       notifications.push(
         action === 'accept'
@@ -208,14 +209,12 @@ export const createProfileActions = (set, get) => ({
       // Unfriending shrinks the accepted-friendship total on both sides;
       // cancelling a pending request never counted, so no patch there.
       set((state) => ({
-        relationship: result.relationship,
         isSubmitting: false,
-        ...(wasFriends
-          ? {
-              publicProfile: withFriendsCountDelta(state.publicProfile, -1),
-              currentProfile: withFriendsCountDelta(state.currentProfile, -1),
-            }
-          : {}),
+        ...applyRelationshipRemovalPatch({
+          relationship: result.relationship,
+          state,
+          wasFriends,
+        }),
       }))
       notifications.push(
         wasFriends ? 'Friend removed' : 'Friend request cancelled',

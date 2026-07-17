@@ -218,6 +218,9 @@ const getProfileData = async (
     createdAt: user.createdAt,
     ...(options.includeEmail ? { email: user.email } : {}),
     isGuest: Boolean(user.isGuest),
+    // Deliberately in both self and public payloads: the profile header wears
+    // the operator badge for admins, so moderation stays attributable.
+    role: user.role,
     stats: { ...toProfileStats(user), friendsCount },
     recentMatches: recentMatches.map((match) => toRecentMatch(match, user.id)),
     friends: friends.map((friendship) => toProfileFriend(friendship, user.id)),

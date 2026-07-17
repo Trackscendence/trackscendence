@@ -22,6 +22,7 @@ import { USER_ROLES } from '@/utils/authorization'
 
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'))
 const AdminPlayers = lazy(() => import('@/pages/AdminPlayers'))
+const AdminUserDetail = lazy(() => import('@/pages/AdminUserDetail'))
 const ChangePassword = lazy(() => import('@/pages/ChangePassword'))
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'))
 const Game = lazy(() => import('@/pages/Game'))
@@ -270,12 +271,13 @@ const App = () => {
             <Route path="/change-password" element={<ChangePassword />} />
 
             {/* The Administration console carries its own shell (left rail /
-                bottom bar), not the player Layout. Reachable by URL only until
-                the nav entry lands (#497). /two-factor is a legacy redirect. */}
+                bottom bar), not the player Layout. /two-factor is a legacy
+                redirect. */}
             <Route element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]} />}>
               <Route element={<Administration />}>
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/players" element={<AdminPlayers />} />
+                <Route path="/admin/users/:id" element={<AdminUserDetail />} />
               </Route>
             </Route>
             <Route

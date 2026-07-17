@@ -171,6 +171,23 @@ test('changeUserRole protects the last administrator', async () => {
   )
 })
 
+test('changeUserRole rejects self-targeting before the repository call', async () => {
+  await assert.rejects(
+    () =>
+      adminService.changeUserRole(
+        1,
+        '1',
+        { role: 'USER' },
+        {
+          repository: {
+            changeUserRole: async () => assert.fail('repository must not run'),
+          },
+        },
+      ),
+    { statusCode: 409 },
+  )
+})
+
 test('suspendUser validates a future expiry and invalidates auth', async () => {
   let mutation = null
   let invalidatedId = null
@@ -241,6 +258,18 @@ test('reinstateUser clears moderation state through the shared write path', asyn
     suspendedUntil: null,
     action: 'USER_REINSTATED',
   })
+})
+
+test('reinstateUser rejects self-targeting before the repository call', async () => {
+  await assert.rejects(
+    () =>
+      adminService.reinstateUser(1, '1', {
+        repository: {
+          moderateUser: async () => assert.fail('repository must not run'),
+        },
+      }),
+    { statusCode: 409 },
+  )
 })
 
 test('deleteUser returns the soft-deleted row and invalidates auth', async () => {

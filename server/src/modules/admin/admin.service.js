@@ -139,6 +139,10 @@ const changeUserRole = async (
 ) => {
   const targetId = parseUserId(rawTargetId)
 
+  if (actorId === targetId) {
+    throw new ConflictException('Administrators cannot change their own role')
+  }
+
   if (!USER_ROLES.has(role)) {
     throw new BadRequestException('role must be USER or ADMIN')
   }
@@ -179,7 +183,7 @@ const runModeration = async (
 ) => {
   const targetId = parseUserId(rawTargetId)
 
-  if (actorId === targetId && mutation.status !== 'ACTIVE') {
+  if (actorId === targetId) {
     throw new ConflictException('Administrators cannot moderate themselves')
   }
 

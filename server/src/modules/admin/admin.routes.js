@@ -8,5 +8,6 @@ const router = Router()
 router.use(requireAuth, requireRole(ROLES.ADMIN))
 router.get('/access', adminController.getAccess)
 router.get('/stats', adminController.getStats)
+router.get('/users', adminController.listUsers)
 
 module.exports = router

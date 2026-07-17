@@ -12,7 +12,16 @@ const getStats = async (req, res, next) => {
   }
 }
 
+const listUsers = async (req, res, next) => {
+  try {
+    res.json(await adminService.listUsers(req.query))
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports = {
   getAccess,
   getStats,
+  listUsers,
 }

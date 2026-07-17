@@ -11,5 +11,8 @@ router.get('/stats', adminController.getStats)
 router.get('/users', adminController.listUsers)
 router.get('/users/:id', adminController.getUser)
 router.patch('/users/:id/role', adminController.changeUserRole)
+router.post('/users/:id/suspend', adminController.suspendUser)
+router.post('/users/:id/ban', adminController.banUser)
+router.post('/users/:id/reinstate', adminController.reinstateUser)
 
 module.exports = router

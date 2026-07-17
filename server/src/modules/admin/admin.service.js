@@ -14,6 +14,7 @@ const {
 const USER_STATUSES = new Set(['ACTIVE', 'SUSPENDED', 'BANNED'])
 const USER_ROLES = new Set(['USER', 'ADMIN'])
 const MAX_SEARCH_LENGTH = 100
+const MAX_REASON_LENGTH = 500
 
 const getAccess = (user) => ({
   message: 'Admin access granted',
@@ -158,7 +159,95 @@ const changeUserRole = async (
   return { user: result.user }
 }
 
+const parseReason = (reason) => {
+  const value = typeof reason === 'string' ? reason.trim() : ''
+
+  if (!value || value.length > MAX_REASON_LENGTH) {
+    throw new BadRequestException(
+      `reason must be between 1 and ${MAX_REASON_LENGTH} characters`,
+    )
+  }
+
+  return value
+}
+
+const runModeration = async (
+  actorId,
+  rawTargetId,
+  mutation,
+  { repository = adminRepository, tokenCache = authTokenCache } = {},
+) => {
+  const targetId = parseUserId(rawTargetId)
+
+  if (actorId === targetId && mutation.status !== 'ACTIVE') {
+    throw new ConflictException('Administrators cannot moderate themselves')
+  }
+
+  const result = await repository.moderateUser(actorId, targetId, mutation)
+
+  if (!result) {
+    throw new NotFoundException('User not found')
+  }
+
+  tokenCache.invalidate(targetId)
+  return { user: result.user }
+}
+
+const suspendUser = async (
+  actorId,
+  rawTargetId,
+  { suspendedUntil, reason } = {},
+  dependencies,
+) => {
+  const until = new Date(suspendedUntil)
+
+  if (!suspendedUntil || Number.isNaN(until.getTime()) || until <= new Date()) {
+    throw new BadRequestException('suspendedUntil must be a future ISO date')
+  }
+
+  return runModeration(
+    actorId,
+    rawTargetId,
+    {
+      status: 'SUSPENDED',
+      reason: parseReason(reason),
+      suspendedUntil: until,
+      action: 'USER_SUSPENDED',
+    },
+    dependencies,
+  )
+}
+
+const banUser = (actorId, rawTargetId, { reason } = {}, dependencies) => {
+  return runModeration(
+    actorId,
+    rawTargetId,
+    {
+      status: 'BANNED',
+      reason: parseReason(reason),
+      suspendedUntil: null,
+      action: 'USER_BANNED',
+    },
+    dependencies,
+  )
+}
+
+const reinstateUser = (actorId, rawTargetId, dependencies) => {
+  return runModeration(
+    actorId,
+    rawTargetId,
+    {
+      status: 'ACTIVE',
+      reason: null,
+      suspendedUntil: null,
+      action: 'USER_REINSTATED',
+    },
+    dependencies,
+  )
+}
+
 module.exports = {
+  banUser,
   changeUserRole,
   getAccess,
   getStats,
@@ -166,4 +255,6 @@ module.exports = {
   listUsers,
   parseUserId,
   parseUsersQuery,
+  reinstateUser,
+  suspendUser,
 }

@@ -10,5 +10,6 @@ router.get('/access', adminController.getAccess)
 router.get('/stats', adminController.getStats)
 router.get('/users', adminController.listUsers)
 router.get('/users/:id', adminController.getUser)
+router.patch('/users/:id/role', adminController.changeUserRole)
 
 module.exports = router

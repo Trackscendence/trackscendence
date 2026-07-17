@@ -28,7 +28,18 @@ const getUser = async (req, res, next) => {
   }
 }
 
+const changeUserRole = async (req, res, next) => {
+  try {
+    res.json(
+      await adminService.changeUserRole(req.user.id, req.params.id, req.body),
+    )
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports = {
+  changeUserRole,
   getAccess,
   getStats,
   getUser,

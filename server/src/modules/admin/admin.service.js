@@ -1,5 +1,7 @@
 const BadRequestException = require('#exceptions/bad-request.exception')
+const ConflictException = require('#exceptions/conflict.exception')
 const NotFoundException = require('#exceptions/not-found.exception')
+const authTokenCache = require('#modules/auth/auth.token-cache')
 const adminRepository = require('#modules/admin/admin.repository')
 const gameStore = require('#modules/game/game.store')
 const {
@@ -128,7 +130,36 @@ const getUser = async (rawId, { repository = adminRepository } = {}) => {
   }
 }
 
+const changeUserRole = async (
+  actorId,
+  rawTargetId,
+  { role } = {},
+  { repository = adminRepository, tokenCache = authTokenCache } = {},
+) => {
+  const targetId = parseUserId(rawTargetId)
+
+  if (!USER_ROLES.has(role)) {
+    throw new BadRequestException('role must be USER or ADMIN')
+  }
+
+  const result = await repository.changeUserRole(actorId, targetId, role)
+
+  if (!result) {
+    throw new NotFoundException('User not found')
+  }
+  if (result.error === repository.ADMIN_MUTATION_ERRORS.LAST_ADMIN) {
+    throw new ConflictException('The last administrator cannot be demoted')
+  }
+
+  if (result.user.tokenVersion !== undefined) {
+    delete result.user.tokenVersion
+  }
+  tokenCache.invalidate(targetId)
+  return { user: result.user }
+}
+
 module.exports = {
+  changeUserRole,
   getAccess,
   getStats,
   getUser,

@@ -123,3 +123,50 @@ test('getUser rejects malformed and missing user ids', async () => {
     { statusCode: 404 },
   )
 })
+
+test('changeUserRole invalidates live auth after the audited write', async () => {
+  let invalidatedId = null
+  const result = await adminService.changeUserRole(
+    1,
+    '12',
+    { role: 'ADMIN' },
+    {
+      repository: {
+        ADMIN_MUTATION_ERRORS: { LAST_ADMIN: 'LAST_ADMIN' },
+        changeUserRole: async (actorId, targetId, role) => {
+          assert.deepEqual(
+            { actorId, targetId, role },
+            {
+              actorId: 1,
+              targetId: 12,
+              role: 'ADMIN',
+            },
+          )
+          return { user: { id: 12, role, tokenVersion: 4 } }
+        },
+      },
+      tokenCache: { invalidate: (id) => (invalidatedId = id) },
+    },
+  )
+
+  assert.deepEqual(result, { user: { id: 12, role: 'ADMIN' } })
+  assert.equal(invalidatedId, 12)
+})
+
+test('changeUserRole protects the last administrator', async () => {
+  await assert.rejects(
+    () =>
+      adminService.changeUserRole(
+        1,
+        '1',
+        { role: 'USER' },
+        {
+          repository: {
+            ADMIN_MUTATION_ERRORS: { LAST_ADMIN: 'LAST_ADMIN' },
+            changeUserRole: async () => ({ error: 'LAST_ADMIN' }),
+          },
+        },
+      ),
+    { statusCode: 409 },
+  )
+})

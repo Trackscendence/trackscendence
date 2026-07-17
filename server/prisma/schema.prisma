@@ -24,6 +24,14 @@ enum UserStatus {
   BANNED
 }
 
+enum AdminActionType {
+  ROLE_CHANGED
+  USER_SUSPENDED
+  USER_BANNED
+  USER_REINSTATED
+  USER_DELETED
+}
+
 model User {
   id                               Int                         @id @default(autoincrement())
   email                            String                      @unique
@@ -78,6 +86,8 @@ model User {
   socialNotifications              SocialNotification[]        @relation("SocialNotificationRecipient")
   socialNotificationsTriggered     SocialNotification[]        @relation("SocialNotificationActor")
   apiKeys                          ApiKey[]
+  adminAuditLogsAuthored           AdminAuditLog[]             @relation("AuditActor")
+  adminAuditLogsTargeted           AdminAuditLog[]             @relation("AuditTarget")
   tournamentsCreated               Tournament[]                @relation("TournamentCreator")
   tournamentsWon                   Tournament[]                @relation("TournamentWinner")
   tournamentEntries                TournamentPlayer[]
@@ -119,6 +129,21 @@ model UserTwoFactorRecoveryCode {
 
   @@unique([userId, codeHash])
   @@index([userId, isPending])
+}
+
+model AdminAuditLog {
+  id        Int             @id @default(autoincrement())
+  actorId   Int?
+  targetId  Int?
+  action    AdminActionType
+  reason    String?
+  metadata  Json?
+  createdAt DateTime        @default(now())
+  actor     User?           @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  target    User?           @relation("AuditTarget", fields: [targetId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([targetId])
 }
 
 enum GameStatus {

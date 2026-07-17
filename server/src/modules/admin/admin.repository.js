@@ -87,6 +87,50 @@ const changeUserRole = (actorId, targetId, role) => {
   })
 }
 
+const moderateUser = (
+  actorId,
+  targetId,
+  { status, reason, suspendedUntil, action },
+) => {
+  return runSerializable(async (tx) => {
+    const target = await tx.user.findFirst({
+      where: { id: targetId, deletedAt: null, isBot: false },
+      select: adminUserSelect,
+    })
+
+    if (!target) {
+      return null
+    }
+
+    const user = await tx.user.update({
+      where: { id: targetId },
+      data: {
+        status,
+        statusReason: reason,
+        suspendedUntil,
+        statusUpdatedAt: new Date(),
+        tokenVersion: { increment: 1 },
+      },
+      select: adminUserSelect,
+    })
+
+    await tx.adminAuditLog.create({
+      data: {
+        actorId,
+        targetId,
+        action,
+        reason,
+        metadata:
+          action === 'USER_SUSPENDED'
+            ? { suspendedUntil: suspendedUntil.toISOString() }
+            : undefined,
+      },
+    })
+
+    return { user }
+  })
+}
+
 const findUserDetail = (id) => {
   return prisma.user.findFirst({
     where: { id, deletedAt: null, isBot: false },
@@ -214,4 +258,5 @@ module.exports = {
   findUserDetail,
   getStats,
   listUsers,
+  moderateUser,
 }

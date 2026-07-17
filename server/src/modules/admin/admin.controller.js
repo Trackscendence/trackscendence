@@ -38,10 +38,39 @@ const changeUserRole = async (req, res, next) => {
   }
 }
 
+const suspendUser = async (req, res, next) => {
+  try {
+    res.json(
+      await adminService.suspendUser(req.user.id, req.params.id, req.body),
+    )
+  } catch (error) {
+    next(error)
+  }
+}
+
+const banUser = async (req, res, next) => {
+  try {
+    res.json(await adminService.banUser(req.user.id, req.params.id, req.body))
+  } catch (error) {
+    next(error)
+  }
+}
+
+const reinstateUser = async (req, res, next) => {
+  try {
+    res.json(await adminService.reinstateUser(req.user.id, req.params.id))
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports = {
+  banUser,
   changeUserRole,
   getAccess,
   getStats,
   getUser,
   listUsers,
+  reinstateUser,
+  suspendUser,
 }

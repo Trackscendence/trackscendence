@@ -170,3 +170,75 @@ test('changeUserRole protects the last administrator', async () => {
     { statusCode: 409 },
   )
 })
+
+test('suspendUser validates a future expiry and invalidates auth', async () => {
+  let mutation = null
+  let invalidatedId = null
+  const suspendedUntil = new Date(Date.now() + 60_000).toISOString()
+  const result = await adminService.suspendUser(
+    1,
+    '12',
+    { suspendedUntil, reason: ' abusive chat ' },
+    {
+      repository: {
+        moderateUser: async (actorId, targetId, input) => {
+          mutation = { actorId, targetId, input }
+          return { user: { id: targetId, status: input.status } }
+        },
+      },
+      tokenCache: { invalidate: (id) => (invalidatedId = id) },
+    },
+  )
+
+  assert.equal(mutation.input.reason, 'abusive chat')
+  assert.equal(mutation.input.action, 'USER_SUSPENDED')
+  assert.equal(mutation.input.suspendedUntil.toISOString(), suspendedUntil)
+  assert.deepEqual(result, { user: { id: 12, status: 'SUSPENDED' } })
+  assert.equal(invalidatedId, 12)
+})
+
+test('moderation rejects self-actions, expired suspensions, and empty reasons', async () => {
+  await assert.rejects(
+    () =>
+      adminService.banUser(
+        1,
+        '1',
+        { reason: 'reason' },
+        {
+          repository: { moderateUser: async () => assert.fail() },
+        },
+      ),
+    { statusCode: 409 },
+  )
+  await assert.rejects(
+    () =>
+      adminService.suspendUser(1, '2', {
+        suspendedUntil: new Date(Date.now() - 60_000).toISOString(),
+        reason: 'reason',
+      }),
+    { statusCode: 400 },
+  )
+  assert.throws(() => adminService.banUser(1, '2', { reason: ' ' }), {
+    statusCode: 400,
+  })
+})
+
+test('reinstateUser clears moderation state through the shared write path', async () => {
+  let receivedMutation = null
+  await adminService.reinstateUser(1, '12', {
+    repository: {
+      moderateUser: async (actorId, targetId, mutation) => {
+        receivedMutation = mutation
+        return { user: { id: targetId, status: mutation.status } }
+      },
+    },
+    tokenCache: { invalidate: () => {} },
+  })
+
+  assert.deepEqual(receivedMutation, {
+    status: 'ACTIVE',
+    reason: null,
+    suspendedUntil: null,
+    action: 'USER_REINSTATED',
+  })
+})

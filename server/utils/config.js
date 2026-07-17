@@ -49,6 +49,18 @@ const parseUrl = (key, fallback) => {
   }
 }
 
+const parseEmailList = (key, fallback) => {
+  const rawValue = process.env[key] || fallback
+
+  return Object.freeze(
+    [
+      ...new Set(
+        rawValue.split(',').map((email) => email.trim().toLowerCase()),
+      ),
+    ].filter(Boolean),
+  )
+}
+
 const defaultClientPort =
   NODE_ENV === 'development'
     ? parseNumber('CLIENT_DEV_PORT', 5173)
@@ -107,6 +119,15 @@ const optionalConfigs = {
   FORTYTWO_CLIENT_SECRET: process.env.FORTYTWO_CLIENT_SECRET || '',
   FORTYTWO_REDIRECT_URI: process.env.FORTYTWO_REDIRECT_URI || '',
   FORTYTWO_STATE_EXPIRES_IN: process.env.FORTYTWO_STATE_EXPIRES_IN || '10m',
+  ADMIN_EMAILS: parseEmailList(
+    'ADMIN_EMAILS',
+    [
+      'dmelnyk@student.42london.com',
+      'ogrativ@student.42london.com',
+      'smoore@student.42london.com',
+      'srodrigo@student.42london.com',
+    ].join(','),
+  ),
   // How long a mid-game player may stay fully disconnected (no socket at all)
   // before their game is abandoned. The game pauses for the other players and
   // shows them a countdown for this long, enough to reopen a closed tab or ride

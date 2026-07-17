@@ -18,65 +18,76 @@ enum Role {
   ADMIN
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
 model User {
-  id                               Int      @id @default(autoincrement())
-  email                            String   @unique
-  username                         String   @unique
+  id                               Int                         @id @default(autoincrement())
+  email                            String                      @unique
+  username                         String                      @unique
   displayName                      String?
   bio                              String?
   avatarUrl                        String?
   // Null for accounts provisioned through 42 OAuth that never set a password;
   // password login and change-password are rejected until a reset sets one.
   passwordHash                     String?
-  fortyTwoId                       Int?     @unique
-  passwordResetTokenId             String?  @unique
+  fortyTwoId                       Int?                        @unique
+  passwordResetTokenId             String?                     @unique
   passwordResetTokenHash           String?
   passwordResetTokenExpiry         DateTime?
-  tokenVersion                     Int      @default(0)
+  tokenVersion                     Int                         @default(0)
   termsAcceptedAt                  DateTime?
   privacyAcceptedAt                DateTime?
   deletedAt                        DateTime?
-  isGuest                          Boolean  @default(false)
-  isBot                            Boolean  @default(false)
-  gamesPlayed                      Int      @default(0)
-  wins                             Int      @default(0)
-  losses                           Int      @default(0)
+  isGuest                          Boolean                     @default(false)
+  isBot                            Boolean                     @default(false)
+  gamesPlayed                      Int                         @default(0)
+  wins                             Int                         @default(0)
+  losses                           Int                         @default(0)
   rank                             Int?
-  twoFactorChallengeVersion        Int      @default(0)
-  twoFactorEnabled                 Boolean  @default(false)
+  twoFactorChallengeVersion        Int                         @default(0)
+  twoFactorEnabled                 Boolean                     @default(false)
   twoFactorSecretCiphertext        String?
   twoFactorPendingSecretCiphertext String?
-  role                             Role     @default(USER)
+  role                             Role                        @default(USER)
+  status                           UserStatus                  @default(ACTIVE)
+  statusReason                     String?
+  suspendedUntil                   DateTime?
+  statusUpdatedAt                  DateTime?
   twoFactorRecoveryCodes           UserTwoFactorRecoveryCode[]
-  createdAt                        DateTime @default(now())
-  updatedAt                        DateTime @updatedAt
+  createdAt                        DateTime                    @default(now())
+  updatedAt                        DateTime                    @updatedAt
   games                            GamePlayer[]
-  outgoingFriendships              Friendship[] @relation("FriendshipRequester")
-  incomingFriendships              Friendship[] @relation("FriendshipAddressee")
-  friendshipsBlockedByUser         Friendship[] @relation("FriendshipBlocker")
-  failedLoginCount                 Int      @default(0)
+  outgoingFriendships              Friendship[]                @relation("FriendshipRequester")
+  incomingFriendships              Friendship[]                @relation("FriendshipAddressee")
+  friendshipsBlockedByUser         Friendship[]                @relation("FriendshipBlocker")
+  failedLoginCount                 Int                         @default(0)
   lockedOutUntil                   DateTime?
-  ownedRooms                       Room[]       @relation("RoomOwner")
+  ownedRooms                       Room[]                      @relation("RoomOwner")
   roomMemberships                  RoomPlayer[]
-  createdChatRooms                 ChatRoom[]       @relation("ChatRoomCreator")
+  createdChatRooms                 ChatRoom[]                  @relation("ChatRoomCreator")
   chatRoomMemberships              ChatRoomMember[]
-  chatRoomInvitesSent              ChatRoomMember[] @relation("ChatRoomInviter")
+  chatRoomInvitesSent              ChatRoomMember[]            @relation("ChatRoomInviter")
   chatMessages                     ChatMessage[]
-  directConversationAsFirstUser    DirectConversation[] @relation("DirectConversationFirstUser")
-  directConversationAsSecondUser   DirectConversation[] @relation("DirectConversationSecondUser")
+  directConversationAsFirstUser    DirectConversation[]        @relation("DirectConversationFirstUser")
+  directConversationAsSecondUser   DirectConversation[]        @relation("DirectConversationSecondUser")
   directMessages                   DirectMessage[]
-  socialNotifications              SocialNotification[] @relation("SocialNotificationRecipient")
-  socialNotificationsTriggered     SocialNotification[] @relation("SocialNotificationActor")
+  socialNotifications              SocialNotification[]        @relation("SocialNotificationRecipient")
+  socialNotificationsTriggered     SocialNotification[]        @relation("SocialNotificationActor")
   apiKeys                          ApiKey[]
-  tournamentsCreated               Tournament[] @relation("TournamentCreator")
-  tournamentsWon                   Tournament[] @relation("TournamentWinner")
+  tournamentsCreated               Tournament[]                @relation("TournamentCreator")
+  tournamentsWon                   Tournament[]                @relation("TournamentWinner")
   tournamentEntries                TournamentPlayer[]
-  tournamentMatchesAsPlayerA       TournamentMatch[] @relation("TournamentMatchPlayerA")
-  tournamentMatchesAsPlayerB       TournamentMatch[] @relation("TournamentMatchPlayerB")
-  tournamentMatchesWon             TournamentMatch[] @relation("TournamentMatchWinner")
+  tournamentMatchesAsPlayerA       TournamentMatch[]           @relation("TournamentMatchPlayerA")
+  tournamentMatchesAsPlayerB       TournamentMatch[]           @relation("TournamentMatchPlayerB")
+  tournamentMatchesWon             TournamentMatch[]           @relation("TournamentMatchWinner")
 
   @@index([deletedAt])
   @@index([isBot])
+  @@index([status])
 }
 
 model ApiKey {
@@ -90,7 +101,7 @@ model ApiKey {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Only the SHA-256 hash of the key is stored; the plaintext key is shown to
   // the owner once at creation time. Revocation is a soft delete (revokedAt)
@@ -129,14 +140,14 @@ enum SocialNotificationType {
 }
 
 model Game {
-  id          Int          @id @default(autoincrement())
-  status      GameStatus   @default(COMPLETED)
-  startedAt   DateTime     @default(now())
-  endedAt     DateTime?
-  players     GamePlayer[]
+  id                Int               @id @default(autoincrement())
+  status            GameStatus        @default(COMPLETED)
+  startedAt         DateTime          @default(now())
+  endedAt           DateTime?
+  players           GamePlayer[]
   tournamentMatches TournamentMatch[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   // Recent-match history (profile page) filters GamePlayer by userId then orders
   // by Game.endedAt desc. Index the sort column so the join does not fall back to
@@ -145,16 +156,16 @@ model Game {
 }
 
 model GamePlayer {
-  id          Int      @id @default(autoincrement())
-  gameId      Int
-  userId      Int
-  score       Int      @default(0)
-  isWinner    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  gameId    Int
+  userId    Int
+  score     Int      @default(0)
+  isWinner  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  game        Game     @relation(fields: [gameId], references: [id])
-  user        User     @relation(fields: [userId], references: [id])
+  game Game @relation(fields: [gameId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([gameId, userId])
   @@index([userId])
@@ -196,8 +207,8 @@ model Room {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  owner     User         @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  players   RoomPlayer[]
+  owner   User         @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  players RoomPlayer[]
 
   @@index([status])
   @@index([ownerId, status])
@@ -209,8 +220,8 @@ model RoomPlayer {
   userId    Int
   createdAt DateTime @default(now())
 
-  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
   @@index([userId])
@@ -298,14 +309,14 @@ model TournamentMatch {
 }
 
 model Friendship {
-  id          Int              @id @default(autoincrement())
-  requesterId Int
-  addresseeId Int
-  status      FriendshipStatus @default(PENDING)
+  id             Int              @id @default(autoincrement())
+  requesterId    Int
+  addresseeId    Int
+  status         FriendshipStatus @default(PENDING)
   requestMessage String?
-  blockedById Int?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  blockedById    Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   requester          User           @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
   addressee          User           @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)

@@ -34,7 +34,7 @@ const CARD_TYPES = {
 const GAME_RULES = {
   CARDS_PER_PLAYER: 7,
   MIN_PLAYERS: 2,
-  MAX_PLAYERS: 10,
+  MAX_PLAYERS: 6,
   // Cards drawn when a player is caught not calling UNO on their last card.
   UNO_PENALTY_CARDS: 2,
 }

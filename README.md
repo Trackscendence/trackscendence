@@ -25,7 +25,7 @@ _This project has been created as part of the 42 curriculum by smoore, srodrigo,
 2. [UNO Game Rules](#2-uno-game-rules)
 3. [Security & Authentication](#3-security--authentication)
 4. [System & Database Architecture](#4-system--database-architecture)
-5. [Target Modules (19 Points Target)](#5-target-modules-19-points-target)
+5. [Target Modules (22 Points Target)](#5-target-modules-22-points-target)
 6. [Getting Started](#6-getting-started)
 7. [Developer Documentation](#7-developer-documentation)
 8. [Team Information](#8-team-information)
@@ -43,6 +43,7 @@ _This project has been created as part of the 42 curriculum by smoore, srodrigo,
 - **Secure Authentication**: JWT-based auth, anonymous guest login, and 2FA support.
 - **User Ecosystem**: Customizable user profiles, statistics, peer friendships, and relationship status tracking.
 - **Live Interaction**: Real-time messaging, chat lobbies, and secure WebSocket authentication.
+- **Tournaments & Live Brackets**: Single-elimination bracket manager, creator-controlled starts, real-time match staging, and live bracket visualization/alerts.
 
 ---
 
@@ -61,6 +62,16 @@ Our multiplayer engine implements the classic rules of UNO:
 - **Yelling "UNO!"**: When a player has exactly **1 card** remaining, they must yell **"UNO!"**. If caught by another player before the next turn begins, they must draw 2 penalty cards.
 - **Winning**: The first player to discard all of their cards wins the game.
 - **Reshuffling**: If the Draw Pile is exhausted, the Discard Pile is reshuffled (leaving the top card) to rebuild the Draw Pile.
+
+### 2.1 User Tournaments & Live Brackets
+
+Trackscendence features a built-in single-elimination tournament management system that allows users to compete in structured multiplayer brackets:
+
+- **Bracket Creation & Join**: Any player can create a tournament from the lobby. Other active players can discover and join the tournament roster.
+- **Roster & Join Alerts**: When a player joins, the tournament creator is instantly notified via real-time social alerts, and the updated roster/bracket is synchronized to all registered participants.
+- **Automated Match Staging**: Once the creator starts the tournament, the bracket engine automatically schedules and pairs players. It terminates any previous open rooms/seats they held and scaffolds dedicated game rooms (e.g., `Tournament Name — R[round] M[slot]`) for each active match.
+- **Real-Time Match Alerts**: When a match in the bracket becomes ready, players receive a high-priority Socket.IO alert (`tournament:match_ready`) that deep-links and redirects them directly to the active game board.
+- **Dynamic Bracket Advancement**: Upon match completion, the winner automatically advances to the next tier of the single-elimination bracket, which updates in real-time for all spectators and players.
 
 ---
 
@@ -141,9 +152,9 @@ Our database relational schema is defined in Prisma and is automatically kept up
 
 _Note: Regenerate the ERD diagram inside the `/docs` folder with `npm run docs:erd --prefix server`._
 
-## 5. Target Modules (21 Points Target)
+## 5. Target Modules (22 Points Target)
 
-To exceed the mandatory 14 points required for evaluation, our project implements the following modules (targeting a total of 21 points):
+To exceed the mandatory 14 points required for evaluation, our project implements the following modules (targeting a total of 22 points):
 
 <details>
 <summary><strong>Click to expand target modules status</strong></summary>
@@ -163,6 +174,7 @@ To exceed the mandatory 14 points required for evaluation, our project implement
 | **Gaming**   | Web-based Game                                | Major (2pts) | 🟢 Implemented | Fully functional UNO game engine with card logic, drawing deck, and "UNO" catching rules.   |
 | **Gaming**   | Multiplayer 3+                                | Major (2pts) | 🟢 Implemented | Multiplayer lobby and game loop supporting up to 6 players at a table.                      |
 | **Gaming**   | Artificial Intelligence Opponent / Bot Player | Major (2pts) | 🟢 Implemented | Backend bot service implementing multiple strategy profiles for solo play (Bonus Module).   |
+| **Gaming**   | User Tournament / Live Bracket                | Minor (1pt)  | 🟢 Implemented | Single-elimination bracket manager, creator starting, live match staging, and alerts.       |
 
 </details>
 

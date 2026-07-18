@@ -66,15 +66,15 @@ test('UnoEngine Constructor Validations', async (t) => {
   await t.test('Throws when less than 2 players', () => {
     assert.throws(
       () => new UnoEngine(['p1']),
-      /A game must have between 2 and 10 players/,
+      /A game must have between 2 and 6 players/,
     )
   })
 
-  await t.test('Throws when more than 10 players', () => {
-    const players = Array.from({ length: 11 }, (_, i) => `p${i}`)
+  await t.test('Throws when more than 6 players', () => {
+    const players = Array.from({ length: 7 }, (_, i) => `p${i}`)
     assert.throws(
       () => new UnoEngine(players),
-      /A game must have between 2 and 10 players/,
+      /A game must have between 2 and 6 players/,
     )
   })
 

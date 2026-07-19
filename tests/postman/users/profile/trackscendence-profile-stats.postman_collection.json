@@ -252,9 +252,9 @@
                   "  pm.expect(json.user.username).to.eql(pm.environment.get('profileUsername'));",
                   "  pm.expect(json.user.displayName).to.eql(null);",
                   "});",
-                  "pm.test('public profile does not expose private fields', function () {",
+                  "pm.test('public profile hides secrets and keeps the public role badge', function () {",
                   "  pm.expect(json.user.email).to.eql(undefined);",
-                  "  pm.expect(json.user.role).to.eql(undefined);",
+                  "  pm.expect(json.user.role).to.eql('USER');",
                   "  pm.expect(JSON.stringify(json)).to.not.include('passwordHash');",
                   "});",
                   "pm.test('public profile includes stats and recentMatches shape', function () {",
@@ -291,9 +291,9 @@
                   "pm.test('opponent profile returns the requested opponent', function () {",
                   "  pm.expect(json.user.username).to.eql(pm.environment.get('profileOpponentUsername'));",
                   "});",
-                  "pm.test('opponent profile also hides private fields', function () {",
+                  "pm.test('opponent profile also hides secrets and keeps the public role badge', function () {",
                   "  pm.expect(json.user.email).to.eql(undefined);",
-                  "  pm.expect(json.user.role).to.eql(undefined);",
+                  "  pm.expect(json.user.role).to.eql('USER');",
                   "});"
                 ]
               }

@@ -4,6 +4,7 @@ const helmet = require('helmet')
 const cors = require('cors')
 const config = require('#utils/config')
 const requestLogger = require('#middleware/morgan.middleware')
+const { attachRequestId } = require('#middleware/request-id.middleware')
 const rateLimiter = require('#middleware/rate-limit.middleware')
 const { notFound, errorHandler } = require('#middleware/error.middleware')
 const {
@@ -23,6 +24,7 @@ const app = express()
 // X-Forwarded-For chains and lets callers spoof their way past rate limits.
 app.set('trust proxy', 1)
 
+app.use(attachRequestId)
 app.use(helmet())
 app.use(cors({ origin: config.CORS_ORIGIN }))
 app.use(express.json())

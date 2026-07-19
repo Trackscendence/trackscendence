@@ -41,6 +41,9 @@ const withUserServiceStubs = async (stubs, callback) => {
   const originals = {
     countAcceptedFriendsForUser: usersRepository.countAcceptedFriendsForUser,
     deleteAvatarFileByUrl: userAvatar.deleteAvatarFileByUrl,
+    findPublicProfileByUsername: usersRepository.findPublicProfileByUsername,
+    findRelationshipBetweenUsers: usersRepository.findRelationshipBetweenUsers,
+    findSelfProfileById: usersRepository.findSelfProfileById,
     invalidate: authTokenCache.invalidate,
     listPublicFriendsForUser: usersRepository.listPublicFriendsForUser,
     listRecentMatchesForUser: usersRepository.listRecentMatchesForUser,
@@ -58,6 +61,14 @@ const withUserServiceStubs = async (stubs, callback) => {
     countAcceptedFriendsForUser:
       stubs.countAcceptedFriendsForUser ??
       originals.countAcceptedFriendsForUser,
+    findPublicProfileByUsername:
+      stubs.findPublicProfileByUsername ??
+      originals.findPublicProfileByUsername,
+    findRelationshipBetweenUsers:
+      stubs.findRelationshipBetweenUsers ??
+      originals.findRelationshipBetweenUsers,
+    findSelfProfileById:
+      stubs.findSelfProfileById ?? originals.findSelfProfileById,
     listPublicFriendsForUser:
       stubs.listPublicFriendsForUser ?? originals.listPublicFriendsForUser,
     listRecentMatchesForUser:
@@ -78,6 +89,9 @@ const withUserServiceStubs = async (stubs, callback) => {
     })
     Object.assign(usersRepository, {
       countAcceptedFriendsForUser: originals.countAcceptedFriendsForUser,
+      findPublicProfileByUsername: originals.findPublicProfileByUsername,
+      findRelationshipBetweenUsers: originals.findRelationshipBetweenUsers,
+      findSelfProfileById: originals.findSelfProfileById,
       listPublicFriendsForUser: originals.listPublicFriendsForUser,
       listRecentMatchesForUser: originals.listRecentMatchesForUser,
       updateAvatarById: originals.updateAvatarById,
@@ -192,6 +206,227 @@ describe('getProfileData', () => {
       })
       assert.strictEqual(profile.email, 'player@trackscendence.local')
     })
+  })
+})
+
+describe('profile view reads', () => {
+  it('assembles the current profile through the shared service path', async () => {
+    await withUserServiceStubs(
+      {
+        countAcceptedFriendsForUser: async () => 2,
+        findSelfProfileById: async () =>
+          buildSelfUser({
+            displayName: 'Current Player',
+          }),
+        listPublicFriendsForUser: async () => [],
+        listRecentMatchesForUser: async () => [],
+      },
+      async (usersService) => {
+        const result = await usersService.getCurrentProfile(buildViewer())
+
+        assert.strictEqual(result.relationship.status, 'SELF')
+        assert.strictEqual(result.user.email, 'player@example.com')
+        assert.strictEqual(result.user.displayName, 'Current Player')
+        assert.strictEqual(result.user.stats.friendsCount, 2)
+      },
+    )
+  })
+
+  it('assembles a public profile with no relationship as NONE', async () => {
+    await withUserServiceStubs(
+      {
+        countAcceptedFriendsForUser: async () => 0,
+        findPublicProfileByUsername: async () =>
+          buildSelfUser({
+            id: 7,
+            email: 'public@example.com',
+            username: 'public-player',
+          }),
+        findRelationshipBetweenUsers: async () => null,
+        listPublicFriendsForUser: async () => [],
+        listRecentMatchesForUser: async () => [],
+      },
+      async (usersService) => {
+        const result = await usersService.getProfileByUsername(
+          buildViewer(),
+          'public-player',
+        )
+
+        assert.deepStrictEqual(result.relationship, { status: 'NONE' })
+        assert.strictEqual(result.user.email, undefined)
+        assert.strictEqual(result.user.username, 'public-player')
+      },
+    )
+  })
+
+  it('assembles a public profile with an accepted relationship as FRIENDS', async () => {
+    const updatedAt = new Date('2026-07-03T12:00:00.000Z')
+
+    await withUserServiceStubs(
+      {
+        countAcceptedFriendsForUser: async () => 5,
+        findPublicProfileByUsername: async () =>
+          buildSelfUser({
+            id: 7,
+            email: 'public@example.com',
+            username: 'public-player',
+          }),
+        findRelationshipBetweenUsers: async () => ({
+          requesterId: 42,
+          addresseeId: 7,
+          status: 'ACCEPTED',
+          updatedAt,
+        }),
+        listPublicFriendsForUser: async () => [],
+        listRecentMatchesForUser: async () => [],
+      },
+      async (usersService) => {
+        const result = await usersService.getProfileByUsername(
+          buildViewer(),
+          'public-player',
+        )
+
+        assert.deepStrictEqual(result.relationship, {
+          status: 'FRIENDS',
+          updatedAt,
+        })
+        assert.strictEqual(result.user.stats.friendsCount, 5)
+      },
+    )
+  })
+
+  it('throws not found for a missing public profile user', async () => {
+    await withUserServiceStubs(
+      {
+        findPublicProfileByUsername: async () => null,
+      },
+      async (usersService) => {
+        await assert.rejects(
+          usersService.getProfileByUsername(buildViewer(), 'missing-player'),
+          { statusCode: 404, message: 'User not found' },
+        )
+      },
+    )
+  })
+})
+
+describe('profile assembly observability', () => {
+  const buildDebugLogger = (overrides = {}) => {
+    const calls = []
+    const logger = {
+      debug: (message, metadata) => {
+        calls.push({ message, metadata })
+      },
+      isLevelEnabled: () => true,
+      ...overrides,
+    }
+
+    return { calls, logger }
+  }
+
+  it('logs correlation id and fragment timings for current profile reads', async () => {
+    const { calls, logger } = buildDebugLogger()
+
+    await withUserServiceStubs(
+      {
+        countAcceptedFriendsForUser: async () => 14,
+        findSelfProfileById: async () => buildSelfUser(),
+        listPublicFriendsForUser: async () => [],
+        listRecentMatchesForUser: async () => [],
+      },
+      async (usersService) => {
+        const result = await usersService.getCurrentProfile(buildViewer(), {
+          correlationId: 'profile-read-123',
+          logger,
+        })
+
+        assert.strictEqual(result.relationship.status, 'SELF')
+      },
+    )
+
+    assert.strictEqual(calls.length, 1)
+    assert.strictEqual(calls[0].message, 'Profile view assembled')
+    assert.strictEqual(calls[0].metadata.correlationId, 'profile-read-123')
+    assert.strictEqual(calls[0].metadata.profileRead, 'current')
+    assert.strictEqual(calls[0].metadata.viewerId, 42)
+    assert.strictEqual(calls[0].metadata.profileUserId, 42)
+    assert.ok(calls[0].metadata.durationsMs.total >= 0)
+    assert.ok(calls[0].metadata.durationsMs.userLookup >= 0)
+    assert.ok(calls[0].metadata.durationsMs.recentMatches >= 0)
+    assert.ok(calls[0].metadata.durationsMs.friendPreview >= 0)
+    assert.ok(calls[0].metadata.durationsMs.friendCount >= 0)
+    assert.ok(calls[0].metadata.durationsMs.responseBuild >= 0)
+    assert.strictEqual('email' in calls[0].metadata, false)
+    assert.strictEqual(JSON.stringify(calls[0].metadata).includes('@'), false)
+  })
+
+  it('logs relationship lookup timing for public profile reads', async () => {
+    const { calls, logger } = buildDebugLogger()
+
+    await withUserServiceStubs(
+      {
+        countAcceptedFriendsForUser: async () => 3,
+        findPublicProfileByUsername: async () =>
+          buildSelfUser({
+            id: 7,
+            email: 'public@example.com',
+            username: 'public-player',
+          }),
+        findRelationshipBetweenUsers: async () => ({
+          requesterId: 42,
+          addresseeId: 7,
+          status: 'PENDING',
+          createdAt: new Date('2026-07-01T00:00:00.000Z'),
+        }),
+        listPublicFriendsForUser: async () => [],
+        listRecentMatchesForUser: async () => [],
+      },
+      async (usersService) => {
+        const result = await usersService.getProfileByUsername(
+          buildViewer(),
+          'public-player',
+          { logger },
+        )
+
+        assert.strictEqual(result.relationship.status, 'PENDING_OUTGOING')
+      },
+    )
+
+    assert.strictEqual(calls.length, 1)
+    assert.strictEqual(calls[0].metadata.profileRead, 'public')
+    assert.strictEqual(calls[0].metadata.viewerId, 42)
+    assert.strictEqual(calls[0].metadata.profileUserId, 7)
+    assert.ok(typeof calls[0].metadata.correlationId === 'string')
+    assert.ok(calls[0].metadata.correlationId.length > 0)
+    assert.ok(calls[0].metadata.durationsMs.relationshipLookup >= 0)
+    assert.strictEqual('username' in calls[0].metadata, false)
+    assert.strictEqual('email' in calls[0].metadata, false)
+  })
+
+  it('stays quiet when debug logging is disabled', async () => {
+    let debugCalls = 0
+
+    await withUserServiceStubs(
+      {
+        countAcceptedFriendsForUser: async () => 0,
+        findSelfProfileById: async () => buildSelfUser(),
+        listPublicFriendsForUser: async () => [],
+        listRecentMatchesForUser: async () => [],
+      },
+      async (usersService) => {
+        await usersService.getCurrentProfile(buildViewer(), {
+          correlationId: 'quiet-profile-read',
+          logger: {
+            debug: () => {
+              debugCalls += 1
+            },
+            isLevelEnabled: () => false,
+          },
+        })
+      },
+    )
+
+    assert.strictEqual(debugCalls, 0)
   })
 })
 

@@ -7,6 +7,13 @@ const {
   storeAvatarFile,
 } = require('#modules/users/users.avatar')
 const authTokenCache = require('#modules/auth/auth.token-cache')
+const {
+  finishTimer,
+  logProfileAssembly,
+  measureAsyncTiming,
+  resolveCorrelationId,
+  startTimer,
+} = require('#modules/users/profile.observability')
 const usersRepository = require('#modules/users/users.repository')
 const {
   DEFAULT_PAGE_SIZE,
@@ -198,18 +205,26 @@ const toRelationshipState = (relationship, viewerId, profileUserId) => {
 const getProfileData = async (
   user,
   options = {},
-  { repository = usersRepository } = {},
+  { repository = usersRepository, timings = null } = {},
 ) => {
   const [recentMatches, friends, friendsCount] = await Promise.all([
-    repository.listRecentMatchesForUser(user.id, MATCH_HISTORY_LIMIT),
-    repository.listPublicFriendsForUser(user.id, PROFILE_FRIENDS_LIMIT),
+    measureAsyncTiming(timings, 'recentMatches', () =>
+      repository.listRecentMatchesForUser(user.id, MATCH_HISTORY_LIMIT),
+    ),
+    measureAsyncTiming(timings, 'friendPreview', () =>
+      repository.listPublicFriendsForUser(user.id, PROFILE_FRIENDS_LIMIT),
+    ),
     // The full accepted-friend total (#396): the list above is a capped
     // preview, so the stat strip needs its own count, and this way public
     // profiles show it even where the friends list itself stays private.
-    repository.countAcceptedFriendsForUser(user.id),
+    measureAsyncTiming(timings, 'friendCount', () =>
+      repository.countAcceptedFriendsForUser(user.id),
+    ),
   ])
 
-  return {
+  const responseBuildStartedAt = startTimer()
+
+  const profile = {
     id: user.id,
     username: user.username,
     displayName: user.displayName,
@@ -225,6 +240,12 @@ const getProfileData = async (
     recentMatches: recentMatches.map((match) => toRecentMatch(match, user.id)),
     friends: friends.map((friendship) => toProfileFriend(friendship, user.id)),
   }
+
+  if (timings) {
+    timings.responseBuild = finishTimer(responseBuildStartedAt)
+  }
+
+  return profile
 }
 
 /**
@@ -285,20 +306,98 @@ const searchUsers = async (query) => {
   }
 }
 
-const getCurrentProfile = async (viewer) => {
-  const user = await usersRepository.findSelfProfileById(viewer.id)
+/**
+ * Internal profile-view assembly interface for both /users/me and /users/:username.
+ *
+ * Blocking today:
+ * - the base user row
+ * - the viewer-to-profile relationship state when a viewer is present
+ * - the friend total that feeds the stat strip
+ *
+ * Secondary fragments loaded in parallel (still blocking this HTTP response
+ * today, but isolated here so callers do not know which queries build them):
+ * - recent match preview
+ * - public friend preview
+ *
+ * Safe future "load later" candidates if the product ever wants a partial or
+ * streamed profile response:
+ * - recent match preview
+ * - public friend preview
+ */
+const assembleProfileView = async ({
+  includeEmail = false,
+  onMissingUser,
+  profileRead,
+  rawCorrelationId,
+  repository = usersRepository,
+  resolveRelationshipState,
+  resolveUser,
+  profileLogger = logger,
+  viewerId = null,
+}) => {
+  const correlationId = resolveCorrelationId(rawCorrelationId)
+  const totalStartedAt = startTimer()
+  const timings = {}
+  const user = await measureAsyncTiming(timings, 'userLookup', resolveUser)
 
   if (!user) {
-    throw new UnauthorizedException(INVALID_TOKEN_MESSAGE)
+    throw onMissingUser()
   }
 
-  return {
-    user: await getProfileData(user, { includeEmail: true }),
-    relationship: { status: 'SELF' },
+  const relationship = await resolveRelationshipState({
+    repository,
+    timings,
+    user,
+    viewerId,
+  })
+  const result = {
+    user: await getProfileData(user, { includeEmail }, { repository, timings }),
+    relationship,
   }
+
+  timings.total = finishTimer(totalStartedAt)
+  logProfileAssembly({
+    correlationId,
+    logger: profileLogger,
+    profileRead,
+    profileUserId: user.id,
+    timings,
+    viewerId,
+  })
+
+  return result
 }
 
-const getProfileByUsername = async (viewer, username) => {
+const getCurrentProfile = async (
+  viewer,
+  {
+    correlationId: rawCorrelationId,
+    logger: profileLogger = logger,
+    repository = usersRepository,
+  } = {},
+) => {
+  return assembleProfileView({
+    includeEmail: true,
+    onMissingUser: () => new UnauthorizedException(INVALID_TOKEN_MESSAGE),
+    profileRead: 'current',
+    profileLogger,
+    rawCorrelationId,
+    repository,
+    resolveRelationshipState: async () => ({ status: 'SELF' }),
+    resolveUser: () => repository.findSelfProfileById(viewer.id),
+    viewerId: viewer.id,
+  })
+}
+
+const getProfileByUsername = async (
+  viewer,
+  username,
+  {
+    correlationId: rawCorrelationId,
+    logger: profileLogger = logger,
+    repository = usersRepository,
+  } = {},
+) => {
   // Lookups only require a non-empty name. Signup-format rules (length,
   // charset) live in auth.service; enforcing them here made every profile
   // whose name predates those rules unreachable with a 400.
@@ -311,24 +410,29 @@ const getProfileByUsername = async (viewer, username) => {
     })
   }
 
-  const user =
-    await usersRepository.findPublicProfileByUsername(normalizedUsername)
+  return assembleProfileView({
+    onMissingUser: () => new NotFoundException('User not found'),
+    profileRead: 'public',
+    profileLogger,
+    rawCorrelationId,
+    repository,
+    resolveRelationshipState: async ({ timings, user }) => {
+      if (!viewer?.id || viewer.id === user.id) {
+        return viewer?.id ? { status: 'SELF' } : null
+      }
 
-  if (!user) {
-    throw new NotFoundException('User not found')
-  }
+      const relationship = await measureAsyncTiming(
+        timings,
+        'relationshipLookup',
+        () => repository.findRelationshipBetweenUsers(viewer.id, user.id),
+      )
 
-  const relationship =
-    viewer?.id && viewer.id !== user.id
-      ? await usersRepository.findRelationshipBetweenUsers(viewer.id, user.id)
-      : null
-
-  return {
-    user: await getProfileData(user),
-    relationship: viewer?.id
-      ? toRelationshipState(relationship, viewer.id, user.id)
-      : null,
-  }
+      return toRelationshipState(relationship, viewer.id, user.id)
+    },
+    resolveUser: () =>
+      repository.findPublicProfileByUsername(normalizedUsername),
+    viewerId: viewer?.id ?? null,
+  })
 }
 
 const toAuthUser = (user) => ({

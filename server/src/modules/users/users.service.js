@@ -173,6 +173,7 @@ const toProfileFriend = (friendship, profileUserId) => {
       username: user.username,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
+      isOnline,
     },
     friendSince: friendship.updatedAt,
   }

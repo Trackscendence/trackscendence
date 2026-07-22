@@ -161,11 +161,15 @@ const toRecentMatch = (match, currentUserId) => {
   }
 }
 
-const toProfileFriend = (friendship, profileUserId) => {
+const { isUserOnline } = require('#socket/presence.service')
+
+const toProfileFriend = async (friendship, profileUserId) => {
   const user =
     friendship.requesterId === profileUserId
       ? friendship.addressee
       : friendship.requester
+
+  const isOnline = await isUserOnline(user.id)
 
   return {
     user: {
@@ -173,6 +177,7 @@ const toProfileFriend = (friendship, profileUserId) => {
       username: user.username,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
+      isOnline,
     },
     friendSince: friendship.updatedAt,
   }
@@ -216,7 +221,8 @@ const getProfileData = async (
     ),
     // The full accepted-friend total (#396): the list above is a capped
     // preview, so the stat strip needs its own count, and this way public
-    // profiles show it even where the friends list itself stays private.
+    // profiles show it even where the friends list its:w
+    // elf stays private.
     measureAsyncTiming(timings, 'friendCount', () =>
       repository.countAcceptedFriendsForUser(user.id),
     ),
@@ -238,7 +244,9 @@ const getProfileData = async (
     role: user.role,
     stats: { ...toProfileStats(user), friendsCount },
     recentMatches: recentMatches.map((match) => toRecentMatch(match, user.id)),
-    friends: friends.map((friendship) => toProfileFriend(friendship, user.id)),
+    friends: await Promise.all(
+      friends.map((friendship) => toProfileFriend(friendship, user.id)),
+    ),
   }
 
   if (timings) {

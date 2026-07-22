@@ -14,7 +14,8 @@
     "#middleware/*": "./src/middleware/*.js",
     "#modules/*": "./src/modules/*.js",
     "#routes/*": "./src/routes/*/index.js",
-    "#utils/*": "./utils/*.js"
+    "#utils/*": "./utils/*.js",
+    "#socket/*": "./src/socket/*.js"
   },
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",

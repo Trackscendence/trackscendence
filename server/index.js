@@ -32,8 +32,11 @@ const {
   setSocketServer,
 } = require('#modules/notifications/notifications.socket')
 const io = initWebSocket(server)
+const { setPresenceSocketServer } = require('#socket/presence.service')
+
 app.set('io', io)
 setSocketServer(io)
+setPresenceSocketServer(io)
 
 registerGracefulShutdown({ io, logger, prisma, server })
 

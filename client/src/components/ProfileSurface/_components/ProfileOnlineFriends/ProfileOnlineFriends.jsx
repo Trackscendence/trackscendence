@@ -1,8 +1,20 @@
 import ProfileLink from '@/components/ProfileLink'
 
 const ProfileOnlineFriends = ({ friends = [], onShowFriends }) => {
-  const visibleFriends = friends.slice(0, 4)
-  const overflow = Math.max(friends.length - visibleFriends.length, 0)
+  const onlineFriends = friends.filter(({ user }) => user.isOnline)
+
+  friends.forEach(({ user }) => {
+    console.log(
+      user.username,
+      'isOnline =',
+      user.isOnline,
+      'type =',
+      typeof user.isOnline,
+    )
+  })
+
+  const visibleFriends = onlineFriends.slice(0, 4)
+  const overflow = Math.max(onlineFriends.length - visibleFriends.length, 0)
 
   return (
     <section className="bg-white p-4">
@@ -11,7 +23,7 @@ const ProfileOnlineFriends = ({ friends = [], onShowFriends }) => {
           Online Friends
         </h2>
         <span className="text-xs font-bold text-green-600">
-          {friends.length} online
+          {onlineFriends.length} online
         </span>
       </div>
 

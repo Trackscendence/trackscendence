@@ -1,6 +1,6 @@
 let io = null
 
-const setSocketServer = (socketServer) => {
+const setPresenceSocketServer = (socketServer) => {
   io = socketServer
 }
 
@@ -12,6 +12,6 @@ const isUserOnline = async (userId) => {
 }
 
 module.exports = {
-  setSocketServer,
+  setPresenceSocketServer,
   isUserOnline,
 }

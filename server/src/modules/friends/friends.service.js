@@ -530,16 +530,33 @@ const unblockUser = async (user, params) => {
   )
 }
 
+const { isUserOnline } = require('#socket/presence.service')
+
 const listFriends = async (user) => {
   const friendships = await friendsRepository.listAcceptedFriendshipsForUser(
     user.id,
   )
 
-  return {
-    friends: friendships.map((friendship) =>
-      toFriendSummary(friendship, user.id),
-    ),
-  }
+  const friends = await Promise.all(
+    friendships.map(async (friendship) => {
+      const friend =
+        friendship.requesterId === user.id
+          ? friendship.addressee
+          : friendship.requester
+      return {
+        user: {
+          id: friend.id,
+          username: friend.username,
+          displayName: friend.displayName,
+          avatarUrl: friend.avatarUrl,
+          isOnline: await isUserOnline(friend.id),
+        },
+        friendSince: friendship.updatedAt,
+      }
+    }),
+  )
+
+  return { friends }
 }
 
 const listFriendRequests = async (user) => {

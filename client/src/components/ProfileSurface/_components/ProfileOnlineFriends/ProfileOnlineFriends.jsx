@@ -2,6 +2,17 @@ import ProfileLink from '@/components/ProfileLink'
 
 const ProfileOnlineFriends = ({ friends = [], onShowFriends }) => {
   const onlineFriends = friends.filter(({ user }) => user.isOnline)
+
+  friends.forEach(({ user }) => {
+    console.log(
+      user.username,
+      'isOnline =',
+      user.isOnline,
+      'type =',
+      typeof user.isOnline,
+    )
+  })
+
   const visibleFriends = onlineFriends.slice(0, 4)
   const overflow = Math.max(onlineFriends.length - visibleFriends.length, 0)
 

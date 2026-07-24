@@ -14,7 +14,7 @@ const MAX_OPEN_ROOMS = 8
 const DEFAULT_CAPACITY = 2
 
 // Capacities a player may request when creating a room. The engine allows
-// 2 to 10; the table currently supports up to six seats while keeping the
+// 2 to 6; the table currently supports up to six seats while keeping the
 // quick-start menu small.
 const ALLOWED_CAPACITIES = [2, 3, 4, 6]
 

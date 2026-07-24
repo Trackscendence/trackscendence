@@ -66,6 +66,6 @@ Because "only one player can own the open room, everyone else joins" is a rule a
 ## Integrity rules
 
 - `(roomId, userId)` is unique, so a player cannot take two seats in one room.
-- Capacity bounds come from the game engine's `GAME_RULES` (2..10) and are enforced in the service.
+- Capacity bounds come from the game engine's `GAME_RULES` (2..6) and are enforced in the service.
 - Seat counting and seat taking happen in one serializable transaction, so two players racing for the last seat cannot both win it.
 - Deleting a user cascades to their memberships and owned rooms.

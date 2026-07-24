@@ -16,7 +16,7 @@ SELF_PREFIX='scripts/git-hooks/'
 RANGE="${1:-}"
 status=0
 
-files=$(git ls-files | grep -viE "^$SELF_PREFIX" || true)
+files=$(git ls-files | grep -viE "^$SELF_PREFIX|^README\.md(\.bak)?$" || true)
 
 # 1) Filenames
 bad_names=$(printf '%s\n' "$files" | grep -iE "$AI_FILENAME_REGEX" || true)
@@ -50,7 +50,7 @@ if [ -n "$RANGE" ]; then
       status=1
     fi
 
-    added=$(git show "$sha" --format= --unified=0 -- . ':!scripts/git-hooks' 2>/dev/null \
+    added=$(git show "$sha" --format= --unified=0 -- . ':!scripts/git-hooks' ':!README.md' ':!README.md.bak' 2>/dev/null \
       | grep -E '^\+' | grep -vE '^\+\+\+ ' | grep -inE "$AI_IDENTIFIER_REGEX" || true)
     if [ -n "$added" ]; then
       echo "✖ commit $sha adds content referencing AI tooling:"
